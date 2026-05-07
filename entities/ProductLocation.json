@@ -1,0 +1,34 @@
+{
+  "name": "ProductLocation",
+  "type": "object",
+  "description": "Lokasi penyimpanan produk (rak, gudang, dll)",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "description": "Nama lokasi (e.g. Rak A1, Gudang Utama)"
+    },
+    "description": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["rack", "warehouse", "store", "other"],
+      "default": "rack",
+      "description": "Tipe lokasi"
+    },
+    "address": {
+      "type": "string"
+    },
+    "postal_code": {
+      "type": "string"
+    },
+    "coordinates": {
+      "type": "string",
+      "description": "Koordinat GPS"
+    }
+  },
+  "required": ["store_id", "name"]
+}

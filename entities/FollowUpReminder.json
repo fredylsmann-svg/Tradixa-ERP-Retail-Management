@@ -1,0 +1,49 @@
+{
+  "name": "FollowUpReminder",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Completed",
+        "Cancelled"
+      ],
+      "default": "Pending"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "Low",
+        "Medium",
+        "High"
+      ],
+      "default": "Medium"
+    }
+  },
+  "required": [
+    "store_id",
+    "customer_id",
+    "title",
+    "due_date"
+  ]
+}

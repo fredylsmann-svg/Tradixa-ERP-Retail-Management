@@ -1,0 +1,32 @@
+{
+  "name": "Expense",
+  "type": "object",
+  "description": "Beban Operasional - pengeluaran harian usaha",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal pengeluaran"
+    },
+    "category": {
+      "type": "string",
+      "description": "Kategori biaya (Gaji, Sewa, Listrik, dll)"
+    },
+    "amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Jumlah nominal pengeluaran"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan / keterangan"
+    },
+    "timestamp_wib": {
+      "type": "string"
+    }
+  },
+  "required": ["date", "category", "amount"]
+}

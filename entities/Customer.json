@@ -1,0 +1,26 @@
+{
+  "name": "Customer",
+  "type": "object",
+  "properties": {
+    "store_id": { "type": "string" },
+    "name": { "type": "string" },
+    "address": { "type": "string" },
+    "phone": { "type": "string" },
+    "email": { "type": "string" },
+    "bank_name": { "type": "string" },
+    "bank_account": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Active",
+        "Inactive"
+      ],
+      "default": "Active"
+    },
+    "advance_balance": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": ["store_id", "name"]
+}

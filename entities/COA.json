@@ -1,0 +1,35 @@
+{
+  "name": "COA",
+  "type": "object",
+  "description": "Chart of Accounts - Daftar Akun Standar Akuntansi",
+  "properties": {
+    "store_id": {
+      "type": "string",
+      "description": "ID toko"
+    },
+    "code": {
+      "type": "string",
+      "description": "Kode akun (e.g. 1-1100)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Nama akun (e.g. Bank BCA)"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["Asset", "Liability", "Equity", "Revenue", "Expense"],
+      "default": "Asset",
+      "description": "Kategori akun"
+    },
+    "normal_balance": {
+      "type": "string",
+      "enum": ["Debit", "Credit"],
+      "default": "Debit",
+      "description": "Saldo normal akun"
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": ["store_id", "code", "name"]
+}

@@ -1,0 +1,71 @@
+{
+  "name": "Discount",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string",
+      "description": "Kode diskon/promo"
+    },
+    "name": {
+      "type": "string",
+      "description": "Nama diskon/promo"
+    },
+    "discount_type": {
+      "type": "string",
+      "enum": [
+        "Percentage",
+        "Nominal"
+      ],
+      "default": "Percentage"
+    },
+    "discount_value": {
+      "type": "number",
+      "description": "Nilai diskon (persentase atau nominal)"
+    },
+    "applicable_products": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "ID produk yang dapat diskon",
+      "default": []
+    },
+    "min_purchase": {
+      "type": "number",
+      "default": 0,
+      "description": "Minimum pembelian untuk mendapat diskon"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "default": "Active"
+    },
+    "used_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Jumlah penggunaan diskon"
+    },
+    "usage_limit": {
+      "type": "number",
+      "default": 0,
+      "description": "Maksimal penggunaan diskon (0 = unlimited)"
+    }
+  },
+  "required": [
+    "store_id",
+    "name",
+    "discount_value",
+    "start_date",
+    "end_date"
+  ]
+}

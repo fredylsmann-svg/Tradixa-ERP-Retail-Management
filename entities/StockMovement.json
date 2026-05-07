@@ -1,0 +1,60 @@
+{
+  "name": "StockMovement",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "reference": {
+      "type": "string",
+      "description": "Nomor referensi"
+    },
+    "product_id": {
+      "type": "string"
+    },
+    "product_name": {
+      "type": "string"
+    },
+    "movement_type": {
+      "type": "string",
+      "enum": [
+        "in",
+        "out"
+      ]
+    },
+    "stock_type": {
+      "type": "string",
+      "enum": [
+        "GRN",
+        "IGRN",
+        "Stock In",
+        "Stock Out",
+        "Purchase",
+        "Return",
+        "Adjustment",
+        "Sales",
+        "Damaged",
+        "Transfer"
+      ]
+    },
+    "quantity": {
+      "type": "number"
+    },
+    "expired_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "timestamp_wib": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "store_id",
+    "product_id",
+    "movement_type",
+    "quantity"
+  ]
+}

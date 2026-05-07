@@ -1,0 +1,608 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Upload, 
+  FileCheck, 
+  RefreshCw, 
+  ArrowLeftRight, 
+  Loader2, 
+  FileSpreadsheet, 
+  History, 
+  CheckCircle2, 
+  AlertCircle,
+  Info,
+  HelpCircle,
+  ArchiveRestore
+} from 'lucide-react';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { api } from '@/api/client';
+import * as XLSX from 'xlsx';
+import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
+import * as pdfjsLib from 'pdfjs-dist';
+import PageHeader from '@/components/layout/PageHeader';
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
+export default function BankReconciliation({ store }) {
+  const [bankAccounts, setBankAccounts] = useState([]);
+  const [selectedBankId, setSelectedBankId] = useState('');
+  const [systemTransactions, setSystemTransactions] = useState([]);
+  const [bankMutations, setBankMutations] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState('');
+  
+  const [statementHistory, setStatementHistory] = useState([]);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+
+  const loadStatementHistory = async (autoLoadLatest = false) => {
+    try {
+      const data = await api.entities.BankStatementHistory.filter({ store_id: store.id }, '-created_at');
+      setStatementHistory(data);
+      if (autoLoadLatest && data.length > 0 && bankMutations.length === 0) {
+        setBankMutations(data[0].parsed_data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    if (store?.id) {
+      loadBankAccounts();
+      loadStatementHistory(true);
+    }
+  }, [store]);
+
+  const loadBankAccounts = async () => {
+    const data = await api.entities.BankAccount.filter({ store_id: store.id });
+    setBankAccounts(data);
+    if (data.length > 0) setSelectedBankId(data[0].id);
+  };
+
+  const loadSystemTransactions = async () => {
+    if (!selectedBankId) return;
+    setIsLoading(true);
+    try {
+      const data = await api.entities.BankTransaction.filter({ 
+        bank_account_id: selectedBankId,
+        status: 'Approved'
+      });
+      setSystemTransactions(data.filter(t => !t.is_reconciled));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSystemTransactions();
+  }, [selectedBankId]);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsProcessing(true);
+    setProcessingMessage('Sedang Memproses File...');
+
+    const parseBankStatementText = (text) => {
+      const mutations = [];
+      const dateRegex = /(\d{2}[\/|-]\d{2})/g;
+      const parts = text.split(dateRegex);
+      
+      for (let i = 1; i < parts.length; i += 2) {
+        const date = parts[i];
+        const content = parts[i+1] || '';
+        
+        const allMatches = [...content.matchAll(/([\d\.,]+)\s+(DB|CR|DR|D|K)\b/gi)];
+        
+        if (allMatches.length > 0) {
+          allMatches.forEach((m) => {
+            const amountStr = m[1];
+            const rawType = m[2].toUpperCase();
+            
+            const isDebit = ['DB', 'DR', 'D'].includes(rawType);
+            const isCredit = ['CR', 'K'].includes(rawType);
+            
+            const clean = (s) => {
+              const hasComma = s.includes(',');
+              const hasDot = s.includes('.');
+              if (hasComma && hasDot) {
+                 if (s.lastIndexOf('.') > s.lastIndexOf(',')) return s.replace(/,/g, '');
+                 return s.replace(/\./g, '').replace(/,/g, '.');
+              }
+              if (hasComma) return s.replace(/,/g, '.');
+              return s;
+            };
+
+            const amount = parseFloat(clean(amountStr));
+            const afterMatch = content.substring(m.index + m[0].length).match(/([\d\.,]+)/);
+            const balance = afterMatch ? parseFloat(clean(afterMatch[1])) : 0;
+
+            if (!isNaN(amount) && amount > 0) {
+              mutations.push({
+                date: date,
+                description: content.substring(0, m.index).trim().substring(0, 200),
+                reference: '-',
+                debit: isDebit ? amount : 0,
+                credit: isCredit ? amount : 0,
+                balance: balance,
+                status: 'unmatched'
+              });
+            }
+          });
+        }
+      }
+      return mutations;
+    };
+
+    try {
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const bstr = evt.target.result;
+          const wb = XLSX.read(bstr, { type: 'binary' });
+          const wsname = wb.SheetNames[0];
+          const ws = wb.Sheets[wsname];
+          const data = XLSX.utils.sheet_to_json(ws);
+          
+          const normalized = data.map(row => ({
+            date: row.Date || row.Tanggal || row['Transaction Date'] || '',
+            description: row.Description || row.Keterangan || row.Memo || '',
+            reference: row.Reference || row.Ref || '-',
+            debit: row.Debit || (row.Type === 'Debit' ? row.Amount : 0) || 0,
+            credit: row.Credit || (row.Type === 'Credit' ? row.Amount : 0) || 0,
+            status: 'unmatched'
+          }));
+          setBankMutations(normalized);
+          saveStatementHistory(file.name, 'Excel/CSV', normalized);
+          toast.success(`${normalized.length} transaksi berhasil dimuat`);
+          setIsProcessing(false);
+        };
+        reader.readAsBinaryString(file);
+      } else if (file.name.endsWith('.pdf')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          fullText += textContent.items.map(item => item.str).join(' ');
+        }
+
+        let mutations = parseBankStatementText(fullText);
+
+        if (mutations.length > 0) {
+          setBankMutations(mutations);
+          saveStatementHistory(file.name, 'PDF (Digital)', mutations);
+          toast.success(`${mutations.length} transaksi dimuat dari PDF Digital`);
+          setIsProcessing(false);
+        } else {
+          // Fallback to OCR if digital parsing fails
+          setProcessingMessage('Teks Digital tidak terbaca. Beralih ke Cloud OCR...');
+          const apiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
+          if (!apiKey) throw new Error("API Key Google Vision tidak tersedia di env.");
+
+          let combinedOcrText = '';
+          for (let i = 1; i <= pdf.numPages; i++) {
+            setProcessingMessage(`Ekstrak Halaman ${i}/${pdf.numPages} via Cloud OCR...`);
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+            
+            const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+            
+            const { data: visionData, error: visionError } = await supabase.functions.invoke('app-bridge', {
+              body: {
+                action: 'analyze-vision',
+                payload: {
+                  requests: [{ image: { content: base64Image }, features: [{ type: 'DOCUMENT_TEXT_DETECTION' }] }]
+                }
+              }
+            });
+            if (visionError) throw visionError;
+            combinedOcrText += (visionData.responses[0]?.fullTextAnnotation?.text || '') + '\n';
+          }
+          
+          mutations = parseBankStatementText(combinedOcrText);
+          setBankMutations(mutations);
+          saveStatementHistory(file.name, 'PDF (OCR)', mutations);
+          toast.success(`${mutations.length} transaksi dimuat via Cloud OCR PDF`);
+          setIsProcessing(false);
+        }
+      } else if (file.name.match(/\.(png|jpe?g)$/i)) {
+        setProcessingMessage('Menganalisis Gambar dengan Google Cloud Vision AI...');
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          try {
+            const apiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
+            if (!apiKey) throw new Error("API Key Google Vision tidak tersedia di env.");
+            const base64Image = reader.result.split(',')[1];
+            const { data: visionData, error: visionError } = await supabase.functions.invoke('app-bridge', {
+              body: {
+                action: 'analyze-vision',
+                payload: {
+                  requests: [{ image: { content: base64Image }, features: [{ type: 'DOCUMENT_TEXT_DETECTION' }] }]
+                }
+              }
+            });
+            if (visionError) throw visionError;
+            const text = visionData.responses[0]?.fullTextAnnotation?.text || '';
+            const mutations = parseBankStatementText(text);
+            
+            setBankMutations(mutations);
+            saveStatementHistory(file.name, 'Image (OCR)', mutations);
+            toast.success(`${mutations.length} transaksi dimuat via Cloud OCR Gambar`);
+            setIsProcessing(false);
+          } catch(err) {
+            toast.error("Gagal OCR Gambar: " + err.message);
+            setIsProcessing(false);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (err) {
+      toast.error("Gagal memproses file: " + err.message);
+      setIsProcessing(false);
+    }
+  };
+
+  const saveStatementHistory = async (fileName, fileType, mutations) => {
+    try {
+      await api.entities.BankStatementHistory.create({
+        store_id: store.id,
+        file_name: fileName,
+        file_type: fileType,
+        total_transactions: mutations.length,
+        parsed_data: mutations
+      });
+      loadStatementHistory();
+    } catch (err) {
+      console.error("Gagal menyimpan history", err);
+    }
+  };
+
+  const parseDateForMatch = (dateStr) => {
+    if (!dateStr) return null;
+    const parts = dateStr.split(/[\/-]/);
+    if (parts.length >= 2) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      let year = new Date().getFullYear();
+      if (parts.length === 3) {
+        year = parts[2].length === 2 ? 2000 + parseInt(parts[2], 10) : parseInt(parts[2], 10);
+      }
+      return new Date(year, month, day);
+    }
+    return new Date(dateStr);
+  };
+
+  const runAutoMatch = () => {
+    if (bankMutations.length === 0 || systemTransactions.length === 0) return;
+    setIsProcessing(true);
+    setProcessingMessage('Mencocokkan Data...');
+    
+    const newMutations = [...bankMutations];
+    const newSystem = [...systemTransactions];
+
+    newMutations.forEach(mut => {
+      const amount = mut.debit > 0 ? mut.debit : mut.credit;
+      const type = mut.debit > 0 ? 'Debit' : 'Credit';
+      const mutDate = parseDateForMatch(mut.date);
+      
+      const match = newSystem.find(sys => {
+        if (Math.abs(sys.amount) !== Math.abs(amount) || sys.transaction_type !== type || sys.matched) return false;
+        
+        if (mutDate) {
+           const sysDateStr = sys.timestamp_wib ? sys.timestamp_wib.split(' ')[0] : (sys.created_date || '');
+           const sysDate = parseDateForMatch(sysDateStr);
+           if (sysDate) {
+             const diffTime = Math.abs(mutDate - sysDate);
+             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+             if (diffDays > 3) return false;
+           }
+        }
+        return true;
+      });
+
+      if (match) {
+        mut.status = 'matched';
+        mut.matchId = match.id;
+        match.matched = true;
+      }
+    });
+
+    setBankMutations(newMutations);
+    setSystemTransactions(newSystem);
+    setIsProcessing(false);
+    toast.success("Proses matching selesai!");
+  };
+
+  const confirmReconcile = async () => {
+    const toUpdate = systemTransactions.filter(s => s.matched);
+    if (toUpdate.length === 0) return;
+
+    setIsProcessing(true);
+    try {
+      await Promise.all(toUpdate.map(s => 
+        api.entities.BankTransaction.update(s.id, { is_reconciled: true, reconciled_at: new Date().toISOString() })
+      ));
+      toast.success("Rekonsiliasi berhasil disimpan!");
+      setBankMutations([]);
+      loadSystemTransactions();
+    } catch (err) {
+      toast.error("Error: " + err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const formatCurrency = (val) => val > 0 ? `Rp ${val.toLocaleString('id-ID')}` : '-';
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <AnimatePresence>
+        {isProcessing && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-blue-600/60 backdrop-blur-sm">
+            <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-4">
+              <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+              <p className="font-bold text-slate-800">{processingMessage}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <PageHeader
+        title="Bank Reconciliation"
+        subtitle="Verifikasi kebenaran transaksi bank dengan catatan internal sistem."
+        icon={FileCheck}
+        children={
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full text-slate-400 hover:text-blue-600 hover:bg-blue-50">
+                <Info className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl rounded-3xl">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5 text-blue-600" /> Alur Kerja Rekonsiliasi
+                </DialogTitle>
+                <DialogDescription className="pt-4 space-y-4 text-left">
+                  <div className="flex gap-3">
+                    <div className="bg-slate-100 h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">1</div>
+                    <p className="text-sm text-slate-600"><span className="font-bold text-slate-900">Upload Statement:</span> Unggah file PDF/Excel/Gambar(JPG/PNG) mutasi asli dari Bank (BCA, Mandiri, BRI, dll).</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="bg-slate-100 h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">2</div>
+                    <p className="text-sm text-slate-600"><span className="font-bold text-slate-900">Parsing Heuristik:</span> Sistem mengekstrak Tanggal, Nominal, dan memisahkan Saldo secara otomatis.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="bg-slate-100 h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">3</div>
+                    <p className="text-sm text-slate-600"><span className="font-bold text-slate-900">Auto-Matching:</span> Klik "Run Auto-Match" untuk mencocokkan data bank dengan transaksi internal yang sudah Anda <span className="text-blue-600 font-bold underline">Approve</span> sebelumnya.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="bg-slate-100 h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">4</div>
+                    <p className="text-sm text-slate-600"><span className="font-bold text-slate-900">Final Audit:</span> Baris hijau berarti sinkron. Klik "Confirm Reconcile" untuk memfinalisasi audit.</p>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
+        }
+        actions={
+          <div className="flex items-center gap-4">
+            <Select value={selectedBankId} onValueChange={setSelectedBankId}>
+              <SelectTrigger className="w-64 h-11 rounded-xl">
+                <SelectValue placeholder="Pilih Rekening..." />
+              </SelectTrigger>
+              <SelectContent>
+                {bankAccounts.map(acc => (
+                  <SelectItem key={acc.id} value={acc.id}>{acc.bank_name} - {acc.account_number}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="h-11 rounded-xl bg-white border-slate-200 hover:bg-slate-50">
+                  <ArchiveRestore className="w-4 h-4 mr-2 text-slate-500" /> Riwayat
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl rounded-3xl">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                    <History className="w-5 h-5 text-blue-600" /> Riwayat Upload Statement
+                  </DialogTitle>
+                  <DialogDescription>Muat kembali data mutasi dari sesi sebelumnya yang sudah di-scan.</DialogDescription>
+                </DialogHeader>
+                <div className="max-h-[60vh] overflow-y-auto mt-4 pr-2">
+                  {statementHistory.length === 0 ? (
+                    <div className="text-center py-10 text-slate-400">Belum ada riwayat unggahan statement.</div>
+                  ) : (
+                    <div className="space-y-3">
+                      {statementHistory.map((hist) => (
+                        <div key={hist.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-200 transition-colors">
+                          <div>
+                            <p className="font-bold text-slate-800">{hist.file_name}</p>
+                            <div className="flex gap-3 mt-1 text-xs text-slate-500 font-medium">
+                              <span className="flex items-center gap-1"><FileCheck className="w-3 h-3" /> {hist.file_type}</span>
+                              <span>•</span>
+                              <span>{hist.total_transactions} Baris</span>
+                              <span>•</span>
+                              <span>{new Date(hist.created_at).toLocaleString('id-ID')}</span>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className="rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200"
+                            onClick={() => {
+                              setBankMutations(hist.parsed_data);
+                              setIsHistoryDialogOpen(false);
+                              toast.success(`Berhasil memuat ${hist.total_transactions} baris dari riwayat.`);
+                            }}
+                          >
+                            Muat Data
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Button onClick={() => document.getElementById('file-up').click()} className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700">
+              <Upload className="w-4 h-4 mr-2" /> Upload Mutasi
+            </Button>
+            <input type="file" id="file-up" className="hidden" accept=".xlsx,.xls,.csv,.pdf,.png,.jpg,.jpeg" onChange={handleFileUpload} />
+          </div>
+        }
+      />
+
+      <Card className="border-none shadow-sm rounded-2xl overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 p-6 bg-slate-50/50">
+          <CardTitle className="text-lg font-bold flex items-center gap-2">
+            <FileSpreadsheet className="w-5 h-5 text-blue-600" /> Daftar Transaksi Statement
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setBankMutations([])} className="rounded-lg h-9">Reset</Button>
+            <Button size="sm" onClick={runAutoMatch} disabled={bankMutations.length === 0} className="bg-blue-600 hover:bg-blue-700 rounded-lg h-9">
+              <RefreshCw className="w-4 h-4 mr-2" /> Run Auto-Match
+            </Button>
+            <Button size="sm" onClick={confirmReconcile} disabled={!bankMutations.some(m => m.status === 'matched')} className="bg-emerald-600 hover:bg-emerald-700 rounded-lg h-9 text-white">
+              <CheckCircle2 className="w-4 h-4 mr-2" /> Confirm Reconcile
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table className="min-w-[1000px]">
+              <TableHeader>
+                <TableRow className="bg-slate-50/30">
+                  <TableHead className="w-12 text-center">No</TableHead>
+                  <TableHead className="w-32">Tanggal</TableHead>
+                  <TableHead>Deskripsi</TableHead>
+                  <TableHead className="w-32">Referensi</TableHead>
+                  <TableHead className="text-right w-36 text-red-600">Debit</TableHead>
+                  <TableHead className="text-right w-36 text-emerald-600">Credit</TableHead>
+                  <TableHead className="text-right w-40 text-blue-600">Saldo</TableHead>
+                  <TableHead className="text-center w-32">Status</TableHead>
+                  <TableHead className="text-center w-24">Match</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {bankMutations.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="h-40 text-center text-slate-400 font-medium">
+                      Silakan upload file mutasi (Excel/PDF/Gambar) untuk memulai rekonsiliasi.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  bankMutations.map((mut, idx) => (
+                    <TableRow key={idx} className={mut.status === 'matched' ? 'bg-emerald-50/30' : ''}>
+                      <TableCell className="text-center font-medium text-slate-400">{idx + 1}</TableCell>
+                      <TableCell className="font-bold">{mut.date}</TableCell>
+                      <TableCell className="whitespace-normal break-words min-w-[250px] text-[11px] leading-relaxed font-medium text-slate-600 uppercase">
+                        {mut.description}
+                      </TableCell>
+                      <TableCell className="text-slate-400 text-xs">{mut.reference}</TableCell>
+                      <TableCell className="text-right font-bold text-red-600">{formatCurrency(mut.debit)}</TableCell>
+                      <TableCell className="text-right font-bold text-emerald-600">{formatCurrency(mut.credit)}</TableCell>
+                      <TableCell className="text-right font-bold text-blue-600">{formatCurrency(mut.balance)}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className={`rounded-lg px-2 py-0.5 text-[10px] uppercase font-black ${mut.status === 'matched' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                          {mut.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {mut.status === 'matched' ? <CheckCircle2 className="w-5 h-5 text-emerald-500 mx-auto" /> : <AlertCircle className="w-5 h-5 text-slate-200 mx-auto" />}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* System Transactions Table */}
+      <Card className="border-none shadow-sm rounded-2xl overflow-hidden mt-8">
+        <CardHeader className="border-b border-slate-50 p-6 bg-slate-50/50">
+          <CardTitle className="text-lg font-bold flex items-center gap-2">
+            <History className="w-5 h-5 text-blue-600" /> Data Transaksi Sistem (Internal Ledger)
+          </CardTitle>
+          <p className="text-xs text-slate-500 font-medium mt-1">Daftar transaksi di sistem yang belum direkonsiliasi.</p>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table className="min-w-[1000px]">
+              <TableHeader>
+                <TableRow className="bg-slate-50/30">
+                  <TableHead className="w-12 text-center">No</TableHead>
+                  <TableHead className="w-32">Tanggal</TableHead>
+                  <TableHead>Deskripsi</TableHead>
+                  <TableHead className="w-32">Referensi</TableHead>
+                  <TableHead className="text-right w-36 text-red-600">Debit</TableHead>
+                  <TableHead className="text-right w-36 text-emerald-600">Credit</TableHead>
+                  <TableHead className="text-right w-40 text-blue-600">Saldo</TableHead>
+                  <TableHead className="text-center w-24">Match</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="h-20 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500" /></TableCell>
+                  </TableRow>
+                ) : systemTransactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="h-20 text-center text-slate-400 font-medium">Semua transaksi sistem sudah sinkron (direkonsiliasi).</TableCell>
+                  </TableRow>
+                ) : (
+                  systemTransactions.map((sys, idx) => (
+                    <TableRow key={sys.id} className={sys.matched ? 'bg-emerald-50/30' : ''}>
+                      <TableCell className="text-center font-medium text-slate-400">{idx + 1}</TableCell>
+                      <TableCell className="font-bold">{sys.timestamp_wib ? sys.timestamp_wib.split(' ')[0] : (sys.created_date || '-')}</TableCell>
+                      <TableCell className="whitespace-normal break-words min-w-[250px] text-[11px] leading-relaxed font-medium text-slate-600 uppercase">
+                        {sys.description}
+                      </TableCell>
+                      <TableCell className="text-slate-400 text-xs">{sys.reference}</TableCell>
+                      <TableCell className="text-right font-bold text-red-600">{sys.transaction_type === 'Debit' ? formatCurrency(sys.amount) : '-'}</TableCell>
+                      <TableCell className="text-right font-bold text-emerald-600">{sys.transaction_type === 'Credit' ? formatCurrency(sys.amount) : '-'}</TableCell>
+                      <TableCell className="text-right font-bold text-blue-600">{formatCurrency(sys.balance || 0)}</TableCell>
+                      <TableCell className="text-center">
+                        {sys.matched ? <CheckCircle2 className="w-5 h-5 text-emerald-500 mx-auto" /> : <AlertCircle className="w-5 h-5 text-slate-200 mx-auto" />}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+

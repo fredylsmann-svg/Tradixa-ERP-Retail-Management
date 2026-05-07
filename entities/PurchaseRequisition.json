@@ -1,0 +1,22 @@
+{
+  "name": "PurchaseRequisition",
+  "fields": [
+    { "name": "id", "type": "string", "primaryKey": true },
+    { "name": "store_id", "type": "string", "index": true },
+    { "name": "pr_number", "type": "string" },
+    { "name": "department", "type": "string" },
+    { "name": "priority", "type": "string" },
+    { "name": "days_needed", "type": "number" },
+    { "name": "justification", "type": "string" },
+    { "name": "items", "type": "json" },
+    { "name": "subtotal", "type": "number" },
+    { "name": "tax_amount", "type": "number" },
+    { "name": "total_amount", "type": "number" },
+    { "name": "status", "type": "string" },
+    { "name": "timestamp_wib", "type": "string" },
+    { "name": "approved_by", "type": "string" },
+    { "name": "approved_at", "type": "string" },
+    { "name": "converted_to_po", "type": "boolean" },
+    { "name": "po_id", "type": "string" }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "name": "DiscountUsage",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "discount_id": {
+      "type": "string"
+    },
+    "discount_code": {
+      "type": "string"
+    },
+    "sales_transaction_id": {
+      "type": "string"
+    },
+    "invoice_number": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "discount_amount": {
+      "type": "number"
+    },
+    "timestamp_wib": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "store_id",
+    "discount_id",
+    "discount_amount"
+  ]
+}

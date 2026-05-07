@@ -1,0 +1,88 @@
+{
+  "name": "Product",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string",
+      "description": "ID toko"
+    },
+    "barcode": {
+      "type": "string",
+      "description": "Barcode produk"
+    },
+    "sku": {
+      "type": "string",
+      "description": "SKU produk"
+    },
+    "name": {
+      "type": "string",
+      "description": "Nama produk"
+    },
+    "category": {
+      "type": "string",
+      "default": "Lainnya"
+    },
+    "buy_unit": {
+      "type": "string",
+      "default": "Dus"
+    },
+    "sell_unit": {
+      "type": "string",
+      "default": "Pcs"
+    },
+    "conversion_rate": {
+      "type": "number",
+      "default": 1
+    },
+    "cogs_per_unit": {
+      "type": "number",
+      "default": 0
+    },
+    "location_name": {
+      "type": "string"
+    },
+    "timestamp_wib": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string",
+      "default": "Pcs"
+    },
+    "buy_price": {
+      "type": "number",
+      "default": 0
+    },
+    "sell_price": {
+      "type": "number"
+    },
+    "stock": {
+      "type": "number",
+      "default": 0
+    },
+    "reorder_level": {
+      "type": "number",
+      "default": 10
+    },
+    "expired_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "In Stock",
+        "Low Stock",
+        "Out of Stock"
+      ],
+      "default": "Out of Stock"
+    }
+  },
+  "required": [
+    "name",
+    "sell_price",
+    "store_id"
+  ]
+}

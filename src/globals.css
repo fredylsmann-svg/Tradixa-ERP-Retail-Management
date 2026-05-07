@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Root & Body - Full Height Background */
+  html {
+    height: 100%;
+  }
+
+  body {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    background-color: #f8fafc;
+    margin: 0;
+    padding: 0;
+  }
+
+  #root,
+  #app {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Mobile Specific Fixes */
+  @media (max-width: 768px) {
+    html {
+      height: -webkit-fill-available;
+    }
+    
+    body {
+      position: relative;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      background-color: #f8fafc;
+    }
+  }
+}

@@ -1,0 +1,332 @@
+import React, { useState, useEffect } from 'react';
+import { api } from '@/api/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { MessageCircle, Send, Bot, User, Loader2, Plus, Menu } from 'lucide-react';
+
+export default function TradixaAssistant({ store }) {
+  const [conversations, setConversations] = useState([]);
+  const [currentConversation, setCurrentConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  useEffect(() => {
+    loadConversations();
+  }, []);
+
+  useEffect(() => {
+    if (currentConversation) {
+      const unsubscribe = api.agents.subscribeToConversation(
+        currentConversation.id,
+        (data) => {
+          setMessages(data.messages || []);
+        }
+      );
+      return () => unsubscribe();
+    }
+  }, [currentConversation]);
+
+  const loadConversations = async () => {
+    setIsLoading(true);
+    try {
+      const convos = await api.agents.listConversations({
+        agent_name: 'tradixa_assistant'
+      });
+      setConversations(convos);
+      if (convos.length > 0) {
+        loadConversation(convos[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+    }
+    setIsLoading(false);
+  };
+
+  const loadConversation = async (conversationId) => {
+    try {
+      const convo = await api.agents.getConversation(conversationId);
+      setCurrentConversation(convo);
+      setMessages(convo.messages || []);
+      setIsSheetOpen(false);
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+    }
+  };
+
+  const createNewConversation = async () => {
+    try {
+      const convo = await api.agents.createConversation({
+        agent_name: 'tradixa_assistant',
+        metadata: {
+          name: `Chat ${new Date().toLocaleString('id-ID')}`,
+          description: 'Percakapan dengan Tradixa Assistant'
+        }
+      });
+      setConversations([convo, ...conversations]);
+      setCurrentConversation(convo);
+      setMessages([]);
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+    }
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || !currentConversation || isSending) return;
+
+    setIsSending(true);
+    const userMessage = input;
+    setInput('');
+
+    try {
+      await api.agents.addMessage(currentConversation, {
+        role: 'user',
+        content: userMessage
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+    setIsSending(false);
+  };
+
+  const messagesEndRef = React.useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isSending]);
+
+  const formatTime = (timestamp) => {
+    return new Date(timestamp).toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const ConversationList = () => (
+    <>
+      {isLoading ? (
+        <div className="p-4 text-center text-slate-500">
+          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+          Memuat...
+        </div>
+      ) : conversations.length === 0 ? (
+        <div className="p-4 text-center text-slate-500">
+          <MessageCircle className="w-12 h-12 mx-auto mb-2 text-slate-300" />
+          <p className="text-sm">Belum ada percakapan</p>
+          <Button 
+            size="sm" 
+            onClick={createNewConversation}
+            className="mt-3 bg-blue-600 hover:bg-blue-700"
+          >
+            Mulai Chat
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-1 p-2">
+          {conversations.map((convo) => (
+            <button
+              key={convo.id}
+              onClick={() => loadConversation(convo.id)}
+              className={`w-full text-left p-3 rounded-lg transition-colors ${
+                currentConversation?.id === convo.id
+                  ? 'bg-blue-50 border border-blue-200'
+                  : 'hover:bg-slate-50'
+              }`}
+            >
+              <p className="font-medium text-sm text-slate-800 truncate">
+                {convo.metadata?.name || 'Percakapan'}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                {new Date(convo.created_date).toLocaleDateString('id-ID')}
+              </p>
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
+
+  return (
+    <div className="h-[calc(100vh-10rem)] flex gap-4 overflow-hidden">
+      {/* Desktop Sidebar - Conversation List */}
+      <Card className="hidden lg:flex w-72 flex-col overflow-hidden">
+        <CardHeader className="pb-3 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Percakapan</CardTitle>
+            <Button size="icon" onClick={createNewConversation} className="h-8 w-8">
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="flex-1 p-0 overflow-hidden">
+          <ScrollArea className="h-full">
+            <ConversationList />
+          </ScrollArea>
+        </CardContent>
+      </Card>
+
+      {/* Main Chat Area */}
+      <Card className="flex-1 flex flex-col overflow-hidden">
+        <CardHeader className="border-b flex-shrink-0">
+          <div className="flex items-center gap-3">
+            {/* Mobile Menu Button */}
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden">
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-80 p-0">
+                <SheetHeader className="p-4 border-b">
+                  <div className="flex items-center justify-between">
+                    <SheetTitle>Percakapan</SheetTitle>
+                    <Button size="icon" onClick={createNewConversation} className="h-8 w-8">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </SheetHeader>
+                <ScrollArea className="h-[calc(100vh-5rem)]">
+                  <ConversationList />
+                </ScrollArea>
+              </SheetContent>
+            </Sheet>
+
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+              <Bot className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-base lg:text-lg truncate">Tradixa Assistant</CardTitle>
+              <p className="text-xs lg:text-sm text-slate-500 truncate">AI Assistant untuk sistem retail</p>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="flex-1 p-0 flex flex-col overflow-hidden bg-slate-50/50">
+          {!currentConversation ? (
+            <div className="flex-1 flex items-center justify-center text-slate-500">
+              <div className="text-center">
+                <Bot className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+                <p className="text-lg font-medium mb-2">Selamat Datang di Tradixa Assistant</p>
+                <p className="text-sm mb-4">Mulai percakapan baru untuk mendapatkan bantuan</p>
+                <Button onClick={createNewConversation} className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Mulai Chat Baru
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Messages Area */}
+              <ScrollArea className="flex-1 p-4 lg:p-6">
+                {messages.length === 0 ? (
+                  <div className="text-center text-slate-500 mt-12">
+                    <Bot className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                    <p>Mulai percakapan dengan mengirim pesan</p>
+                    <p className="text-sm mt-2">Tanyakan tentang cara menggunakan sistem</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 pb-4">
+                    {messages.map((msg, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        {msg.role === 'assistant' && (
+                          <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1 shadow-sm">
+                            <Bot className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600" />
+                          </div>
+                        )}
+                        <div
+                          className={`max-w-[85%] lg:max-w-[75%] rounded-2xl px-3 py-2 lg:px-4 lg:py-2.5 shadow-sm ${
+                            msg.role === 'user'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-white border text-slate-800'
+                          }`}
+                        >
+                          <div 
+                            className="text-xs lg:text-[13.5px] leading-relaxed"
+                            style={{ 
+                              wordWrap: 'break-word', 
+                              overflowWrap: 'break-word', 
+                              wordBreak: 'break-word',
+                              whiteSpace: 'pre-wrap'
+                            }}
+                          >
+                            {msg.content}
+                          </div>
+                          {msg.created_date && (
+                            <p className={`text-[10px] mt-1.5 lg:mt-2 opacity-70 ${msg.role === 'user' ? 'text-blue-50' : 'text-slate-500'}`}>
+                              {formatTime(msg.created_date)}
+                            </p>
+                          )}
+                        </div>
+                        {msg.role === 'user' && (
+                          <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 mt-1 shadow-sm">
+                            <User className="w-4 h-4 lg:w-5 lg:h-5 text-slate-600" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {isSending && (
+                      <div className="flex gap-3 justify-start">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
+                          <Bot className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div className="bg-white border rounded-2xl px-4 py-2.5 shadow-sm">
+                          <div className="flex gap-1">
+                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div>
+                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
+              </ScrollArea>
+
+              {/* Input Area */}
+              <div className="border-t p-3 lg:p-4 bg-white flex-shrink-0">
+                <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Ketik pesan atau tanyakan alur sistem..."
+                    disabled={isSending}
+                    className="flex-1 text-sm bg-slate-50 border-slate-200 focus:bg-white transition-all"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={!input.trim() || isSending}
+                    className="bg-blue-600 hover:bg-blue-700 px-3 lg:px-4 shadow-md"
+                    size="sm"
+                  >
+                    {isSending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                </form>
+                <p className="text-[10px] lg:text-[11px] text-slate-400 mt-2 text-center">
+                  Tradixa Assistant memahami seluruh Blueprint sistem Anda.
+                </p>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

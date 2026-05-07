@@ -1,0 +1,60 @@
+{
+  "name": "Store",
+  "type": "object",
+  "properties": {
+    "store_name": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "tax_id": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "owner_user_id": {
+      "type": "string",
+      "description": "ID user yang menjadi owner (dari base44 auth)"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email owner"
+    },
+    "owner_name": {
+      "type": "string",
+      "description": "Nama pemilik toko"
+    },
+    "owner_position": {
+      "type": "string",
+      "description": "Jabatan owner"
+    },
+    "owner_phone": {
+      "type": "string",
+      "description": "Telepon owner"
+    },
+    "owner_photo_url": {
+      "type": "string",
+      "description": "Foto owner"
+    },
+    "owner_notes": {
+      "type": "string",
+      "description": "Catatan tentang owner"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "store_name",
+    "owner_user_id"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "BankAccount",
+  "type": "object",
+  "properties": {
+    "store_id": { "type": "string" },
+    "bank_name": { "type": "string" },
+    "account_number": { "type": "string" },
+    "account_name": { "type": "string" },
+    "balance": { "type": "number", "default": 0 },
+    "account_type": { "type": "string", "enum": ["Checking", "Savings", "Cash"], "default": "Savings" },
+    "is_active": { "type": "boolean", "default": true }
+  },
+  "required": ["store_id", "bank_name", "account_number"]
+}

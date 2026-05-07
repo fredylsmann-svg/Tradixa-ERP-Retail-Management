@@ -1,0 +1,68 @@
+{
+  "name": "SupplierReturn",
+  "type": "object",
+  "description": "Retur barang ke supplier",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "return_number": {
+      "type": "string",
+      "description": "Nomor retur"
+    },
+    "supplier_id": {
+      "type": "string"
+    },
+    "supplier_name": {
+      "type": "string"
+    },
+    "bank_account_id": {
+      "type": "string",
+      "description": "ID rekening bank untuk refund"
+    },
+    "items": {
+      "type": "array",
+      "description": "Daftar item yang diretur (JSON)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": { "type": "string" },
+          "product_name": { "type": "string" },
+          "quantity": { "type": "number" },
+          "unit_price": { "type": "number" },
+          "reason": { "type": "string" },
+          "subtotal": { "type": "number" }
+        }
+      }
+    },
+    "notes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["Pending", "Approved", "Rejected", "Completed"],
+      "default": "Pending"
+    },
+    "total_value": {
+      "type": "number",
+      "default": 0
+    },
+    "activity_log": {
+      "type": "array",
+      "description": "Log aktivitas retur (JSON)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": { "type": "string" },
+          "note": { "type": "string" },
+          "timestamp": { "type": "string" },
+          "actor": { "type": "string" }
+        }
+      }
+    },
+    "timestamp_wib": {
+      "type": "string"
+    }
+  },
+  "required": ["store_id"]
+}

@@ -1,0 +1,75 @@
+{
+  "name": "Supplier",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string",
+      "description": "ID toko pemilik data supplier"
+    },
+    "supplier_code": {
+      "type": "string",
+      "description": "Kode supplier auto-generate (SPL-00001)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Nama supplier/vendor"
+    },
+    "type": {
+      "type": "string",
+      "description": "Tipe supplier (Distributor, Agen, dll)"
+    },
+    "contact_person": {
+      "type": "string",
+      "description": "Nama kontak person"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Nomor telepon"
+    },
+    "phone_code": {
+      "type": "string",
+      "default": "+62",
+      "description": "Kode telepon negara"
+    },
+    "email": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "npwp": {
+      "type": "string",
+      "description": "NPWP supplier"
+    },
+    "payment_terms": {
+      "type": "string",
+      "description": "Syarat pembayaran"
+    },
+    "bank_name": {
+      "type": "string"
+    },
+    "bank_account": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["Active", "Inactive"],
+      "default": "Active"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "advance_balance": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": ["store_id", "name"]
+}

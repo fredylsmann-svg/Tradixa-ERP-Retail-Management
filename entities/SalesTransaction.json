@@ -1,0 +1,103 @@
+{
+  "name": "SalesTransaction",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "invoice_number": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string",
+      "default": "Walk-in Customer"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit_price": {
+            "type": "number"
+          },
+          "buy_price": {
+            "type": "number"
+          },
+          "subtotal": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "subtotal": {
+      "type": "number"
+    },
+    "discount": {
+      "type": "number",
+      "default": 0
+    },
+    "tax_percentage": {
+      "type": "number",
+      "default": 0
+    },
+    "tax_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "total": {
+      "type": "number"
+    },
+    "profit": {
+      "type": "number"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "Cash",
+        "Transfer",
+        "QRIS",
+        "Credit Card",
+        "Debit Card"
+      ],
+      "default": "Cash"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "Paid",
+        "Pending",
+        "Partial",
+        "Cancelled"
+      ],
+      "default": "Paid"
+    },
+    "paid_amount": {
+      "type": "number"
+    },
+    "bank_account_id": {
+      "type": "string"
+    },
+    "payment_proof_url": {
+      "type": "string"
+    },
+    "timestamp_wib": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "store_id",
+    "total"
+  ]
+}

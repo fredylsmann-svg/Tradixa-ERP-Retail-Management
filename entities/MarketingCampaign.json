@@ -1,0 +1,82 @@
+{
+  "name": "MarketingCampaign",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "campaign_name": {
+      "type": "string"
+    },
+    "campaign_type": {
+      "type": "string",
+      "enum": [
+        "Email",
+        "SMS",
+        "WhatsApp",
+        "Mixed"
+      ],
+      "default": "Email"
+    },
+    "trigger_type": {
+      "type": "string",
+      "enum": [
+        "Manual",
+        "Birthday",
+        "Reward Expiry",
+        "Segment",
+        "Purchase",
+        "Scheduled"
+      ],
+      "default": "Manual"
+    },
+    "segment_id": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "message_content": {
+      "type": "string"
+    },
+    "schedule_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Draft",
+        "Scheduled",
+        "Running",
+        "Completed",
+        "Paused"
+      ],
+      "default": "Draft"
+    },
+    "sent_count": {
+      "type": "number",
+      "default": 0
+    },
+    "opened_count": {
+      "type": "number",
+      "default": 0
+    },
+    "clicked_count": {
+      "type": "number",
+      "default": 0
+    },
+    "converted_count": {
+      "type": "number",
+      "default": 0
+    },
+    "is_automated": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "store_id",
+    "campaign_name"
+  ]
+}

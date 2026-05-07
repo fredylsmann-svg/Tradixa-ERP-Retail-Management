@@ -1,0 +1,19 @@
+{
+  "name": "AgentTransaction",
+  "type": "object",
+  "properties": {
+    "store_id": { "type": "string" },
+    "agent_id": { "type": "string" },
+    "agent_name": { "type": "string" },
+    "transaction_type": { "type": "string", "enum": ["Deposit", "Withdrawal", "Commission", "Fee", "Transfer"] },
+    "service_type": { "type": "string" },
+    "amount": { "type": "number" },
+    "fee": { "type": "number", "default": 0 },
+    "commission": { "type": "number", "default": 0 },
+    "balance_after": { "type": "number" },
+    "reference": { "type": "string" },
+    "notes": { "type": "string" },
+    "timestamp_wib": { "type": "string" }
+  },
+  "required": ["store_id", "agent_id", "transaction_type", "amount"]
+}

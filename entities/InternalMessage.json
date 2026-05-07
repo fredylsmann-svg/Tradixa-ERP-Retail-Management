@@ -1,0 +1,12 @@
+{
+  "name": "InternalMessage",
+  "label": "Pesan Internal",
+  "fields": [
+    { "name": "id", "type": "id", "label": "ID" },
+    { "name": "store_id", "type": "id", "label": "Store ID" },
+    { "name": "sender_id", "type": "id", "label": "Sender ID" },
+    { "name": "receiver_id", "type": "id", "label": "Receiver ID" },
+    { "name": "content", "type": "text", "label": "Pesan" },
+    { "name": "created_date", "type": "datetime", "label": "Waktu Kirim" }
+  ]
+}

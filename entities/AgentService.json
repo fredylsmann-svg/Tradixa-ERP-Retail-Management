@@ -1,0 +1,13 @@
+{
+  "name": "AgentService",
+  "type": "object",
+  "properties": {
+    "store_id": { "type": "string" },
+    "name": { "type": "string" },
+    "category": { "type": "string", "enum": ["Pulsa", "Listrik", "PDAM", "BPJS", "Internet", "TV Kabel", "E-Wallet", "Transfer", "Lainnya"] },
+    "fee": { "type": "number", "default": 0 },
+    "commission": { "type": "number", "default": 0 },
+    "is_active": { "type": "boolean", "default": true }
+  },
+  "required": ["store_id", "name"]
+}

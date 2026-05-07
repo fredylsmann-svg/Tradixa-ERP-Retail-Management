@@ -1,0 +1,77 @@
+{
+  "name": "GoodsReceipt",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "gr_number": {
+      "type": "string"
+    },
+    "po_id": {
+      "type": "string"
+    },
+    "po_number": {
+      "type": "string"
+    },
+    "vendor_name": {
+      "type": "string"
+    },
+    "supplier_id": {
+      "type": "string",
+      "description": "ID supplier"
+    },
+    "supplier_name": {
+      "type": "string",
+      "description": "Nama supplier"
+    },
+    "signatures": {
+      "type": "object",
+      "description": "Tanda tangan digital (JSON)"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "ordered_qty": {
+            "type": "number"
+          },
+          "received_qty": {
+            "type": "number"
+          },
+          "unit_price": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "total_value": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Partial",
+        "Complete"
+      ],
+      "default": "Pending"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "timestamp_wib": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "store_id"
+  ]
+}

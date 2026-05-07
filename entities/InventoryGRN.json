@@ -1,0 +1,84 @@
+{
+  "name": "InventoryGRN",
+  "type": "object",
+  "description": "Inventory Goods Receipt Note - Penerimaan barang ke gudang",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "igrn_number": {
+      "type": "string",
+      "description": "Nomor IGRN"
+    },
+    "journal_id": {
+      "type": "string",
+      "description": "ID jurnal terkait"
+    },
+    "procurement_grn_id": {
+      "type": "string",
+      "description": "ID GoodsReceipt (procurement) yang direferensikan"
+    },
+    "procurement_grn_number": {
+      "type": "string"
+    },
+    "po_id": {
+      "type": "string",
+      "description": "ID Purchase Order"
+    },
+    "po_number": {
+      "type": "string"
+    },
+    "supplier_name": {
+      "type": "string"
+    },
+    "surat_jalan": {
+      "type": "string",
+      "description": "Nomor surat jalan"
+    },
+    "items": {
+      "type": "array",
+      "description": "Daftar item yang diterima (JSON)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": { "type": "string" },
+          "product_name": { "type": "string" },
+          "ordered_qty": { "type": "number" },
+          "received_qty": { "type": "number" },
+          "unit_price": { "type": "number" },
+          "unit": { "type": "string" },
+          "subtotal": { "type": "number" },
+          "location": { "type": "string" }
+        }
+      }
+    },
+    "total_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "storage_location": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "signatures": {
+      "type": "object",
+      "description": "Tanda tangan digital (JSON)",
+      "properties": {
+        "receiver": { "type": "string" },
+        "warehouse": { "type": "string" },
+        "supplier": { "type": "string" }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["Draft", "Posted", "Void"],
+      "default": "Draft"
+    },
+    "timestamp_wib": {
+      "type": "string"
+    }
+  },
+  "required": ["store_id"]
+}

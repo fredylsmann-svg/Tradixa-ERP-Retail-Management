@@ -1,0 +1,45 @@
+{
+  "name": "LoyaltyTier",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "tier_name": {
+      "type": "string",
+      "description": "Nama tier (Bronze, Silver, Gold, Platinum)"
+    },
+    "min_points": {
+      "type": "number",
+      "description": "Minimum poin untuk mencapai tier ini"
+    },
+    "discount_percentage": {
+      "type": "number",
+      "default": 0,
+      "description": "Diskon otomatis untuk tier ini (%)"
+    },
+    "points_multiplier": {
+      "type": "number",
+      "default": 1,
+      "description": "Pengali poin untuk setiap pembelian"
+    },
+    "benefits": {
+      "type": "string",
+      "description": "Deskripsi benefit tier"
+    },
+    "tier_color": {
+      "type": "string",
+      "default": "#94a3b8",
+      "description": "Warna untuk tier ini"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "store_id",
+    "tier_name",
+    "min_points"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "AutomationRule",
+  "type": "object",
+  "properties": {
+    "store_id": { "type": "string" },
+    "rule_name": { "type": "string" },
+    "trigger": { "type": "string", "enum": ["Birthday", "Reward Expiry", "New Customer", "Inactive Customer", "Purchase Threshold", "Tier Upgrade"], "default": "Birthday" },
+    "campaign_template": { "type": "object", "description": "Template kampanye yang akan dijalankan" },
+    "is_active": { "type": "boolean", "default": true },
+    "last_run": { "type": "string" },
+    "total_executions": { "type": "number", "default": 0 }
+  },
+  "required": ["store_id", "rule_name", "trigger"]
+}

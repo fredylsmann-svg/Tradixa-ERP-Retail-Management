@@ -1,0 +1,45 @@
+{
+  "name": "LoyaltyTransaction",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "Earn",
+        "Redeem",
+        "Adjustment"
+      ],
+      "default": "Earn"
+    },
+    "points": {
+      "type": "number"
+    },
+    "reference": {
+      "type": "string",
+      "description": "Invoice number atau referensi lainnya"
+    },
+    "description": {
+      "type": "string"
+    },
+    "balance_after": {
+      "type": "number"
+    },
+    "timestamp_wib": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "store_id",
+    "customer_id",
+    "points"
+  ]
+}

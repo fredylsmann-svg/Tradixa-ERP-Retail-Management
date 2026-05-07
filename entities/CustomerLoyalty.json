@@ -1,0 +1,15 @@
+{
+  "name": "CustomerLoyalty",
+  "type": "object",
+  "properties": {
+    "store_id": { "type": "string" },
+    "customer_id": { "type": "string" },
+    "customer_name": { "type": "string" },
+    "total_points": { "type": "number", "default": 0 },
+    "current_tier": { "type": "string", "default": "Bronze" },
+    "lifetime_spending": { "type": "number", "default": 0, "description": "Total belanja sepanjang waktu" },
+    "points_earned": { "type": "number", "default": 0, "description": "Total poin yang didapat" },
+    "points_redeemed": { "type": "number", "default": 0, "description": "Total poin yang ditukar" }
+  },
+  "required": ["store_id", "customer_id"]
+}

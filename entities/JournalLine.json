@@ -1,0 +1,27 @@
+{
+  "name": "JournalLine",
+  "type": "object",
+  "description": "Baris detail dari sebuah Journal Entry",
+  "properties": {
+    "journal_id": {
+      "type": "string",
+      "description": "ID Journal Entry parent"
+    },
+    "account_name": {
+      "type": "string",
+      "description": "Nama akun COA"
+    },
+    "description": {
+      "type": "string"
+    },
+    "debit": {
+      "type": "number",
+      "default": 0
+    },
+    "credit": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": ["journal_id", "account_name"]
+}

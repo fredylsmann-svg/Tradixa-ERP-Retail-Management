@@ -1,0 +1,67 @@
+{
+  "name": "User",
+  "type": "object",
+  "description": "Pengguna sistem Tradixa",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "Email login"
+    },
+    "password": {
+      "type": "string",
+      "description": "Password (hashed)"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": ["owner", "admin", "staff"],
+      "default": "staff"
+    },
+    "position": {
+      "type": "string",
+      "description": "Jabatan kerja (Manager, Purchasing, dll)"
+    },
+    "department": {
+      "type": "string"
+    },
+    "site": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "modules": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Daftar modul yang bisa diakses (RBAC)"
+    },
+    "photo_url": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "store_id": {
+      "type": "string",
+      "description": "ID toko tempat bekerja"
+    },
+    "current_store_id": {
+      "type": "string",
+      "description": "ID toko aktif saat ini"
+    },
+    "linked_employee_id": {
+      "type": "string",
+      "description": "Link ke data Employee HRIS"
+    },
+    "is_store_setup_completed": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": ["email"]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "CommunicationLog",
+  "type": "object",
+  "properties": {
+    "store_id": { "type": "string" },
+    "customer_id": { "type": "string" },
+    "customer_name": { "type": "string" },
+    "communication_type": { "type": "string", "enum": ["Note", "Email", "Call", "Meeting", "WhatsApp"], "default": "Note" },
+    "subject": { "type": "string" },
+    "content": { "type": "string" },
+    "timestamp_wib": { "type": "string" }
+  },
+  "required": ["store_id", "customer_id", "content"]
+}

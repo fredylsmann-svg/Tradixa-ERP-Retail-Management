@@ -1,0 +1,516 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-blue-100 selection:text-blue-900;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1,
+  .font-black {
+    @apply tracking-tight;
+  }
+
+  /* Subtler tracking for other headings to prevent squeezing */
+  h2,
+  h3,
+  h4,
+  .font-bold,
+  .font-semibold {
+    letter-spacing: -0.01em;
+  }
+}
+
+/* ========================================
+   GLOBAL DARK MODE OVERRIDES
+   Automatically fix contrast for all pages
+   without editing individual files.
+   ======================================== */
+@layer utilities {
+
+  /* --- Background overrides --- */
+  .dark .bg-slate-50 {
+    background-color: rgb(30 41 59 / 0.5) !important;
+    /* slate-800/50 */
+  }
+
+  .dark .bg-white {
+    background-color: hsl(222.2 84% 4.9%) !important;
+    /* matches --background */
+  }
+
+  .dark .bg-slate-100 {
+    background-color: rgb(30 41 59 / 0.7) !important;
+  }
+
+  /* --- Tailwind opacity-variant backgrounds (bg-slate-50/50 etc) --- */
+  .dark .bg-slate-50\/50,
+  .dark .bg-slate-50\/30 {
+    background-color: transparent !important;
+  }
+
+  .dark .bg-slate-100\/50 {
+    background-color: rgb(30 41 59 / 0.4) !important;
+  }
+
+  /* --- Shadow color overrides (remove light-mode colored shadows) --- */
+  .dark .shadow-emerald-100,
+  .dark .shadow-blue-100,
+  .dark .shadow-blue-100\/50,
+  .dark .shadow-blue-100\/40,
+  .dark .shadow-blue-200,
+  .dark .shadow-indigo-50,
+  .dark .shadow-blue-50,
+  .dark .shadow-slate-100,
+  .dark .shadow-slate-200\/50,
+  .dark .shadow-amber-100,
+  .dark .shadow-emerald-50,
+  .dark .shadow-amber-50 {
+    --tw-shadow-color: transparent !important;
+    --tw-shadow: none !important;
+  }
+
+  /* Remove white glow from general shadows in dark mode */
+  .dark .shadow-xl,
+  .dark .shadow-lg,
+  .dark .shadow-md {
+    --tw-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .dark .shadow-sm {
+    --tw-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  /* --- Native select elements --- */
+  .dark select,
+  .dark select option {
+    background-color: rgb(15 23 42) !important;
+    /* slate-900 */
+    color: rgb(226 232 240) !important;
+    /* slate-200 */
+    border-color: rgb(51 65 85) !important;
+  }
+
+  /* --- Indigo/blue info panels --- */
+  .dark .bg-indigo-50,
+  .dark .bg-indigo-50\/60 {
+    background-color: rgb(49 46 129 / 0.2) !important;
+  }
+
+  .dark .border-indigo-100,
+  .dark .border-indigo-100\/50 {
+    border-color: rgb(67 56 202 / 0.3) !important;
+  }
+
+  .dark .text-indigo-700 {
+    color: rgb(165 180 252) !important;
+    /* indigo-300 */
+  }
+
+  .dark .text-indigo-600 {
+    color: rgb(129 140 248) !important;
+    /* indigo-400 */
+  }
+
+  /* --- Text color overrides (dark text → light text) --- */
+  .dark .text-slate-900 {
+    color: rgb(241 245 249) !important;
+    /* slate-100 */
+  }
+
+  .dark .text-slate-800 {
+    color: rgb(226 232 240) !important;
+    /* slate-200 */
+  }
+
+  .dark .text-slate-700 {
+    color: rgb(203 213 225) !important;
+    /* slate-300 */
+  }
+
+  .dark .text-slate-600 {
+    color: rgb(148 163 184) !important;
+    /* slate-400 */
+  }
+
+  .dark .text-slate-500 {
+    color: rgb(148 163 184) !important;
+    /* slate-400 */
+  }
+
+  /* --- Border overrides --- */
+  .dark .border-slate-100 {
+    border-color: rgb(30 41 59) !important;
+    /* slate-800 */
+  }
+
+  .dark .border-slate-200 {
+    border-color: rgb(51 65 85) !important;
+    /* slate-700 */
+  }
+
+  .dark .border-slate-300 {
+    border-color: rgb(51 65 85) !important;
+  }
+
+  /* --- Hover background overrides --- */
+  .dark .hover\:bg-slate-50:hover {
+    background-color: rgb(30 41 59 / 0.5) !important;
+  }
+
+  .dark .hover\:bg-slate-100:hover {
+    background-color: rgb(30 41 59 / 0.7) !important;
+  }
+
+  .dark .hover\:bg-white:hover {
+    background-color: rgb(30 41 59 / 0.5) !important;
+  }
+
+  .dark .hover\:bg-slate-50\/50:hover,
+  .dark .hover\:bg-slate-50\/30:hover {
+    background-color: rgb(30 41 59 / 0.3) !important;
+  }
+
+  /* --- Gradient background overrides (used by info panels) --- */
+  .dark .from-indigo-50 {
+    --tw-gradient-from: rgb(49 46 129 / 0.2) !important;
+  }
+
+  .dark .to-blue-50 {
+    --tw-gradient-to: rgb(30 58 138 / 0.2) !important;
+  }
+
+  /* --- Info/tip panel overrides --- */
+  .dark .bg-blue-50 {
+    background-color: rgb(30 58 138 / 0.2) !important;
+    /* blue-900/20 */
+  }
+
+  .dark .bg-blue-50\/50 {
+    background-color: rgb(30 58 138 / 0.15) !important;
+  }
+
+  .dark .border-blue-100 {
+    border-color: rgb(30 64 175 / 0.4) !important;
+    /* blue-800/40 */
+  }
+
+  .dark .text-blue-700 {
+    color: rgb(96 165 250) !important;
+    /* blue-400 */
+  }
+
+  .dark .text-blue-900 {
+    color: rgb(147 197 253) !important;
+    /* blue-300 */
+  }
+
+  /* --- Cards and containers with explicit bg-white --- */
+  .dark [class*="bg-white"]:not([class*="dark:bg"]):not(.bg-white\/5):not(.bg-white\/10):not(.bg-white\/20) {
+    background-color: hsl(222.2 84% 4.9%) !important;
+  }
+
+  /* --- Colored info-50 backgrounds --- */
+  .dark .bg-emerald-50 {
+    background-color: rgb(6 78 59 / 0.2) !important;
+  }
+
+  .dark .bg-amber-50 {
+    background-color: rgb(120 53 15 / 0.2) !important;
+  }
+
+  .dark .bg-red-50 {
+    background-color: rgb(127 29 29 / 0.2) !important;
+  }
+
+  .dark .bg-indigo-50 {
+    background-color: rgb(49 46 129 / 0.2) !important;
+  }
+
+  .dark .bg-violet-50 {
+    background-color: rgb(76 29 149 / 0.2) !important;
+  }
+
+  .dark .bg-orange-50 {
+    background-color: rgb(124 45 18 / 0.2) !important;
+  }
+
+  .dark .bg-purple-50 {
+    background-color: rgb(88 28 135 / 0.2) !important;
+  }
+
+  .dark .bg-cyan-50 {
+    background-color: rgb(22 78 99 / 0.2) !important;
+  }
+
+  .dark .bg-rose-50,
+  .dark .bg-rose-50\/50 {
+    background-color: rgb(136 19 55 / 0.2) !important;
+  }
+
+  /* --- Badge light backgrounds in dark mode --- */
+  .dark .bg-emerald-100 {
+    background-color: rgb(6 78 59 / 0.3) !important;
+  }
+
+  .dark .bg-amber-100 {
+    background-color: rgb(120 53 15 / 0.3) !important;
+  }
+
+  .dark .bg-red-100 {
+    background-color: rgb(127 29 29 / 0.3) !important;
+  }
+
+  .dark .bg-blue-100 {
+    background-color: rgb(30 58 138 / 0.3) !important;
+  }
+
+  .dark .bg-orange-100 {
+    background-color: rgb(124 45 18 / 0.3) !important;
+  }
+
+  .dark .bg-violet-100 {
+    background-color: rgb(76 29 149 / 0.3) !important;
+  }
+
+  .dark .bg-green-100 {
+    background-color: rgb(20 83 45 / 0.3) !important;
+  }
+
+  .dark .bg-pink-100 {
+    background-color: rgb(131 24 67 / 0.3) !important;
+  }
+
+  .dark .bg-cyan-100 {
+    background-color: rgb(22 78 99 / 0.3) !important;
+  }
+
+  /* --- Colored text in flowcharts/badges --- */
+  .dark .text-blue-800 {
+    color: rgb(147 197 253) !important;
+    /* blue-300 */
+  }
+
+  .dark .text-blue-600 {
+    color: rgb(96 165 250) !important;
+    /* blue-400 */
+  }
+
+  .dark .text-emerald-700 {
+    color: rgb(52 211 153) !important;
+    /* emerald-400 */
+  }
+
+  .dark .text-emerald-800 {
+    color: rgb(110 231 183) !important;
+    /* emerald-300 */
+  }
+
+  .dark .text-emerald-600 {
+    color: rgb(52 211 153) !important;
+  }
+
+  .dark .text-violet-700 {
+    color: rgb(167 139 250) !important;
+    /* violet-400 */
+  }
+
+  .dark .text-violet-800 {
+    color: rgb(196 181 253) !important;
+    /* violet-300 */
+  }
+
+  .dark .text-violet-600 {
+    color: rgb(167 139 250) !important;
+  }
+
+  .dark .text-amber-700 {
+    color: rgb(251 191 36) !important;
+    /* amber-400 */
+  }
+
+  .dark .text-amber-800 {
+    color: rgb(252 211 77) !important;
+    /* amber-300 */
+  }
+
+  .dark .text-red-800 {
+    color: rgb(252 165 165) !important;
+    /* red-300 */
+  }
+
+  .dark .text-red-600 {
+    color: rgb(248 113 113) !important;
+  }
+
+  .dark .text-green-800 {
+    color: rgb(134 239 172) !important;
+    /* green-300 */
+  }
+
+  .dark .text-green-600 {
+    color: rgb(74 222 128) !important;
+  }
+
+  .dark .text-pink-700 {
+    color: rgb(244 114 182) !important;
+    /* pink-400 */
+  }
+
+  .dark .text-cyan-700 {
+    color: rgb(34 211 238) !important;
+  }
+
+  /* --- Selection text in dark mode --- */
+  .dark ::selection {
+    background-color: rgb(30 58 138 / 0.4);
+    color: rgb(219 234 254);
+  }
+
+  /* --- Recharts tooltip dark mode (global fix) --- */
+  .dark .recharts-default-tooltip,
+  .dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+    background-color: rgb(15 23 42) !important;
+    /* slate-900 */
+    border: 1px solid rgb(51 65 85) !important;
+    /* slate-700 */
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  .dark .recharts-default-tooltip .recharts-tooltip-label {
+    color: rgb(226 232 240) !important;
+    /* slate-200 */
+  }
+
+  .dark .recharts-default-tooltip .recharts-tooltip-item {
+    color: rgb(148 163 184) !important;
+    /* slate-400 */
+  }
+
+  .dark .recharts-cartesian-grid line {
+    stroke: rgb(30 41 59) !important;
+    /* slate-800 */
+  }
+
+  .dark .recharts-tooltip-cursor {
+    fill: rgb(59 130 246 / 0.25) !important;
+    /* blue-500 dengan opacity 25% untuk efek biru terang yang jelas */
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) skewX(-20deg);
+  }
+
+  100% {
+    transform: translateX(200%) skewX(-20deg);
+  }
+}
+
+@keyframes toast-progress {
+  from {
+    width: 100%;
+  }
+
+  to {
+    width: 0%;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+.animate-toast-progress {
+  animation: toast-progress linear forwards;
+}
+
+keyframes toast-progress {
+  from {
+    width: 100%;
+  }
+
+  to {
+    width: 0%;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+.animate-toast-progress {
+  animation: toast-progress linear forwards;
+}

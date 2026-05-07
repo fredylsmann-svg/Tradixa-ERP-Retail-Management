@@ -1,0 +1,51 @@
+{
+  "name": "LoyaltyReward",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "reward_name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "points_required": {
+      "type": "number"
+    },
+    "reward_type": {
+      "type": "string",
+      "enum": [
+        "Discount",
+        "Free Product",
+        "Cashback",
+        "Voucher"
+      ],
+      "default": "Discount"
+    },
+    "reward_value": {
+      "type": "number",
+      "description": "Nilai reward (nominal atau persentase)"
+    },
+    "stock_quantity": {
+      "type": "number",
+      "default": 0,
+      "description": "Stok reward yang tersedia (0 = unlimited)"
+    },
+    "expiry_days": {
+      "type": "number",
+      "default": 30,
+      "description": "Masa berlaku reward setelah ditukar (hari)"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "store_id",
+    "reward_name",
+    "points_required"
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "name": "Receivable",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "invoice_number": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "sales_id": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "paid_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "remaining_amount": {
+      "type": "number"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Partial",
+        "Paid",
+        "Overdue"
+      ],
+      "default": "Pending"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "timestamp_wib": {
+      "type": "string"
+    },
+    "payment_proof_url": {
+      "type": "string"
+    },
+    "payment_bank_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "store_id",
+    "customer_name",
+    "amount"
+  ]
+}

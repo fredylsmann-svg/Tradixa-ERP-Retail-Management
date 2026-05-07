@@ -1,0 +1,19 @@
+{
+  "name": "BankTransaction",
+  "type": "object",
+  "properties": {
+    "store_id": { "type": "string" },
+    "bank_account_id": { "type": "string" },
+    "bank_name": { "type": "string" },
+    "transaction_type": { "type": "string", "enum": ["Credit", "Debit"] },
+    "amount": { "type": "number" },
+    "description": { "type": "string" },
+    "reference": { "type": "string" },
+    "balance_after": { "type": "number" },
+    "status": { "type": "string", "enum": ["Pending", "Approved", "Rejected"], "default": "Approved" },
+    "sales_transaction_id": { "type": "string" },
+    "payment_proof_url": { "type": "string" },
+    "timestamp_wib": { "type": "string" }
+  },
+  "required": ["store_id", "bank_account_id", "transaction_type", "amount"]
+}

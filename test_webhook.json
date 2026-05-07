@@ -1,0 +1,27 @@
+{
+  "event": "payment.received",
+  "data": {
+    "id": "77e2b1aa-231c-496f-bd6d-ac131b3f9155",
+    "transactionId": "77e2b1aa-231c-496f-bd6d-ac131b3f9155",
+    "status": "SUCCESS",
+    "transactionStatus": "created",
+    "createdAt": "2026-05-02T17:27:20.351Z",
+    "updatedAt": "2026-05-02T17:28:50.346Z",
+    "merchantId": "682dc334-94b5-46b9-91ec-e71bdb0b62e0",
+    "merchantName": "Tradixa",
+    "merchantEmail": "ferdiarmond@gmail.com",
+    "customerId": "64726315-7de7-4ebc-a33f-f39b8b646c35",
+    "customerName": "JANATA",
+    "customerEmail": "vip652570@gmail.com",
+    "customerMobile": "6281383882120",
+    "amount": 1000,
+    "paymentLinkAmount": 1000,
+    "productId": "2a96abed-7139-4126-bc68-ccdfa3d1d42d",
+    "productName": "Penagihan",
+    "productDescription": "Pembayaran Penjualan INV-1777742835127",
+    "productType": "payment_request",
+    "qty": 1,
+    "paymentMethod": "QRIS",
+    "nettAmount": 1000
+  }
+}

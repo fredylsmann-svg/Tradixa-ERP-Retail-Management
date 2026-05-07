@@ -1,0 +1,15 @@
+{
+  "name": "Agent",
+  "type": "object",
+  "properties": {
+    "store_id": { "type": "string" },
+    "name": { "type": "string" },
+    "phone": { "type": "string" },
+    "email": { "type": "string" },
+    "address": { "type": "string" },
+    "balance": { "type": "number", "default": 0 },
+    "commission_rate": { "type": "number", "default": 0 },
+    "status": { "type": "string", "enum": ["Active", "Inactive"], "default": "Active" }
+  },
+  "required": ["store_id", "name"]
+}

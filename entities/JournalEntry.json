@@ -1,0 +1,88 @@
+{
+  "name": "JournalEntry",
+  "type": "object",
+  "description": "Jurnal Umum - catatan transaksi akuntansi",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "transaction_id": {
+      "type": "string",
+      "description": "Nomor referensi transaksi (e.g. EXP-xxxx, SALE-xxxx)"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal jurnal"
+    },
+    "description": {
+      "type": "string",
+      "description": "Deskripsi jurnal"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["Manual", "Auto-Sales", "Auto-Expense", "Auto-Payment", "Auto-GRN"],
+      "default": "Manual",
+      "description": "Tipe jurnal"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["Draft", "Posted", "Void"],
+      "default": "Draft"
+    },
+    "total_debit": {
+      "type": "number",
+      "default": 0
+    },
+    "total_credit": {
+      "type": "number",
+      "default": 0
+    },
+    "total_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "created_by": {
+      "type": "string",
+      "description": "Pembuat jurnal"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "reference": {
+      "type": "string",
+      "description": "Referensi ID (misal ID receivable/payable)"
+    },
+    "entries": {
+      "type": "array",
+      "description": "Entri jurnal inline (JSON) - dipakai oleh auto-journal",
+      "items": {
+        "type": "object",
+        "properties": {
+          "account_name": { "type": "string" },
+          "debit": { "type": "number" },
+          "credit": { "type": "number" }
+        }
+      }
+    },
+    "account_name": {
+      "type": "string",
+      "description": "Nama akun (dipakai oleh Expenses auto-journal)"
+    },
+    "account_type": {
+      "type": "string",
+      "description": "Tipe akun (Aset, Biaya, dll)"
+    },
+    "debit": {
+      "type": "number",
+      "default": 0,
+      "description": "Jumlah debit (dipakai oleh Expenses auto-journal)"
+    },
+    "credit": {
+      "type": "number",
+      "default": 0,
+      "description": "Jumlah kredit (dipakai oleh Expenses auto-journal)"
+    }
+  },
+  "required": ["store_id"]
+}

@@ -1,0 +1,70 @@
+{
+  "name": "Payable",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "invoice_number": {
+      "type": "string"
+    },
+    "vendor_id": {
+      "type": "string"
+    },
+    "vendor_name": {
+      "type": "string"
+    },
+    "supplier_id": {
+      "type": "string",
+      "description": "ID supplier (alias vendor_id)"
+    },
+    "supplier_name": {
+      "type": "string",
+      "description": "Nama supplier (alias vendor_name)"
+    },
+    "po_id": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "paid_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "remaining_amount": {
+      "type": "number"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Partial",
+        "Paid",
+        "Overdue"
+      ],
+      "default": "Pending"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "timestamp_wib": {
+      "type": "string"
+    },
+    "payment_proof_url": {
+      "type": "string"
+    },
+    "payment_bank_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "store_id",
+    "vendor_id",
+    "amount"
+  ]
+}

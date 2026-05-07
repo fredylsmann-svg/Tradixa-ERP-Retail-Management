@@ -1,0 +1,54 @@
+{
+  "name": "Employee",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "employee_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "position": {
+      "type": "string"
+    },
+    "department": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "join_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "salary": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Active",
+        "Inactive",
+        "On Leave"
+      ],
+      "default": "Active"
+    },
+    "photo_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "store_id",
+    "name",
+    "position"
+  ]
+}
