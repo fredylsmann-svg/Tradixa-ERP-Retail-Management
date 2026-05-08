@@ -53,7 +53,10 @@ export const playGlobalNotificationSound = (type = 'success', overrideSoundType 
 
 export const SettingsProvider = ({ children }) => {
   const { user } = useAuth();
-  const userId = user?.id;
+  // IMPORTANT: Use auth_id (Supabase Auth UUID) for DB operations — matches RLS auth.uid()
+  // Use user.id for localStorage key (app-level identity)
+  const authUserId = user?.auth_id || user?.id; // auth_id for DB (matches RLS)
+  const userId = user?.id; // for localStorage key
   const storeId = user?.current_store_id || 'global';
   // Key is scoped per-user AND per-store so each user has independent preferences
   const storageKey = userId ? `tradixa_settings_${userId}_${storeId}` : `tradixa_settings_guest`;
@@ -79,15 +82,15 @@ export const SettingsProvider = ({ children }) => {
   // Load from DB when store/user changes
   useEffect(() => {
     const loadFromDb = async () => {
-      if (!userId || storeId === 'global') return;
-      const dbSettings = await api.preferences.get(userId, storeId);
+      if (!authUserId || storeId === 'global') return;
+      const dbSettings = await api.preferences.get(authUserId, storeId);
       if (dbSettings) {
         setSettings(prev => ({ ...prev, ...dbSettings }));
         localStorage.setItem(storageKey, JSON.stringify({ ...DEFAULT_SETTINGS, ...dbSettings }));
       }
     };
     loadFromDb();
-  }, [userId, storeId, storageKey]);
+  }, [authUserId, storeId, storageKey]);
 
   // Save to DB and LocalStorage
   useEffect(() => {
@@ -105,13 +108,13 @@ export const SettingsProvider = ({ children }) => {
     }
 
     // Sync to DB (debounce slightly or just run)
-    if (userId && storeId !== 'global') {
+    if (authUserId && storeId !== 'global') {
       const timer = setTimeout(() => {
-        api.preferences.save(userId, storeId, settings);
+        api.preferences.save(authUserId, storeId, settings);
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [settings, userId, storeId, storageKey]);
+  }, [settings, authUserId, storeId, storageKey]);
 
   // Apply Side-effects (Font/Theme)
   useEffect(() => {

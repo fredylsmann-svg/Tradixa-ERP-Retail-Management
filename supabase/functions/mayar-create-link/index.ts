@@ -62,16 +62,21 @@ serve(async (req: any) => {
 
     // 3. Call Mayar API to create payment link
     // Standardizing endpoint and phone number format (must start with 62)
-    let formattedPhone = customer_phone ? customer_phone.replace(/[^0-9]/g, '') : '6280000000000';
+    let formattedPhone = customer_phone ? customer_phone.replace(/[^0-9]/g, '') : '6281000000000';
     if (formattedPhone.startsWith('0')) {
       formattedPhone = '62' + formattedPhone.slice(1);
     } else if (!formattedPhone.startsWith('62')) {
       formattedPhone = '62' + formattedPhone;
     }
+    // Mayar requires minimum 10 characters for mobile field
+    if (formattedPhone.length < 10) {
+      formattedPhone = '6281000000000'; // Use default if too short
+    }
 
     console.log(`[Mayar Request] Creating link for ${customer_name} - Rp ${amount}`);
 
-    const mayarResponse = await fetch('https://api.mayar.id/v1/payment/create', {
+    // 3a. Create Payment Link
+    const mayarResponse = await fetch('https://api.mayar.id/hl/v1/payment/create', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${mayarApiKey}`,
@@ -81,25 +86,58 @@ serve(async (req: any) => {
         name: customer_name || 'Customer Tradixa',
         email: customer_email || 'customer@tradixa.com',
         mobile: formattedPhone,
-        amount: Math.round(Number(amount)), // Ensure integer
+        amount: Math.round(Number(amount)),
         description: description || `Pembayaran Invoice ${receivable_id}`,
+        redirectUrl: 'https://tradixa.vercel.app/',
       })
     })
 
-    const mayarData = await mayarResponse.json()
+    const contentType = mayarResponse.headers.get('content-type') || ''
+    let mayarData
+    
+    if (contentType.includes('application/json')) {
+      mayarData = await mayarResponse.json()
+    } else {
+      const textError = await mayarResponse.text()
+      throw new Error(`Mayar API tidak mengembalikan JSON. Status: ${mayarResponse.status}. Pesan: ${textError.slice(0, 100)}...`)
+    }
+
     console.log(`[Mayar Response] Status: ${mayarResponse.status}`, mayarData);
 
     if (!mayarResponse.ok) {
       throw new Error(`Mayar Error (${mayarResponse.status}): ${mayarData.message || JSON.stringify(mayarData)}`)
     }
 
-    // Usually Mayar returns the link in data.link or similar. Adjust based on exact Mayar API version
     const paymentLink = mayarData.data?.link || mayarData.link
     const paymentId = mayarData.data?.id || mayarData.id
 
+    // 3b. Generate Real QRIS Image from Mayar
+    let qrisImageUrl = null
+    try {
+      const qrisResponse = await fetch('https://api.mayar.id/hl/v1/qrcode/create', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${mayarApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          amount: Math.round(Number(amount))
+        })
+      })
+
+      if (qrisResponse.ok) {
+        const qrisData = await qrisResponse.json()
+        qrisImageUrl = qrisData.data?.url || null
+        console.log(`[Mayar QRIS] QR Image URL: ${qrisImageUrl}`)
+      } else {
+        console.log(`[Mayar QRIS] Failed to generate QRIS: ${qrisResponse.status}`)
+      }
+    } catch (qrisErr) {
+      console.log(`[Mayar QRIS] Error (non-fatal): ${qrisErr.message}`)
+    }
+
     // 4. Save the generated link to Supabase
     if (receivable_id && !store_id) {
-      // If store_id is NOT passed, it implies this is the old AR flow which expects receivable_id to be valid
       await supabase.from('receivables')
         .update({ 
           payment_link: paymentLink,
@@ -109,7 +147,7 @@ serve(async (req: any) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, link: paymentLink, id: paymentId }),
+      JSON.stringify({ success: true, link: paymentLink, id: paymentId, qris_image: qrisImageUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
   } catch (error: any) {

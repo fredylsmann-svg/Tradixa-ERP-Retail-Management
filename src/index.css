@@ -514,3 +514,9 @@ keyframes toast-progress {
 .animate-toast-progress {
   animation: toast-progress linear forwards;
 }
+
+/* Fix Google Maps Autocomplete dropdown inside Radix/Shadcn Dialog */
+.pac-container {
+  z-index: 100000 !important;
+  pointer-events: auto !important;
+}

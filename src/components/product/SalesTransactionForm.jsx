@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { Search, ShoppingCart, Plus, Minus, Trash2, Loader2, Upload, X, Package, ShieldCheck, CheckCircle2, Info, Receipt } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, Loader2, Upload, X, Package, ShieldCheck, CheckCircle2, Info, Receipt, CreditCard, Truck } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { NumberInput } from '@/components/ui/number-input';
 import { formatNumber } from '@/components/utils/currencyFormatter';
@@ -21,6 +21,7 @@ import { id } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import PrintInvoice from '../invoice/PrintInvoice';
 import { allocateBatches, deductBatches } from '@/utils/fefoEngine';
+import { supabase } from '@/lib/supabase';
 
 export default function SalesTransactionForm({ open, onClose, store, onSuccess }) {
   const { toast } = useToast();
@@ -58,8 +59,10 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [paymentLink, setPaymentLink] = useState('');
+  const [qrisImage, setQrisImage] = useState('');
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [needsDelivery, setNeedsDelivery] = useState(false);
   const containerRef = React.useRef(null);
 
   useEffect(() => {
@@ -384,6 +387,16 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
     // 1. Generate Mayar QRIS Link FIRST before creating transaction
     let generatedPaymentLink = '';
     if (paymentMethod === 'QRIS') {
+      if (!store.mayar_api_key) {
+        toast({ 
+          title: 'Konfigurasi Belum Lengkap', 
+          description: 'Anda belum memasukkan Mayar API Key di menu Settings. Silakan atur terlebih dahulu untuk menggunakan QRIS.', 
+          variant: 'destructive' 
+        });
+        setIsLoading(false);
+        return;
+      }
+
       if (total < 500) {
         toast({ title: 'Gagal Memproses QRIS', description: 'Total transaksi untuk metode QRIS/E-Wallet minimal Rp 500.', variant: 'destructive' });
         return;
@@ -392,14 +405,19 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
       try {
         setIsGeneratingLink(true);
         console.log('[Tradixa] Calling mayar-create-link Edge Function with storeId:', storeId);
+        // For walk-in customers, use store info to avoid Mayar rejection
+        const effectiveName = (customerName && customerName !== 'Walk-in Customer') ? customerName : (store?.store_name || 'Pelanggan');
+        const effectiveEmail = customerEmail || store?.email || 'pos@tradixa.com';
+        const effectivePhone = customerPhone || store?.phone || '6281000000000';
+        
         const { data, error } = await api.client.functions.invoke('mayar-create-link', {
           body: {
             store_id: storeId,
             receivable_id: invoiceNumber, // used as reference
             amount: total,
-            customer_name: customerName,
-            customer_email: customerEmail || `customer_${invoiceNumber}@tradixa.com`,
-            customer_phone: customerPhone,
+            customer_name: effectiveName,
+            customer_email: effectiveEmail,
+            customer_phone: effectivePhone,
             description: `Pembayaran Penjualan ${invoiceNumber}`
           }
         });
@@ -413,7 +431,12 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
           console.log('[Tradixa] Payment Link received:', data.link);
           generatedPaymentLink = data.link;
           setPaymentLink(data.link);
-          proofUrl = data.link; // Set proofUrl to payment link for DB
+          proofUrl = data.link;
+          // Set real QRIS image from Mayar if available
+          if (data.qris_image) {
+            console.log('[Tradixa] QRIS Image received:', data.qris_image);
+            setQrisImage(data.qris_image);
+          }
         } else {
           throw new Error('Payment Link is empty or undefined in data object.');
         }
@@ -749,6 +772,31 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
       }
     }
 
+    // 9. Handle Outbound Delivery Integration
+    if (needsDelivery && selectedCustomer && selectedCustomer !== 'walk-in') {
+      try {
+        const customer = customers.find(c => c.id === selectedCustomer);
+        if (customer) {
+          await supabase.from('outbound_deliveries').insert([{
+            store_id: storeId,
+            sales_transaction_id: salesTransaction.id,
+            customer_id: customer.id,
+            shipping_address: customer.address || customer.formatted_address || '',
+            latitude: customer.latitude,
+            longitude: customer.longitude,
+            status: 'Pending'
+          }]);
+        }
+      } catch (err) {
+        console.error("Failed to create outbound delivery:", err);
+      }
+    }
+
+    toast({
+      title: "Transaksi Berhasil",
+      description: `Invoice ${invoiceNumber} telah dibuat.`
+    });
+
     setIsGeneratingLink(false);
     setIsLoading(false);
     onSuccess();
@@ -774,6 +822,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
     setDownPayment('');
     setCustomerPhone('');
     setPaymentLink('');
+    setQrisImage('');
     setCompletedTransaction(null);
     if (!stayOnPage) {
       onClose();
@@ -913,13 +962,25 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                 <div className="flex flex-col items-center justify-center p-10 h-full min-h-[60vh] space-y-6 text-center">
                   {paymentLink ? (
                     <>
-                      <div className="w-full bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden mt-4" style={{ height: '500px' }}>
-                        <iframe
-                          src={paymentLink}
-                          className="w-full h-full border-0"
-                          title="Mayar Payment Page"
-                          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                      <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-2 mt-6 animate-pulse">
+                        <CreditCard className="w-9 h-9 text-amber-600" />
+                      </div>
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-amber-50 border border-amber-200 rounded-full">
+                        <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                        <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">Menunggu Pembayaran</span>
+                      </div>
+                      <p className="text-sm text-slate-500 max-w-xs">Minta pelanggan scan QRIS di bawah untuk membayar.</p>
+                      
+                      {/* QRIS - Real dari Mayar atau fallback ke URL QR */}
+                      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <img
+                          src={qrisImage || `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(paymentLink)}`}
+                          alt="QRIS Pembayaran"
+                          className="w-52 h-52 mx-auto"
                         />
+                        <p className="text-[10px] text-slate-400 mt-3">
+                          {qrisImage ? 'QRIS resmi — scan dengan e-wallet / mobile banking' : 'Scan untuk buka halaman pembayaran'}
+                        </p>
                       </div>
                     </>
                   ) : (
@@ -1172,7 +1233,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                     </div>
 
                     {/* Bank Account Selection (Conditional) */}
-                    {paymentMethod !== 'Cash' && (
+                    {paymentMethod !== 'Cash' && paymentMethod !== 'QRIS / E-Wallet' && (
                       <div className="col-span-2 space-y-1.5 pt-2 animate-in fade-in slide-in-from-top-2">
                         <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pilih Bank Tujuan</Label>
                         <Select value={selectedBank} onValueChange={setSelectedBank}>
@@ -1291,6 +1352,42 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                           )}
                         </label>
                       </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-3 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 mt-4">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        id="needs-delivery"
+                        checked={needsDelivery}
+                        onCheckedChange={(checked) => {
+                          setNeedsDelivery(checked);
+                          if (checked && selectedCustomer === 'walk-in') {
+                            toast({
+                              title: "Pilih Pelanggan",
+                              description: "Silakan pilih pelanggan (bukan walk-in) untuk menggunakan fitur pengiriman.",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                        className="w-5 h-5 rounded-lg border-indigo-300 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                      />
+                      <Label htmlFor="needs-delivery" className="text-sm font-bold text-indigo-900 cursor-pointer flex items-center gap-2">
+                        <Truck className="w-4 h-4" /> Butuh Pengiriman Barang (Outbound Delivery)
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-indigo-400" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs text-xs">
+                              Sistem akan otomatis menjadwalkan pengiriman dari <b>Alamat Toko Saat Ini</b> menuju alamat Pelanggan (Customer Master) yang dipilih.
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </Label>
+                    </div>
+                    {needsDelivery && selectedCustomer === 'walk-in' && (
+                      <p className="text-xs text-red-500 font-bold ml-8">⚠️ Anda harus memilih pelanggan (Customer Master) di bagian atas untuk mencatat alamat tujuan pengiriman.</p>
                     )}
                   </div>
 

@@ -51,6 +51,8 @@ export const ENTITY_TABLE_MAP = {
   Payable:           'payables',
   Receivable:        'receivables',
   InvoicePayment:    'invoice_payments',
+  BankStatementHistory: 'bank_statement_history',
+  OutboundDelivery:  'outbound_deliveries',
 
   // === AGENT ===
   Agent:             'agents',

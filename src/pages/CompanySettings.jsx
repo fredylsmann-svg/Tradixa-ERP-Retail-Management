@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Store, Upload, Phone, Mail, FileText, Loader2, Save, Building2, User, Settings, Info, CreditCard, Key, ShieldCheck } from 'lucide-react';
+import { Store, Upload, Phone, Mail, FileText, Loader2, Save, Building2, User, Settings, Info, CreditCard, Key, ShieldCheck, CheckCircle2, ExternalLink, Zap, ArrowRight } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import PageHeader from '@/components/layout/PageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -45,7 +46,10 @@ const InfoTooltip = ({ text }) => {
 
 export default function CompanySettings({ store }) {
   const { settings, updateSetting } = useSettings();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null); // 'success' | 'error' | null
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(store?.logo_url || null);
   const [formData, setFormData] = useState({
@@ -272,20 +276,108 @@ export default function CompanySettings({ store }) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
+            {/* Step-by-step Setup Guide */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3">
+              <p className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" />
+                Panduan Aktivasi Payment Gateway
+              </p>
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-3 text-[11px] text-slate-600 dark:text-slate-400">
+                  <span className="shrink-0 w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-black text-[10px]">1</span>
+                  <span>Daftar di <a href="https://mayar.id" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-bold underline">mayar.id</a> (Pilih: Perorangan atau Perusahaan)</span>
+                </div>
+                <div className="flex items-start gap-3 text-[11px] text-slate-600 dark:text-slate-400">
+                  <span className="shrink-0 w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-black text-[10px]">2</span>
+                  <span>Lengkapi verifikasi <b>KYC</b> (Upload KTP, NPWP, Selfie). NPWP bisa gunakan yang sudah diisi di atas.</span>
+                </div>
+                <div className="flex items-start gap-3 text-[11px] text-slate-600 dark:text-slate-400">
+                  <span className="shrink-0 w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-black text-[10px]">3</span>
+                  <div>
+                    <span>Buka <a href="https://web.mayar.id/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-bold underline">Dashboard Mayar → API Keys</a>, buat API Key baru</span>
+                    <div className="mt-1.5 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg">
+                      <p className="text-[10px] text-red-700 dark:text-red-400 font-bold">⚠️ PENTING: Pilih scope "Read & Write"</p>
+                      <p className="text-[10px] text-red-600/80 dark:text-red-400/80 mt-0.5">Jangan pilih "Read Only" — scope tersebut tidak bisa membuat pembayaran. Harus <b>"Read & Write"</b> agar QRIS/VA berfungsi.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 text-[11px] text-slate-600 dark:text-slate-400">
+                  <span className="shrink-0 w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-black text-[10px]">4</span>
+                  <span>Tempel API Key di bawah ini, lalu klik <b>"Tes Koneksi"</b></span>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-700 mt-3 space-y-1">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">* Webhook akan didaftarkan otomatis oleh sistem saat Anda menyimpan.</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">* Membuat API Key baru tidak akan merusak webhook atau langganan (subscription) yang sudah ada.</p>
+              </div>
+            </div>
+
+            {/* API Key Input */}
             <div>
               <Label className="flex items-center text-slate-700 dark:text-slate-300 font-semibold mb-1.5">
                 Mayar API Key
-                <InfoTooltip text="Dapatkan API Key ini dengan mendaftar di dashboard Mayar.id. API Key ini memungkinkan aplikasi untuk membuat link pembayaran QRIS/VA atas nama toko Anda secara otomatis." />
+                <InfoTooltip text="Dapatkan API Key dari menu API Keys di dashboard Mayar.id. Satu toko = satu API Key. Webhook otomatis terdaftar." />
               </Label>
               <Input
                 type="password"
                 value={formData.mayar_api_key}
-                onChange={(e) => setFormData({ ...formData, mayar_api_key: e.target.value })}
+                onChange={(e) => { setFormData({ ...formData, mayar_api_key: e.target.value }); setTestResult(null); }}
                 className="mt-1.5 font-mono text-sm tracking-widest focus:tracking-normal"
-                placeholder="••••••••••••••••••••••••"
+                placeholder="Paste API Key dari Dashboard Mayar"
               />
-              <p className="text-[11px] text-slate-500 mt-2">
-                * Kunci ini disensor (seperti password) agar aman dari penglihatan pihak yang tidak berwenang.
+            </div>
+
+            {/* Test Connection Button */}
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={`h-9 px-4 text-xs font-bold transition-all ${
+                  testResult === 'success' ? 'border-emerald-300 text-emerald-700 bg-emerald-50' :
+                  testResult === 'error' ? 'border-red-300 text-red-700 bg-red-50' :
+                  'border-blue-200 text-blue-700 hover:bg-blue-50'
+                }`}
+                disabled={!formData.mayar_api_key || isTesting}
+                onClick={async () => {
+                  setIsTesting(true);
+                  setTestResult(null);
+                  try {
+                    const { data, error } = await api.client.functions.invoke('mayar-test-connection', {
+                      body: { api_key: formData.mayar_api_key }
+                    });
+                    if (error) throw new Error(error.message);
+                    if (data?.success) {
+                      setTestResult('success');
+                      toast({ title: '✅ Koneksi Berhasil!', description: `Saldo Mayar: Rp ${new Intl.NumberFormat('id-ID').format(data.balance || 0)}` });
+                    } else {
+                      setTestResult('error');
+                      toast({ title: 'Koneksi Gagal', description: data?.error || 'API Key tidak valid.', variant: 'destructive' });
+                    }
+                  } catch (err) {
+                    setTestResult('error');
+                    toast({ title: 'Koneksi Gagal', description: err.message, variant: 'destructive' });
+                  }
+                  setIsTesting(false);
+                }}
+              >
+                {isTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> :
+                 testResult === 'success' ? <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> :
+                 <Zap className="w-3.5 h-3.5 mr-1.5" />}
+                {isTesting ? 'Menguji...' : testResult === 'success' ? 'Terhubung!' : 'Tes Koneksi API'}
+              </Button>
+              {testResult === 'success' && (
+                <span className="text-[10px] text-emerald-600 font-medium animate-in fade-in">API Key valid — Anda siap menerima pembayaran QRIS!</span>
+              )}
+              {testResult === 'error' && (
+                <span className="text-[10px] text-red-500 font-medium">Pastikan scope API Key = "Read & Write" dan KYC sudah terverifikasi.</span>
+              )}
+            </div>
+
+            {/* Sandbox Info */}
+            <div className="p-3 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30 rounded-lg">
+              <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-relaxed">
+                <b>Testing?</b> Gunakan <a href="https://web.mayar.club/api-keys" target="_blank" rel="noopener noreferrer" className="underline font-bold">Sandbox Mayar (mayar.club)</a> untuk menguji pembayaran tanpa uang asli.
               </p>
             </div>
           </CardContent>

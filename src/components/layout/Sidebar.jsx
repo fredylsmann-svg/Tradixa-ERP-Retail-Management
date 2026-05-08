@@ -77,6 +77,7 @@ const getFilteredMenuGroups = (isOwner) => {
       items: [
         { name: 'Sales Transaction', icon: ShoppingCart, page: 'SalesTransaction' },
         { name: 'Sales Invoices', icon: Receipt, page: 'SalesInvoices' },
+        { name: 'Outbound Delivery', icon: Truck, page: 'OutboundDelivery' },
         { name: 'Revenue Reports', icon: BarChart3, page: 'RevenueReports' }
       ]
     },

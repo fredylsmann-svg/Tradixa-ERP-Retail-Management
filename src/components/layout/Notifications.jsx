@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { api, supabase } from '@/api/client';
-import { Bell, AlertTriangle, FileText, ShoppingCart, Loader2, Receipt } from 'lucide-react';
+import { Bell, AlertTriangle, FileText, ShoppingCart, Loader2, Receipt, CreditCard } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -75,7 +75,7 @@ export default function Notifications({ store }) {
           supabase.from('payables').select('id, status, supplier_name, amount, due_date, created_at').eq('store_id', store.id).eq('status', 'Belum Lunas').limit(100),
           supabase.from('purchase_orders').select('id, status, po_number, supplier_name, supplier_signature, admin_signature, created_at, updated_date').eq('store_id', store.id).in('status', ['Negotiation', 'Approved', 'Sent']).limit(50),
           supabase.from('purchase_requisitions').select('id, status, pr_number, timestamp_wib, created_at, updated_date').eq('store_id', store.id).in('status', ['Diajukan', 'Menunggu Level 2', 'Pending', 'Approved', 'Disetujui']).limit(50),
-          supabase.from('sales_transactions').select('id, customer_name, total, timestamp_wib, created_at').eq('store_id', store.id).eq('created_date', todayString).limit(50)
+          supabase.from('sales_transactions').select('id, customer_name, total, timestamp_wib, created_at, payment_status, payment_method').eq('store_id', store.id).eq('created_date', todayString).limit(50)
         ]);
         products = results[0].data || [];
         receivables = results[1].data || [];
@@ -247,13 +247,16 @@ export default function Notifications({ store }) {
       // 4. Sales Transactions Today
       sales?.forEach(sale => {
         const saleTimestamp = sale.created_at ? new Date(sale.created_at).getTime() : new Date().getTime();
+        const isPending = sale.payment_status === 'Pending';
+        const isQRIS = sale.payment_method === 'QRIS' || sale.payment_method === 'QRIS / E-Wallet';
+        
         alerts.push({
           id: `sale-${sale.id}`,
-          type: 'new_sale',
-          icon: Receipt,
-          iconClass: 'text-emerald-600 bg-emerald-50',
-          title: 'Transaksi Penjualan Baru',
-          message: `${sale.customer_name || 'Walk-in Customer'} — Rp ${Number(sale.total || 0).toLocaleString('id-ID')}`,
+          type: isPending ? 'sale_pending' : 'new_sale',
+          icon: isPending ? CreditCard : Receipt,
+          iconClass: isPending ? 'text-amber-600 bg-amber-50' : 'text-emerald-600 bg-emerald-50',
+          title: isPending ? '⏳ Menunggu Pembayaran' : 'Transaksi Penjualan Baru',
+          message: `${sale.customer_name || 'Walk-in Customer'} — Rp ${Number(sale.total || 0).toLocaleString('id-ID')}${isPending && isQRIS ? ' (QRIS)' : ''}`,
           time: sale.timestamp_wib?.split(' ')[1] || 'Hari ini',
           timestamp: saleTimestamp
         });

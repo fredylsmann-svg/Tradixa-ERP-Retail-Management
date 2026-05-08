@@ -45,10 +45,12 @@ serve(async (req: any) => {
     const eventName = String(payload.event || '')
 
     // ─── 1. SaaS UPGRADE CHECK ───
-    // Identify SaaS payments by amount matching our known SaaS prices
+    // Identify SaaS payments by description or amount matching
+    const paymentDescription = String(payload.data?.productDescription || payload.data?.description || '').toLowerCase()
+    const isSaaSPayment = paymentDescription.includes('saas upgrade') || (SAAS_PRICES[amount] && paymentDescription.includes('tradixa'))
     const matchedPlan = SAAS_PRICES[amount]
 
-    if (matchedPlan && customerEmail && (dataStatus === 'SUCCESS' || dataStatus === 'PAID' || dataStatus === 'COMPLETED' || dataStatus === 'SETTLEMENT')) {
+    if (isSaaSPayment && matchedPlan && customerEmail && (dataStatus === 'SUCCESS' || dataStatus === 'PAID' || dataStatus === 'COMPLETED' || dataStatus === 'SETTLEMENT')) {
       // Find the user by email to get their store_id
       const { data: user } = await supabase
         .from('users')

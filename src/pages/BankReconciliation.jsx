@@ -27,6 +27,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -102,23 +103,19 @@ export default function BankReconciliation({ store }) {
 
     const parseBankStatementText = (text) => {
       const mutations = [];
+      // Pass 1: Traditional format (DD/MM ... Amount DB/CR)
       const dateRegex = /(\d{2}[\/|-]\d{2})/g;
       const parts = text.split(dateRegex);
-      
       for (let i = 1; i < parts.length; i += 2) {
         const date = parts[i];
         const content = parts[i+1] || '';
-        
         const allMatches = [...content.matchAll(/([\d\.,]+)\s+(DB|CR|DR|D|K)\b/gi)];
-        
         if (allMatches.length > 0) {
           allMatches.forEach((m) => {
             const amountStr = m[1];
             const rawType = m[2].toUpperCase();
-            
             const isDebit = ['DB', 'DR', 'D'].includes(rawType);
             const isCredit = ['CR', 'K'].includes(rawType);
-            
             const clean = (s) => {
               const hasComma = s.includes(',');
               const hasDot = s.includes('.');
@@ -129,11 +126,9 @@ export default function BankReconciliation({ store }) {
               if (hasComma) return s.replace(/,/g, '.');
               return s;
             };
-
             const amount = parseFloat(clean(amountStr));
             const afterMatch = content.substring(m.index + m[0].length).match(/([\d\.,]+)/);
             const balance = afterMatch ? parseFloat(clean(afterMatch[1])) : 0;
-
             if (!isNaN(amount) && amount > 0) {
               mutations.push({
                 date: date,
@@ -148,6 +143,114 @@ export default function BankReconciliation({ store }) {
           });
         }
       }
+
+      // Pass 2: Modern E-Wallet/Digital Bank Format (e.g. Bank Jago)
+      // Since OCR might scatter text across lines, we use a State Machine.
+      if (mutations.length === 0) {
+        let currentDate = '';
+        let currentDesc = '';
+        
+        const lines = text.split('\n');
+        
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          // Helper to clean Indonesian currency formats correctly
+          const clean = (s) => {
+             if(!s) return '0';
+             let cleaned = s.replace(/[^\d\.,+-]/g, '');
+             const hasComma = cleaned.includes(',');
+             const hasDot = cleaned.includes('.');
+             
+             if (hasComma && hasDot) {
+                 // Dot is thousand separator, comma is decimal
+                 return cleaned.replace(/\./g, '').replace(/,/g, '.');
+             } else if (hasComma) {
+                 // Comma is decimal
+                 return cleaned.replace(/,/g, '.');
+             } else if (hasDot) {
+                 // ONLY Dot exists! In IDR, this is a thousand separator (e.g. 78.000 -> 78000)
+                 return cleaned.replace(/\./g, '');
+             }
+             return cleaned;
+          };
+
+          // 1. Inline Match (Everything on one line)
+          const inlineMatch = line.match(/(\d{1,2}\s+[a-zA-Z]{3,4}\s+\d{4}).*?([+-]\s?[\d\.,]+)\s+([\d\.,]+)?/i);
+          if (inlineMatch && !currentDate) {
+             const amt = parseFloat(clean(inlineMatch[2]));
+             if (!isNaN(amt) && amt !== 0) {
+               mutations.push({
+                 date: inlineMatch[1],
+                 description: line.replace(inlineMatch[0], '').trim() || 'Mutasi Digital',
+                 reference: '-',
+                 debit: amt < 0 ? Math.abs(amt) : 0,
+                 credit: amt > 0 ? amt : 0,
+                 balance: parseFloat(clean(inlineMatch[3])),
+                 status: 'unmatched'
+               });
+             }
+             continue;
+          }
+
+          // 2. Multi-line Match (State Machine)
+          const dateMatch = line.match(/^(\d{1,2}\s+[a-zA-Z]{3,4}\s+\d{4})/i);
+          if (dateMatch) {
+            currentDate = dateMatch[1];
+            currentDesc = ''; // reset
+            continue;
+          }
+
+          // If we have an active date, look for amount
+          // Allows format: "[text] +56.000,00 [58.023]"
+          const amountMatch = line.match(/(?:^|\s)([+-])\s?([\d\.,]+)(?:\s+([\d\.,]+))?$/);
+          if (amountMatch && currentDate) {
+            const sign = amountMatch[1];
+            const amountStr = amountMatch[2];
+            let balanceStr = amountMatch[3]; // Balance might be on the same line
+            
+            const amountVal = parseFloat(clean(amountStr));
+            let finalAmount = sign === '-' ? -amountVal : amountVal;
+            
+            let balance = balanceStr ? parseFloat(clean(balanceStr)) : 0;
+            
+            // If balance wasn't on the same line, check the NEXT line
+            if (!balanceStr && i + 1 < lines.length) {
+              const nextLine = lines[i+1].trim();
+              if (nextLine.match(/^[\d\.,]+$/) && !nextLine.match(/^[+-]/)) {
+                balance = parseFloat(clean(nextLine));
+                i++; // skip balance line
+              }
+            }
+
+            // Extract any leading text on the amount line to add to description
+            const leadingText = line.replace(amountMatch[0], '').trim();
+            if (leadingText) currentDesc += ' ' + leadingText;
+
+            if (!isNaN(finalAmount) && finalAmount !== 0) {
+               mutations.push({
+                 date: currentDate,
+                 description: (currentDesc.trim() || 'Mutasi Digital').substring(0, 200),
+                 reference: '-',
+                 debit: finalAmount < 0 ? Math.abs(finalAmount) : 0,
+                 credit: finalAmount > 0 ? finalAmount : 0,
+                 balance: balance,
+                 status: 'unmatched'
+               });
+            }
+            // Reset for next transaction
+            currentDate = '';
+            currentDesc = '';
+          } else if (currentDate) {
+             // Accumulate description, skip time
+             if (!line.match(/^\d{2}:\d{2}$/)) {
+                currentDesc += ' ' + line;
+             }
+          }
+        }
+      }
+
       return mutations;
     };
 
@@ -194,13 +297,11 @@ export default function BankReconciliation({ store }) {
           setIsProcessing(false);
         } else {
           // Fallback to OCR if digital parsing fails
-          setProcessingMessage('Teks Digital tidak terbaca. Beralih ke Cloud OCR...');
-          const apiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
-          if (!apiKey) throw new Error("API Key Google Vision tidak tersedia di env.");
+          setProcessingMessage('Teks Digital tidak terbaca. Beralih ke Smart AI OCR...');
 
           let combinedOcrText = '';
           for (let i = 1; i <= pdf.numPages; i++) {
-            setProcessingMessage(`Ekstrak Halaman ${i}/${pdf.numPages} via Cloud OCR...`);
+            setProcessingMessage(`Ekstrak Halaman ${i}/${pdf.numPages} via Smart AI...`);
             const page = await pdf.getPage(i);
             const viewport = page.getViewport({ scale: 1.5 });
             const canvas = document.createElement('canvas');
@@ -220,22 +321,22 @@ export default function BankReconciliation({ store }) {
               }
             });
             if (visionError) throw visionError;
+            if (visionData?.error) throw new Error("Gagal menganalisis gambar. Layanan AI sedang tidak tersedia.");
+            if (!visionData?.responses) throw new Error('Sistem AI tidak mengembalikan data. Silakan coba lagi nanti.');
             combinedOcrText += (visionData.responses[0]?.fullTextAnnotation?.text || '') + '\n';
           }
           
           mutations = parseBankStatementText(combinedOcrText);
           setBankMutations(mutations);
           saveStatementHistory(file.name, 'PDF (OCR)', mutations);
-          toast.success(`${mutations.length} transaksi dimuat via Cloud OCR PDF`);
+          toast.success(`${mutations.length} transaksi dimuat via Smart AI PDF`);
           setIsProcessing(false);
         }
       } else if (file.name.match(/\.(png|jpe?g)$/i)) {
-        setProcessingMessage('Menganalisis Gambar dengan Google Cloud Vision AI...');
+        setProcessingMessage('Menganalisis Gambar dengan Smart AI OCR...');
         const reader = new FileReader();
         reader.onloadend = async () => {
           try {
-            const apiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
-            if (!apiKey) throw new Error("API Key Google Vision tidak tersedia di env.");
             const base64Image = reader.result.split(',')[1];
             const { data: visionData, error: visionError } = await supabase.functions.invoke('app-bridge', {
               body: {
@@ -246,15 +347,17 @@ export default function BankReconciliation({ store }) {
               }
             });
             if (visionError) throw visionError;
+            if (visionData?.error) throw new Error("Gagal menganalisis gambar. Layanan AI sedang tidak tersedia.");
+            if (!visionData?.responses) throw new Error('Sistem AI tidak mengembalikan data. Silakan coba lagi nanti.');
             const text = visionData.responses[0]?.fullTextAnnotation?.text || '';
             const mutations = parseBankStatementText(text);
             
             setBankMutations(mutations);
             saveStatementHistory(file.name, 'Image (OCR)', mutations);
-            toast.success(`${mutations.length} transaksi dimuat via Cloud OCR Gambar`);
+            toast.success(`${mutations.length} transaksi dimuat via Smart AI Gambar`);
             setIsProcessing(false);
           } catch(err) {
-            toast.error("Gagal OCR Gambar: " + err.message);
+            toast.error("Gagal Smart AI OCR: " + err.message);
             setIsProcessing(false);
           }
         };
@@ -263,18 +366,22 @@ export default function BankReconciliation({ store }) {
     } catch (err) {
       toast.error("Gagal memproses file: " + err.message);
       setIsProcessing(false);
+    } finally {
+      // Wajib mereset value input agar user bisa mengupload file yang SAMA jika sebelumnya gagal
+      e.target.value = '';
     }
   };
 
   const saveStatementHistory = async (fileName, fileType, mutations) => {
     try {
-      await api.entities.BankStatementHistory.create({
+      const { error } = await supabase.from('bank_statement_history').insert({
         store_id: store.id,
         file_name: fileName,
         file_type: fileType,
         total_transactions: mutations.length,
         parsed_data: mutations
       });
+      if (error) throw error;
       loadStatementHistory();
     } catch (err) {
       console.error("Gagal menyimpan history", err);

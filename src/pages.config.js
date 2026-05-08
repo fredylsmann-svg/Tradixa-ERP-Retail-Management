@@ -58,6 +58,7 @@ const StockIn = lazy(() => import('./pages/StockIn'));
 const StockOut = lazy(() => import('./pages/StockOut'));
 const StockOpname = lazy(() => import('./pages/StockOpname'));
 const StockReport = lazy(() => import('./pages/StockReport'));
+const OutboundDelivery = lazy(() => import('./pages/OutboundDelivery'));
 const StoreSetup = lazy(() => import('./pages/StoreSetup'));
 const TradixaAssistant = lazy(() => import('./pages/TradixaAssistant'));
 const TransaksiAgen = lazy(() => import('./pages/TransaksiAgen'));
@@ -109,6 +110,7 @@ export const PAGES = {
     "ProductMaster": ProductMaster,
     "PurchaseOrders": PurchaseOrders,
     "PurchaseRequisition": PurchaseRequisition,
+    "OutboundDelivery": OutboundDelivery,
     "ReceivableInvoices": ReceivableInvoices,
     "Receivables": Receivables,
     "Reports": Reports,

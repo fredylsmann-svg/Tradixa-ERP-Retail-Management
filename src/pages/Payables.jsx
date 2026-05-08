@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -192,21 +193,11 @@ export default function Payables({ store }) {
   };
 
   const runGoogleCloudVision = async () => {
-    const apiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
-    if (!apiKey) {
-      toast({ 
-        title: "API Key Belum Dikonfigurasi", 
-        description: "Tambahkan VITE_GOOGLE_VISION_API_KEY di file .env Anda.", 
-        variant: "destructive" 
-      });
-      return;
-    }
-
     if (!lastUploadedImageBase64) return;
 
     setIsOcrProcessing(true);
     setOcrError(false);
-    setOcrMessage('Menganalisis dengan Google Cloud Vision AI...');
+    setOcrMessage('Menganalisis dengan Smart AI OCR...');
 
     try {
       const base64Image = lastUploadedImageBase64.split(',')[1];
@@ -219,13 +210,18 @@ export default function Payables({ store }) {
         }
       });
       if (visionError) throw visionError;
+      if (visionData?.error) {
+        console.error("Vision API Error Detail:", visionData.error);
+        throw new Error("Gagal menganalisis gambar. Layanan AI sedang tidak tersedia.");
+      }
+      if (!visionData?.responses) throw new Error('Sistem AI tidak mengembalikan data. Silakan coba lagi nanti.');
       const text = visionData.responses[0]?.fullTextAnnotation?.text || '';
 
       const { amount, bankMatch } = extractReceiptData(text);
 
       if (amount && !isNaN(amount) && amount > 0) {
         setPaymentAmount(amount);
-        toast({ title: "Berhasil (Cloud AI)", description: `Nominal terdeteksi: Rp ${formatCurrency(amount)}` });
+        toast({ title: "Berhasil (Smart AI)", description: `Nominal terdeteksi: Rp ${formatCurrency(amount)}` });
         
         if (bankMatch) {
           setPaymentMethod('Bank');
@@ -236,12 +232,12 @@ export default function Payables({ store }) {
           });
         }
       } else {
-        toast({ title: "Gagal", description: "Bahkan Cloud AI tidak bisa mendeteksi nominal.", variant: "destructive" });
+        toast({ title: "Gagal", description: "Sistem AI tidak dapat mendeteksi nominal pada dokumen ini.", variant: "destructive" });
       }
       setIsOcrProcessing(false);
 
     } catch (err) {
-      toast({ title: "Error Cloud Vision", description: err.message, variant: "destructive" });
+      toast({ title: "Gagal Memproses Gambar", description: err.message, variant: "destructive" });
       setIsOcrProcessing(false);
     }
   };

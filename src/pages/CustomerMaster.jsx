@@ -16,6 +16,9 @@ import ExportToolbar from '@/components/layout/ExportToolbar';
 import moment from 'moment';
 import PageHeader from '@/components/layout/PageHeader';
 import { executeAutomation } from '@/utils/automation';
+import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
+
+const libraries = ['places'];
 
 export default function CustomerMaster({ store }) {
   const [customers, setCustomers] = useState([]);
@@ -36,8 +39,36 @@ export default function CustomerMaster({ store }) {
     bank_name: '',
     bank_account: '',
     status: 'Active',
-    photo_url: ''
+    photo_url: '',
+    latitude: null,
+    longitude: null,
+    place_id: '',
+    formatted_address: ''
   });
+
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+    libraries
+  });
+
+  const autocompleteRef = useRef(null);
+
+  const handlePlaceChanged = () => {
+    if (autocompleteRef.current) {
+      const place = autocompleteRef.current.getPlace();
+      if (place.geometry && place.geometry.location) {
+        setFormData(prev => ({
+          ...prev,
+          address: place.formatted_address || place.name,
+          formatted_address: place.formatted_address || place.name,
+          latitude: place.geometry.location.lat(),
+          longitude: place.geometry.location.lng(),
+          place_id: place.place_id
+        }));
+      }
+    }
+  };
 
   useEffect(() => {
     if (store?.id) loadCustomers();
@@ -69,7 +100,7 @@ export default function CustomerMaster({ store }) {
     setIsSaving(false);
     setShowForm(false);
     setEditingCustomer(null);
-    setFormData({ name: '', address: '', phone: '', country_code: '+62', phone_main: '', email: '', bank_name: '', bank_account: '', status: 'Active', photo_url: '' });
+    setFormData({ name: '', address: '', phone: '', country_code: '+62', phone_main: '', email: '', bank_name: '', bank_account: '', status: 'Active', photo_url: '', latitude: null, longitude: null, place_id: '', formatted_address: '' });
     loadCustomers();
   };
 
@@ -99,7 +130,11 @@ export default function CustomerMaster({ store }) {
       bank_name: customer.bank_name || '',
       bank_account: customer.bank_account || '',
       status: customer.status,
-      photo_url: customer.photo_url || ''
+      photo_url: customer.photo_url || '',
+      latitude: customer.latitude || null,
+      longitude: customer.longitude || null,
+      place_id: customer.place_id || '',
+      formatted_address: customer.formatted_address || ''
     });
     setShowForm(true);
   };
@@ -255,7 +290,14 @@ export default function CustomerMaster({ store }) {
       </Card>
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-xl">
+        <DialogContent 
+          className="max-w-xl"
+          onInteractOutside={(e) => {
+            if (e.target.closest('.pac-container')) {
+              e.preventDefault();
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>{editingCustomer ? 'Edit Customer' : 'Tambah Customer Baru'}</DialogTitle>
           </DialogHeader>
@@ -301,7 +343,25 @@ export default function CustomerMaster({ store }) {
             </div>
             <div>
               <Label>Alamat</Label>
-              <Input value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} className="mt-1.5" />
+              {isLoaded ? (
+                <Autocomplete
+                  onLoad={(autocomplete) => (autocompleteRef.current = autocomplete)}
+                  onPlaceChanged={handlePlaceChanged}
+                >
+                  <Input 
+                    value={formData.address} 
+                    onChange={(e) => setFormData({...formData, address: e.target.value})} 
+                    className="mt-1.5" 
+                    placeholder="Ketik alamat untuk pencarian otomatis..." 
+                  />
+                </Autocomplete>
+              ) : (
+                <Input 
+                  value={formData.address} 
+                  onChange={(e) => setFormData({...formData, address: e.target.value})} 
+                  className="mt-1.5" 
+                />
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
