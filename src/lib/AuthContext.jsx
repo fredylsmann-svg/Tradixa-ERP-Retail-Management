@@ -200,8 +200,13 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = async (emailHint = null) => {
     try {
+      // Get clean origin for redirect (removing any trailing slashes)
+      const redirectUrl = window.location.origin.endsWith('/') 
+        ? window.location.origin.slice(0, -1) 
+        : window.location.origin;
+
       const options = {
-        redirectTo: window.location.origin,
+        redirectTo: redirectUrl,
       };
 
       if (emailHint) {
