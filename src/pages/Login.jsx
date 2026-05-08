@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Loader2, Mail, Lock, ArrowRight, Eye, EyeOff, Instagram, Globe } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
+import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -23,6 +24,8 @@ export default function Login() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [loopNum, setLoopNum] = useState(0);
   const [typingSpeed, setTypingSpeed] = useState(150);
+  const [videoReady, setVideoReady] = useState(false);
+  const videoRef = useRef(null);
 
   const phrases = [
     "Enter your credentials to access the enterprise dashboard",
@@ -125,12 +128,17 @@ export default function Login() {
       {/* Premium Video Background */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-[#020617]">
         <video 
+          ref={videoRef}
           autoPlay 
           muted 
           loop 
           playsInline 
           preload="auto"
-          className="absolute w-full h-full object-cover scale-[1.02]"
+          fetchpriority="high"
+          disablePictureInPicture
+          onCanPlayThrough={() => setVideoReady(true)}
+          className="absolute w-full h-full object-cover scale-[1.02] transition-opacity duration-1000 ease-in-out"
+          style={{ opacity: videoReady ? 1 : 0 }}
         >
           <source src="https://assets.tradixasystems.com/0506(3).mp4" type="video/mp4" />
         </video>
@@ -261,7 +269,7 @@ export default function Login() {
               {/* Logo */}
               <div className="text-center mb-6">
                 <motion.img
-                  src="/src/assets/tradixa-logo-transparent.png"
+                  src={tradixaLogo}
                   alt="Tradixa"
                   className="h-52 mx-auto -mb-8"
                   initial={{ scale: 0.9, opacity: 0 }}
