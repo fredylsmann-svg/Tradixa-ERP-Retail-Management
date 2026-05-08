@@ -1,4 +1,5 @@
 
+import { Suspense, lazy } from "react"
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -10,14 +11,17 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { DateProvider } from '@/contexts/DateContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import Login from '@/pages/Login';
-import PublicPOSign from './pages/PublicPOSign';
-import PublicGRNSign from './pages/PublicGRNSign';
-import PublicReturnReview from './pages/PublicReturnReview';
-import PublicInvoice from './pages/PublicInvoice';
-import ProcurementWorkflow from './pages/ProcurementWorkflow';
 import StaffRegister from './pages/StaffRegister';
 import SignUp from '@/pages/SignUp';
 import PublicTracker from './pages/PublicTracker';
+import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
+
+// Lazy-loaded public pages (heavy components that don't need eager loading)
+const PublicPOSign = lazy(() => import('./pages/PublicPOSign'));
+const PublicGRNSign = lazy(() => import('./pages/PublicGRNSign'));
+const PublicReturnReview = lazy(() => import('./pages/PublicReturnReview'));
+const PublicInvoice = lazy(() => import('./pages/PublicInvoice'));
+const ProcurementWorkflow = lazy(() => import('./pages/ProcurementWorkflow'));
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -28,23 +32,26 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
 
+// Shared loading fallback component
+const LoadingFallback = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
+    <div className="text-center animate-in fade-in zoom-in duration-500 flex flex-col items-center -mt-32">
+      <img src={tradixaLogo} alt="Tradixa" className="h-48 md:h-60 mx-auto animate-pulse" />
+      <div className="flex items-center gap-1.5 -mt-16">
+        <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.3s]"></div>
+        <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.15s]"></div>
+        <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce"></div>
+      </div>
+    </div>
+  </div>
+);
+
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoadingAuth } = useAuth();
   
   if (isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
-        <div className="text-center animate-in fade-in zoom-in duration-500 flex flex-col items-center -mt-32">
-          <img src="/src/assets/tradixa-logo-transparent.png" alt="Tradixa" className="h-48 md:h-60 mx-auto animate-pulse" />
-          <div className="flex items-center gap-1.5 -mt-16">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.3s]"></div>
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.15s]"></div>
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce"></div>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingFallback />;
   }
   
   if (!isAuthenticated) {
@@ -59,18 +66,7 @@ const LoginRoute = () => {
   const { isAuthenticated, isLoadingAuth } = useAuth();
   
   if (isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
-        <div className="text-center animate-in fade-in zoom-in duration-500 flex flex-col items-center -mt-32">
-          <img src="/src/assets/tradixa-logo-transparent.png" alt="Tradixa" className="h-48 md:h-60 mx-auto animate-pulse" />
-          <div className="flex items-center gap-1.5 -mt-16">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.3s]"></div>
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.15s]"></div>
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce"></div>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingFallback />;
   }
   
   if (isAuthenticated) {
@@ -88,6 +84,7 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <NavigationTracker />
+          <Suspense fallback={<LoadingFallback />}>
           <Routes>
             {/* Public Login Route */}
             <Route path="/login" element={<LoginRoute />} />
@@ -166,6 +163,7 @@ function App() {
             
             <Route path="*" element={<PageNotFound />} />
           </Routes>
+          </Suspense>
         </Router>
         <Toaster />
       </QueryClientProvider>
