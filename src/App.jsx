@@ -13,6 +13,7 @@ import { SettingsProvider } from '@/contexts/SettingsContext';
 import Login from '@/pages/Login';
 import StaffRegister from './pages/StaffRegister';
 import SignUp from '@/pages/SignUp';
+import ResetPassword from '@/pages/ResetPassword';
 import PublicTracker from './pages/PublicTracker';
 import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
 
@@ -94,6 +95,9 @@ function App() {
             
             {/* Public Business Sign Up Route */}
             <Route path="/signup" element={<SignUp />} />
+
+            {/* Public Reset Password Route */}
+            <Route path="/reset-password" element={<ResetPassword />} />
             
             {/* Public PO Signature Route */}
             <Route path="/public/po/:id/sign" element={<PublicPOSign />} />

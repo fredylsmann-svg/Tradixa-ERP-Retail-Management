@@ -24,6 +24,8 @@ const featureGroups = [
       { name: 'Inventory Reports', free: false, pro: true, enterprise: true },
       { name: 'Inventory Ledger', free: false, pro: true, enterprise: true },
       { name: 'Low Stock Alert', free: false, pro: true, enterprise: true },
+      { name: 'Outbound Delivery', free: false, pro: true, enterprise: true },
+      { name: 'Inventory Workflow', free: false, pro: true, enterprise: true },
     ]
   },
   {
@@ -34,7 +36,6 @@ const featureGroups = [
       { name: 'Sales Invoices', free: true, pro: true, enterprise: true },
       { name: 'Revenue Reports', free: false, pro: true, enterprise: true },
       { name: 'Sales Report', free: false, pro: true, enterprise: true },
-      { name: 'Sales Performance', free: false, pro: true, enterprise: true },
     ]
   },
   {
@@ -45,6 +46,7 @@ const featureGroups = [
       { name: 'Suppliers', free: false, pro: true, enterprise: true },
       { name: 'Purchase Orders', free: false, pro: true, enterprise: true },
       { name: 'Goods Receipt & GRN', free: false, pro: true, enterprise: true },
+      { name: 'Purchase Invoices', free: false, pro: true, enterprise: true },
       { name: 'Supplier Return', free: false, pro: true, enterprise: true },
     ]
   },
@@ -53,10 +55,12 @@ const featureGroups = [
     icon: DollarSign,
     features: [
       { name: 'Bank Accounts & Transactions', free: false, pro: true, enterprise: true },
+      { name: 'Cash Register', free: true, pro: true, enterprise: true },
       { name: 'Payables & Receivables', free: false, pro: true, enterprise: true },
       { name: 'Journal Entries', free: false, pro: true, enterprise: true },
       { name: 'Financial Statements', free: false, pro: true, enterprise: true },
-      { name: 'Bank Reconciliation', free: false, pro: false, enterprise: true },
+      { name: 'Bank Reconciliation', free: false, pro: true, enterprise: true },
+      { name: 'Tax Management', free: false, pro: true, enterprise: true },
     ]
   },
   {
@@ -71,28 +75,29 @@ const featureGroups = [
     ]
   },
   {
-    title: 'HR & Users',
+    title: 'HRIS Management',
     icon: Users,
     features: [
-      { name: 'User Management', free: false, pro: '10 user', enterprise: 'Unlimited' },
       { name: 'Employee Management', free: false, pro: true, enterprise: true },
+      { name: 'Sales Performance', free: false, pro: true, enterprise: true },
+      { name: 'User Management', free: '1 user', pro: '10 user', enterprise: 'Unlimited' },
     ]
   },
   {
     title: 'Financial Agent',
     icon: Landmark,
     features: [
-      { name: 'Agent Workflow (BRILink)', free: false, pro: false, enterprise: true },
-      { name: 'Transaksi & Dashboard Agent', free: false, pro: false, enterprise: true },
-      { name: 'Agent Performance', free: false, pro: false, enterprise: true },
+      { name: 'Agent Workflow (BRILink)', free: false, pro: true, enterprise: true },
+      { name: 'Transaksi & Dashboard Agent', free: false, pro: true, enterprise: true },
+      { name: 'Agent Performance', free: false, pro: true, enterprise: true },
     ]
   },
   {
     title: 'Lainnya',
     icon: Sparkles,
     features: [
-      { name: 'Design Studio', free: false, pro: false, enterprise: true },
-      { name: 'Audit Log', free: false, pro: false, enterprise: true },
+      { name: 'Design Studio', free: false, pro: true, enterprise: true },
+      { name: 'Audit Log', free: false, pro: true, enterprise: true },
       { name: 'Export (CSV, PDF, Print)', free: false, pro: true, enterprise: true },
       { name: 'AI Assistant', free: true, pro: true, enterprise: true },
     ]

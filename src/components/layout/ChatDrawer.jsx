@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, Send, ArrowLeft, Circle, CheckCheck, MessageSquare, Smile } from 'lucide-react';
+import { Search, Send, ArrowLeft, Circle, CheckCheck, MessageSquare, Smile, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSettings } from '@/contexts/SettingsContext';
 
@@ -306,9 +306,15 @@ export default function ChatDrawer({ isOpen, onOpenChange, store }) {
 
             <div className="flex-1 overflow-y-auto p-2 space-y-1">
               {filtered.length === 0 ? (
-                <div className="text-center py-12 text-slate-400">
+                <div className="text-center py-12 text-slate-400 px-6">
                   <Send className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                  <p className="text-sm">Tidak ada rekan kerja ditemukan</p>
+                  <p className="text-sm font-medium mb-4">Tidak ada rekan kerja ditemukan</p>
+                  <div className="p-3 bg-blue-50 dark:bg-slate-800/80 rounded-xl text-left border border-blue-100 dark:border-slate-800 shadow-sm flex gap-3">
+                    <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Karyawan belum ditambahkan. Silakan tambahkan akun karyawan Anda melalui menu <b className="font-bold text-blue-600 dark:text-blue-400">User Management</b> agar dapat berkomunikasi.
+                    </p>
+                  </div>
                 </div>
               ) : (
                 filtered.map(contact => (

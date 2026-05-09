@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/api/client';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { 
   User, 
   Mail, 
@@ -31,10 +33,12 @@ import { PLAN_TIERS } from '@/planConfig';
 
 export default function ProfileAccount({ store }) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const fileInputRef = useRef(null);
   const { toast } = useToast();
 
@@ -426,12 +430,33 @@ export default function ProfileAccount({ store }) {
             </CardContent>
           </Card>
 
-          <Button variant="outline" className="w-full h-14 rounded-3xl border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all text-slate-600 font-bold group">
+          <Button 
+            variant="outline" 
+            onClick={() => setIsLogoutDialogOpen(true)}
+            className="w-full h-14 rounded-3xl border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all text-slate-600 font-bold group"
+          >
             <LogOut className="w-5 h-5 mr-3 group-hover:-translate-x-1 transition-transform" />
             Keluar dari Sistem
           </Button>
         </div>
       </div>
+
+      <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+        <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-black text-slate-900">Konfirmasi Keluar</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500">
+              Apakah Anda yakin ingin keluar dari sistem? Anda harus login kembali untuk mengakses data Tradixa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl border-slate-200">Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={logout} className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold">
+              Ya, Keluar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

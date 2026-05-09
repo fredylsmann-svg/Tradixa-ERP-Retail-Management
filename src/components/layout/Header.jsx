@@ -8,6 +8,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { Store, MapPin, RefreshCw, User, Settings, LogOut, Menu, MessageSquare, Sun, Moon, Monitor } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import GlobalSearch from './GlobalSearch';
 import Notifications from './Notifications';
 import ChatDrawer from './ChatDrawer';
@@ -24,6 +25,7 @@ export default function Header({ store, isSidebarOpen, setIsSidebarOpen, isMobil
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [totalUnreadChat, setTotalUnreadChat] = useState(0);
   const { toast } = useToast();
@@ -329,13 +331,30 @@ export default function Header({ store, isSidebarOpen, setIsSidebarOpen, isMobil
                 </Link>
               </div>
               <div className="h-px bg-slate-100 my-1"></div>
-              <button onClick={logout} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium">
+              <button onClick={() => setIsLogoutDialogOpen(true)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium">
                 <LogOut className="w-4 h-4" /> Keluar
               </button>
             </PopoverContent>
           </Popover>
         </div>
       </div>
+
+      <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+        <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-black text-slate-900">Konfirmasi Keluar</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500">
+              Apakah Anda yakin ingin keluar dari sistem? Anda harus login kembali untuk mengakses data Tradixa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl border-slate-200">Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={logout} className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold">
+              Ya, Keluar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }

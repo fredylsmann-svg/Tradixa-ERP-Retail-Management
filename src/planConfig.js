@@ -19,15 +19,16 @@ export const PLAN_TIERS = {
       'StockIn', 'StockOut', 'SalesTransaction',
       'SalesInvoices', 'CustomerMaster',
       'ProfileAccount', 'CompanySettings', 'StoreSetup',
-      'SystemSettings', 'TradixaAssistant', 'PricingPage'
+      'SystemSettings', 'TradixaAssistant', 'PricingPage',
+      'UserManagement'
     ],
     limits: {
       maxProducts: 100,
-      maxUsers: 1, // owner only, no user management
+      maxUsers: 1, // owner only, no user management (wait, they said user management ada 1)
       maxPhotosPerModule: 5,
       maxPhotoSizeMB: 2,
       exportEnabled: false,
-      userManagement: false,
+      userManagement: true,
     },
     features: [
       'Product Master (max 100 produk)',
@@ -37,10 +38,11 @@ export const PLAN_TIERS = {
       'Sales Invoices',
       'Customer Master',
       'AI Assistant',
+      'User Management (1 User)'
     ],
     notIncluded: [
       'Procurement', 'Reports Lengkap', 'Keuangan',
-      'Diskon & Loyalty', 'Export Data', 'User Management',
+      'Diskon & Loyalty', 'Export Data',
       'Financial Agent', 'Design Studio'
     ]
   },

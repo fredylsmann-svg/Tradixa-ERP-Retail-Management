@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Notifications({ store }) {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -262,6 +264,35 @@ export default function Notifications({ store }) {
         });
       });
 
+      // Filter alerts based on user modules if not owner
+      if (user && user.role !== 'owner') {
+        const modules = user.modules || [];
+        alerts = alerts.filter(alert => {
+          switch (alert.type) {
+            case 'low_stock':
+            case 'expired':
+            case 'expiring':
+              return modules.includes('Inventory Workflow') || modules.includes('Product Master') || modules.includes('Stock Opname');
+            case 'ar_due':
+              return modules.includes('Account Receivables') || modules.includes('Bank Accounts') || modules.includes('Receivables');
+            case 'ap_due':
+              return modules.includes('Account Payables') || modules.includes('Bank Accounts') || modules.includes('Payables');
+            case 'pr_pending':
+            case 'pr_approved':
+            case 'po_neg':
+            case 'po_supplier_approved':
+            case 'po_sign':
+            case 'po_approved':
+              return modules.includes('Procurement Workflow') || modules.includes('Purchase Orders') || modules.includes('Purchase Requisition');
+            case 'sale_pending':
+            case 'new_sale':
+              return modules.includes('Sales Transaction') || modules.includes('Sales Report');
+            default:
+              return true;
+          }
+        });
+      }
+
       // Sort alerts descending (newest first)
       alerts.sort((a, b) => b.timestamp - a.timestamp);
 
@@ -307,7 +338,7 @@ export default function Notifications({ store }) {
     }
     setIsLoading(false);
     isPollingRef.current = false;
-  }, [store, toast, playSound]);
+  }, [store, toast, playSound, user]);
 
   // Setup polling with Page Visibility API guard
   useEffect(() => {

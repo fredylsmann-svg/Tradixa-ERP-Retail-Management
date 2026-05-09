@@ -42,7 +42,8 @@ const getFilteredMenuGroups = (isOwner) => {
         { name: 'Inventory Ledger', icon: Activity, page: 'InventoryLedger' },
         { name: 'Inventory Reports', icon: FileText, page: 'InventoryReports' },
         { name: 'Low Stock Alert', icon: AlertTriangle, page: 'LowStockAlert' },
-        { name: 'Stock Opname', icon: ClipboardCheck, page: 'StockOpname' }
+        { name: 'Stock Opname', icon: ClipboardCheck, page: 'StockOpname' },
+        { name: 'Outbound Delivery', icon: Truck, page: 'OutboundDelivery' }
       ]
     },
     {
@@ -77,7 +78,6 @@ const getFilteredMenuGroups = (isOwner) => {
       items: [
         { name: 'Sales Transaction', icon: ShoppingCart, page: 'SalesTransaction' },
         { name: 'Sales Invoices', icon: Receipt, page: 'SalesInvoices' },
-        { name: 'Outbound Delivery', icon: Truck, page: 'OutboundDelivery' },
         { name: 'Revenue Reports', icon: BarChart3, page: 'RevenueReports' }
       ]
     },
@@ -95,7 +95,8 @@ const getFilteredMenuGroups = (isOwner) => {
         { name: 'Payments', icon: HandCoins, page: 'Payments' },
         { name: 'Operational Expenses', icon: ReceiptText, page: 'Expenses' },
         { name: 'Journal Entries', icon: BookOpen, page: 'JournalEntries' },
-        { name: 'Chart of Accounts', icon: List, page: 'ChartOfAccounts' }
+        { name: 'Chart of Accounts', icon: List, page: 'ChartOfAccounts' },
+        { name: 'Tax Management', icon: FileCheck, page: 'TaxManagement' }
       ]
     },
     {

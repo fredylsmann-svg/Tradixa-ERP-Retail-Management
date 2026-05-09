@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useRef, useCallback } from 'react';
 import { api } from '@/api/client';
 import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 const AuthContext = createContext();
 
@@ -156,6 +157,13 @@ export const AuthProvider = ({ children }) => {
       } else if (event === 'SIGNED_IN' && session?.user) {
         console.log('[Tradixa Auth] Event: SIGNED_IN');
         await resolveUser(session.user);
+        
+        if (localStorage.getItem('oauth_login_in_progress') === 'true') {
+          localStorage.removeItem('oauth_login_in_progress');
+          toast.success('Login Berhasil', {
+            description: `Selamat datang kembali di Tradixa, ${session.user.user_metadata?.full_name || 'Kak'}!`
+          });
+        }
       } else if (event === 'SIGNED_OUT') {
         console.log('[Tradixa Auth] Event: SIGNED_OUT');
         setUser(null);
@@ -200,6 +208,7 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = async (emailHint = null) => {
     try {
+      localStorage.setItem('oauth_login_in_progress', 'true');
       // Get clean origin for redirect (removing any trailing slashes)
       const redirectUrl = window.location.origin.endsWith('/') 
         ? window.location.origin.slice(0, -1) 

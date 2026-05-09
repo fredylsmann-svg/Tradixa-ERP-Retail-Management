@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Truck, MapPin, Navigation, Clock, CheckCircle2, XCircle, Route, Plus } from 'lucide-react';
+import { Search, Truck, MapPin, Navigation, Clock, CheckCircle2, XCircle, Route, Plus, Info, HelpCircle } from 'lucide-react';
 import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, Autocomplete } from '@react-google-maps/api';
 import { api } from '@/api/client';
 import { supabase } from '@/lib/supabase';
@@ -220,6 +220,32 @@ export default function OutboundDelivery({ store }) {
         title="Outbound Delivery"
         subtitle="Kelola pengiriman barang ke pelanggan dan lacak rute pengiriman"
         icon={Truck}
+        children={
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full text-slate-400 hover:text-blue-600 hover:bg-blue-50">
+                <Info className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md rounded-3xl">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5 text-blue-600" /> Cara Penggunaan
+                </DialogTitle>
+                <DialogDescription className="pt-4 space-y-4 text-left">
+                  <p className="text-sm text-slate-600">Untuk menambahkan data ke modul ini secara otomatis, ikuti langkah berikut:</p>
+                  <ol className="list-decimal pl-5 space-y-2 text-sm text-slate-700">
+                    <li>Buka halaman <span className="font-bold text-slate-900">Sales Transaction</span>.</li>
+                    <li>Pilih pelanggan dan produk yang akan dibeli.</li>
+                    <li>Pada Opsi Pengiriman, pilih metode <span className="font-bold text-blue-600">Pengiriman Barang</span>.</li>
+                    <li>Proses transaksi hingga selesai.</li>
+                    <li>Data pengiriman otomatis akan muncul di halaman ini untuk diproses kurir.</li>
+                  </ol>
+                </DialogDescription>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
+        }
         actions={
           <div className="flex items-center gap-2">
             <ExportToolbar 

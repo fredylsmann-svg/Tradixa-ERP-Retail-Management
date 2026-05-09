@@ -4,11 +4,13 @@ import { Loader2, Mail, Lock, ArrowRight, Eye, EyeOff, Instagram, Globe } from '
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/supabase';
 import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,6 +22,7 @@ export default function Login() {
   const { toast } = useToast();
   const [rememberedUser, setRememberedUser] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [isForgotMode, setIsForgotMode] = useState(false);
   const [displayText, setDisplayText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [loopNum, setLoopNum] = useState(0);
@@ -71,6 +74,12 @@ export default function Login() {
         console.error('Error parsing remembered user');
       }
     }
+    
+    const savedEmail = localStorage.getItem('tradixa_saved_email');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -83,11 +92,18 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isForgotMode) return handleForgotPassword(e);
+    
     setIsSubmitting(true);
     setError('');
     setSuccess('');
     const result = await login(email, password);
     if (result.success) {
+      if (rememberMe) {
+        localStorage.setItem('tradixa_saved_email', email);
+      } else {
+        localStorage.removeItem('tradixa_saved_email');
+      }
       toast({
         title: "Login Berhasil",
         description: "Selamat datang kembali di Tradixa!",
@@ -102,6 +118,34 @@ export default function Login() {
         description: errorMsg,
         variant: "destructive",
       });
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      setError('Silakan masukkan email Anda untuk reset password.');
+      return;
+    }
+    setIsSubmitting(true);
+    setError('');
+    setSuccess('');
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setSuccess('Tautan reset password telah dikirim ke email Anda. Silakan cek Inbox atau Spam.');
+    } catch (err) {
+      console.error("Lupa password error:", err);
+      let errMsg = 'Gagal mengirim tautan reset password.';
+      if (err?.message && err.message !== '{}') {
+        errMsg = err.message;
+      }
+      setError(errMsg);
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -260,7 +304,7 @@ export default function Login() {
               
               {/* Back Button */}
               <button 
-                onClick={() => setShowForm(false)}
+                onClick={() => isForgotMode ? setIsForgotMode(false) : setShowForm(false)}
                 className="absolute top-6 left-6 text-slate-400 hover:text-blue-600 transition-colors"
               >
                 <ArrowRight className="w-5 h-5 rotate-180" />
@@ -276,7 +320,9 @@ export default function Login() {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.15, duration: 0.4 }}
                 />
-                <p className="text-[13px] text-slate-400 tracking-wide">Masuk ke akun Anda untuk melanjutkan</p>
+                <p className="text-[13px] text-slate-400 tracking-wide">
+                  {isForgotMode ? "Masukkan email untuk reset password Anda" : "Masuk ke akun Anda untuk melanjutkan"}
+                </p>
               </div>
 
               {error && (
@@ -301,6 +347,8 @@ export default function Login() {
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       type="email"
+                      name="email"
+                      autoComplete="email"
                       placeholder="nama@email.com"
                       className="w-full h-[46px] pl-10 pr-4 rounded-xl text-sm outline-none transition-all font-medium placeholder-slate-400"
                       style={{ background: '#f8f9fb', border: '1.5px solid #bfdbfe', color: '#000000' }}
@@ -313,44 +361,68 @@ export default function Login() {
                   </div>
                 </div>
 
-                {/* Password */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-[13px] font-bold" style={{ color: '#1e293b' }}>Password</label>
-                    <Link to="#" className="text-xs font-semibold hover:underline" style={{ color: '#2563eb' }}>Lupa password?</Link>
+                {/* Password (Only show if not in forgot password mode) */}
+                {!isForgotMode && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-[13px] font-bold" style={{ color: '#1e293b' }}>Password</label>
+                      <button type="button" onClick={() => { setIsForgotMode(true); setError(''); setSuccess(''); }} className="text-xs font-semibold hover:underline" style={{ color: '#2563eb' }}>Lupa password?</button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        autoComplete="current-password"
+                        placeholder="••••••••"
+                        className="w-full h-[46px] pl-10 pr-11 rounded-xl text-sm outline-none transition-all font-medium placeholder-slate-400"
+                        style={{ background: '#f8f9fb', border: '1.5px solid #bfdbfe', color: '#000000' }}
+                        onFocus={(e) => { e.target.style.borderColor = '#2563eb'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }}
+                        onBlur={(e) => { e.target.style.borderColor = '#bfdbfe'; e.target.style.boxShadow = 'none'; }}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mt-4 mb-2">
+                      <input 
+                        type="checkbox" 
+                        id="rememberMe" 
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label htmlFor="rememberMe" className="text-xs text-slate-600 font-medium cursor-pointer">
+                        Ingat Saya
+                      </label>
+                    </div>
                   </div>
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      className="w-full h-[46px] pl-10 pr-11 rounded-xl text-sm outline-none transition-all font-medium placeholder-slate-400"
-                      style={{ background: '#f8f9fb', border: '1.5px solid #bfdbfe', color: '#000000' }}
-                      onFocus={(e) => { e.target.style.borderColor = '#2563eb'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }}
-                      onBlur={(e) => { e.target.style.borderColor = '#bfdbfe'; e.target.style.boxShadow = 'none'; }}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
+                )}
 
                 {/* Submit */}
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full h-[46px] rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-60 hover:shadow-lg"
+                  className="w-full h-[46px] rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-60 hover:shadow-lg mt-6"
                   style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', boxShadow: '0 4px 14px rgba(37,99,235,0.35)' }}
                 >
-                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Masuk ke Sistem <ArrowRight className="w-4 h-4" /></>}
+                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                    <>
+                      {isForgotMode ? "Kirim Tautan Reset" : "Masuk ke Sistem"} 
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               </form>
 
-              {/* Divider */}
-              <div className="relative my-5">
+              {/* Divider & Other Options (Hide in Forgot Mode) */}
+              {!isForgotMode && (
+                <>
+                  <div className="relative my-5">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div>
                 <div className="relative flex justify-center text-xs"><span className="px-3 bg-white text-slate-400 font-medium">atau</span></div>
               </div>
@@ -401,11 +473,13 @@ export default function Login() {
                 )}
               </button>
 
-              {/* Signup Link */}
+              {/* Login Link */}
               <p className="text-center text-sm text-slate-500 mt-5">
                 Belum punya akun?{' '}
                 <Link to="/signup" className="font-semibold hover:underline" style={{ color: '#2563eb' }}>Daftar sekarang</Link>
               </p>
+                </>
+              )}
             </div>
 
             {/* Footer */}

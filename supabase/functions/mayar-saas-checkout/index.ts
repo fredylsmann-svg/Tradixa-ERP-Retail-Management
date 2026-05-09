@@ -8,8 +8,8 @@ const corsHeaders = {
 }
 
 const PLAN_PRICES = {
-  pro: { monthly: 1000, yearly: 10000 },
-  enterprise: { monthly: 1500, yearly: 15000 },
+  pro: { monthly: 149000, yearly: 1490000 },
+  enterprise: { monthly: 499000, yearly: 4990000 },
 };
 
 serve(async (req: any) => {

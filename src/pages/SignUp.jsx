@@ -130,7 +130,7 @@ export default function SignUp() {
         {/* Thin top accent line with shimmer during loading */}
         <motion.div 
           className="absolute top-0 left-0 right-0 h-1"
-          animate={(isSubmitting || isGoogleLoading) ? { backgroundPosition: ['200% 0', '-200% 0'] } : {}}
+          animate={(isLoading || isGoogleLoading) ? { backgroundPosition: ['200% 0', '-200% 0'] } : {}}
           transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
           style={{ 
             background: 'linear-gradient(90deg, #2563eb 0%, #3b82f6 25%, #ffffff 50%, #3b82f6 75%, #2563eb 100%)',

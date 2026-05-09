@@ -16,7 +16,8 @@ import {
   AlertCircle,
   Info,
   HelpCircle,
-  ArchiveRestore
+  ArchiveRestore,
+  Sparkles
 } from 'lucide-react';
 import { 
   Dialog,
@@ -97,6 +98,22 @@ export default function BankReconciliation({ store }) {
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // AI OCR Premium Check
+    if (file.name.match(/\.(pdf|png|jpe?g)$/i)) {
+      const plan = store?.subscription_plan || 'free';
+      if (plan === 'free') {
+        toast.error(
+          <div className="flex flex-col gap-1">
+            <span className="font-bold text-sm">Upgrade ke Pro/Enterprise</span>
+            <span className="text-xs">Fitur Smart AI OCR (Otomatis baca mutasi dari gambar/PDF) memerlukan paket langganan premium.</span>
+          </div>,
+          { duration: 5000 }
+        );
+        e.target.value = ''; // Reset input
+        return;
+      }
+    }
 
     setIsProcessing(true);
     setProcessingMessage('Sedang Memproses File...');
@@ -498,6 +515,10 @@ export default function BankReconciliation({ store }) {
                   <div className="flex gap-3">
                     <div className="bg-slate-100 h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">1</div>
                     <p className="text-sm text-slate-600"><span className="font-bold text-slate-900">Upload Statement:</span> Unggah file PDF/Excel/Gambar(JPG/PNG) mutasi asli dari Bank (BCA, Mandiri, BRI, dll).</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="bg-blue-100 h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 text-blue-600"><Sparkles className="w-3 h-3" /></div>
+                    <p className="text-sm text-slate-600"><span className="font-bold text-slate-900">Smart AI OCR:</span> Jika menggunakan file PDF/Gambar, fitur premium AI OCR akan mengekstrak data mutasi Anda secara otomatis dan cerdas.</p>
                   </div>
                   <div className="flex gap-3">
                     <div className="bg-slate-100 h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">2</div>
