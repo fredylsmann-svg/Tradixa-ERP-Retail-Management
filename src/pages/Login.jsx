@@ -184,7 +184,7 @@ export default function Login() {
           className="absolute w-full h-full object-cover scale-[1.02] transition-opacity duration-1000 ease-in-out"
           style={{ opacity: videoReady ? 1 : 0 }}
         >
-          <source src="https://assets.tradixasystems.com/0506(3).mp4" type="video/mp4" />
+          <source src="/assets/login-bg.mp4" type="video/mp4" />
         </video>
         {/* Deep Overlay for readability - Removed blur to keep video sharp */}
         <div className="absolute inset-0 bg-[#020617]/40" />
