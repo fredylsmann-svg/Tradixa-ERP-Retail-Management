@@ -15,6 +15,7 @@ import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import PageHeader from '@/components/layout/PageHeader';
 import PrintPayment from '@/components/invoice/PrintPayment';
+import ExportToolbar from '@/components/layout/ExportToolbar';
 
 export default function Payments({ store }) {
   const [payments, setPayments] = useState([]);
