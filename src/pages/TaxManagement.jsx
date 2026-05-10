@@ -67,7 +67,7 @@ export default function TaxManagement() {
        toast({ title: "Error", description: "Nama dan tarif pajak harus diisi.", variant: "destructive" });
        return;
     }
-    setTaxRates([...taxRates, { ...newTax, id: Date.now(), status: 'active' }]);
+    setTaxRates([{ ...newTax, id: Date.now(), status: 'active' }, ...taxRates]);
     setIsAddModalOpen(false);
     setNewTax({ name: '', rate: '', type: 'Value Added Tax', appliedTo: 'Sales' });
     toast({ title: "Berhasil", description: "Tax Rate baru telah ditambahkan." });
