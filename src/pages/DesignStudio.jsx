@@ -611,7 +611,7 @@ export default function DesignStudio({ store }) {
               {/* Mockup Frame Decor */}
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
               
-              <div className="w-full animate-in zoom-in-95 duration-500 origin-top">
+              <div className="w-full min-w-[700px] md:min-w-0 animate-in zoom-in-95 duration-500 origin-top">
                 {previewMode === 'Marketing' ? (
                   <div 
                     className="max-w-[500px] mx-auto shadow-2xl"
