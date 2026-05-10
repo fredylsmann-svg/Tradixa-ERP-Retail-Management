@@ -226,6 +226,7 @@ export default function ProductMaster({ store }) {
         open={showForm}
         onClose={() => { setShowForm(false); setEditingProduct(null); }}
         product={editingProduct}
+        existingProducts={products}
         storeId={store?.id}
         onSuccess={loadProducts}
       />

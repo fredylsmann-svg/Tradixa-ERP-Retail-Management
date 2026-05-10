@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Upload, Scan, Loader2, X, PackageOpen, LayoutGrid, Info, Plus, Boxes, Calendar, Clock, ArrowDownUp } from 'lucide-react';
 import BarcodeScanner from '@/components/barcode/BarcodeScanner';
 import { NumberInput } from '@/components/ui/number-input';
@@ -12,8 +12,9 @@ import { NumberInput } from '@/components/ui/number-input';
 const CATEGORIES = ['Elektronik', 'Makanan', 'Minuman', 'Pakaian', 'Kesehatan', 'Kecantikan', 'Rumah Tangga', 'Alat Tulis', 'Rokok', 'Sembako', 'Lainnya'];
 const UNITS = ['Pcs', 'Batang', 'Bungkus', 'Sachet', 'Dus', 'Pack', 'Bal', 'Karton', 'Kg', 'Liter'];
 
-export default function ProductForm({ open, onClose, product, storeId, onSuccess }) {
+export default function ProductForm({ open, onClose, product, storeId, onSuccess, existingProducts = [] }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(product?.image_url || null);
   const [showScanner, setShowScanner] = useState(false);
@@ -75,6 +76,21 @@ export default function ProductForm({ open, onClose, product, storeId, onSuccess
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    const isDuplicate = existingProducts.some(p => 
+      p.name.toLowerCase() === formData.name.trim().toLowerCase() && 
+      p.id !== product?.id
+    );
+
+    if (isDuplicate) {
+      setShowDuplicateWarning(true);
+      return;
+    }
+
+    await processSubmit();
+  };
+
+  const processSubmit = async () => {
     setIsLoading(true);
     let imageUrl = product?.image_url || '';
     if (imageFile) {
@@ -131,6 +147,7 @@ export default function ProductForm({ open, onClose, product, storeId, onSuccess
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -409,5 +426,31 @@ export default function ProductForm({ open, onClose, product, storeId, onSuccess
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* Duplicate Warning Dialog */}
+    <Dialog open={showDuplicateWarning} onOpenChange={setShowDuplicateWarning}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-amber-600 flex items-center gap-2">
+            <Info className="w-5 h-5" /> Peringatan
+          </DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-slate-600">
+          Nama produk <strong>{formData.name}</strong> sudah terdaftar di sistem. Apakah Anda yakin ingin melanjutkan dan membuat duplikat?
+        </p>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowDuplicateWarning(false)}>
+            No, Batal
+          </Button>
+          <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={() => {
+            setShowDuplicateWarning(false);
+            processSubmit();
+          }}>
+            Yes, Lanjutkan
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
