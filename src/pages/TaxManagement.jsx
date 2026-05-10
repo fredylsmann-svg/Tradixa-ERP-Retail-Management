@@ -30,10 +30,13 @@ import {
   Wallet, Settings, Search, Plus, MoreHorizontal, Percent, ArrowRightLeft, Info, Trash2, Edit, Loader2
 } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
+import { useGlobalDate } from '@/contexts/DateContext';
+import ExportToolbar from '@/components/layout/ExportToolbar';
 
 export default function TaxManagement({ store }) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const { toast } = useToast();
+  const { formattedDate } = useGlobalDate();
   const storeId = store?.id;
 
   const handleNotReady = (feature) => {
@@ -182,6 +185,16 @@ export default function TaxManagement({ store }) {
         title="Tax Management" 
         subtitle="Kelola tarif pajak terpusat dan pantau ringkasan pajak pertambahan nilai (PPN)."
         icon={FileSignature}
+        actions={
+          <ExportToolbar
+            title="Daftar Tarif Pajak (Tax Rates)"
+            date={formattedDate}
+            storeName={store?.store_name}
+            storeAddress={store?.address}
+            storeLogoUrl={store?.logo_url}
+            contentId="print-taxes-detailed"
+          />
+        }
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -549,6 +562,37 @@ export default function TaxManagement({ store }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Hidden table for export */}
+      <div id="print-taxes-detailed" className="hidden">
+        <div className="mb-4">
+          <p><strong>PPN Keluaran:</strong> {formatCurrency(taxMetrics.ppnKeluaran)}</p>
+          <p><strong>PPN Masukan:</strong> {formatCurrency(taxMetrics.ppnMasukan)}</p>
+          <p><strong>Kurang Bayar PPN:</strong> {formatCurrency(taxMetrics.kurangBayar)}</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nama Pajak</th>
+              <th>Tarif (%)</th>
+              <th>Tipe</th>
+              <th>Diterapkan Pada</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {taxRates.map((t) => (
+              <tr key={t.id}>
+                <td>{t.name}</td>
+                <td>{t.rate}%</td>
+                <td>{t.type}</td>
+                <td>{t.applied_to}</td>
+                <td>{t.status}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

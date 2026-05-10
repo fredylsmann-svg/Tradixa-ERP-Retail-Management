@@ -182,10 +182,20 @@ export default function Payments({ store }) {
         subtitle="Rekam dan kelola pelunasan Piutang (AR) & Utang (AP)"
         icon={HandCoins}
         actions={
-          <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 rounded-xl">
-            <Plus className="w-4 h-4 mr-2" />
-            Rekam Pelunasan Baru
-          </Button>
+          <div className="flex gap-2">
+            <ExportToolbar
+              title="Laporan Pembayaran & Pelunasan"
+              date={formattedDate}
+              storeName={store?.store_name}
+              storeAddress={store?.address}
+              storeLogoUrl={store?.logo_url}
+              contentId="print-payments-detailed"
+            />
+            <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 rounded-xl">
+              <Plus className="w-4 h-4 mr-2" />
+              Rekam Pelunasan Baru
+            </Button>
+          </div>
         }
       />
       <PageDatePicker />
@@ -470,6 +480,34 @@ export default function Payments({ store }) {
       {printingPayment && (
         <PrintPayment payment={printingPayment} store={store} onClose={() => setPrintingPayment(null)} />
       )}
+
+      {/* Hidden Table for Export */}
+      <div id="print-payments-detailed" className="hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Waktu</TableHead>
+              <TableHead>Ref / Deskripsi</TableHead>
+              <TableHead>Metode / Bank</TableHead>
+              <TableHead>Tipe</TableHead>
+              <TableHead>Jumlah (Rp)</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredPayments.map(p => (
+              <TableRow key={p.id}>
+                <TableCell>{p.timestamp_wib}</TableCell>
+                <TableCell>{p.description} (Ref: {p.reference || '-'})</TableCell>
+                <TableCell>{p.bank_name || '-'}</TableCell>
+                <TableCell>{p.transaction_type === 'Credit' ? 'In (AR)' : 'Out (AP)'}</TableCell>
+                <TableCell>{p.amount}</TableCell>
+                <TableCell>{p.status}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
