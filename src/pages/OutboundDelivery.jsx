@@ -100,18 +100,19 @@ export default function OutboundDelivery({ store }) {
   const calculateRoute = async (delivery) => {
     if (!isLoaded) return;
     
-    // Store origin coordinates (if available) or default
     const origin = store.latitude && store.longitude 
       ? { lat: Number(store.latitude), lng: Number(store.longitude) } 
-      : defaultCenter;
+      : (store.address || defaultCenter);
       
-    // Destination from delivery
-    if (!delivery.latitude || !delivery.longitude) {
-      toast.error('Pelanggan ini belum memiliki koordinat lokasi yang valid.');
+    const destinationLatLng = (delivery.latitude && delivery.longitude) 
+      ? { lat: Number(delivery.latitude), lng: Number(delivery.longitude) } : null;
+      
+    const destination = destinationLatLng || delivery.shipping_address || delivery.customers?.address;
+
+    if (!destination) {
+      toast.error('Pelanggan ini belum memiliki alamat atau koordinat lokasi yang valid.');
       return;
     }
-    
-    const destination = { lat: Number(delivery.latitude), lng: Number(delivery.longitude) };
 
     const directionsService = new window.google.maps.DirectionsService();
     try {
@@ -138,7 +139,13 @@ export default function OutboundDelivery({ store }) {
       setIsMapOpen(true);
     } catch (error) {
       console.error("Directions request failed", error);
-      toast.error('Gagal menghitung rute lokasi.');
+      if (error.code === 'ZERO_RESULTS' || error.message?.includes('ZERO_RESULTS')) {
+         toast.error('Tidak ada rute darat (driving) yang tersedia ke lokasi tersebut.');
+      } else if (error.code === 'NOT_FOUND') {
+         toast.error('Lokasi tujuan atau asal tidak dapat ditemukan di Google Maps.');
+      } else {
+         toast.error('Gagal menghitung rute: ' + (error.message || error.code || 'Pastikan alamat valid.'));
+      }
     }
   };
 
