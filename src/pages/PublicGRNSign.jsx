@@ -151,21 +151,9 @@ export default function PublicGRNSign() {
             const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
             const url = URL.createObjectURL(blob);
 
-            // Create a hidden iframe for non-blocking print
-            let iframe = document.getElementById('print-iframe');
-            if (!iframe) {
-              iframe = document.createElement('iframe');
-              iframe.id = 'print-iframe';
-              iframe.style.display = 'none';
-              document.body.appendChild(iframe);
-            }
-
-            iframe.src = url;
-            iframe.onload = () => {
-              setTimeout(() => {
-                URL.revokeObjectURL(url);
-              }, 1000);
-            };
+            const w = window.open(url, '_blank', 'noopener,noreferrer');
+            if (!w) { alert("Popup diblokir browser! Izinkan popup untuk mencetak."); return; }
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
           }}
           className="w-full bg-blue-700 hover:bg-blue-600 h-12 text-white font-bold"
         >
@@ -394,21 +382,9 @@ export default function PublicGRNSign() {
                 const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
 
-                // Create a hidden iframe for non-blocking print
-                let iframe = document.getElementById('print-iframe');
-                if (!iframe) {
-                  iframe = document.createElement('iframe');
-                  iframe.id = 'print-iframe';
-                  iframe.style.display = 'none';
-                  document.body.appendChild(iframe);
-                }
-
-                iframe.src = url;
-                iframe.onload = () => {
-                  setTimeout(() => {
-                    URL.revokeObjectURL(url);
-                  }, 1000);
-                };
+                const w = window.open(url, '_blank', 'noopener,noreferrer');
+                if (!w) { alert("Popup diblokir browser! Izinkan popup untuk mencetak."); return; }
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
               }}
               className="w-full bg-blue-700 hover:bg-blue-600 h-12 text-white font-bold"
             >

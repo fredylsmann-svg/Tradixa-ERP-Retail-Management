@@ -1275,7 +1275,7 @@ export default function GoodsReceipt({ store }) {
                   Posting ke Ledger (IGRN)
                 </Button>
               ) : viewingReceipt?.status === 'Draft' ? (
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 justify-end w-full">
                   {/* Driver actions */}
                   {/* Driver actions - Only show if Admin has signed but Driver hasn't */}
                   {!viewingReceipt?.driver_signature && viewingReceipt?.admin_signature && (
