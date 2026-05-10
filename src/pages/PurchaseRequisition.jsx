@@ -801,9 +801,9 @@ export default function PurchaseRequisition({ store }) {
 
       {/* Detail Dialog */}
       <Dialog open={!!viewingPr} onOpenChange={() => setViewingPr(null)}>
-        <DialogContent hideFullscreen={true} className="max-w-7xl h-[90vh] p-0 overflow-hidden flex flex-col">
+        <DialogContent hideFullscreen={true} className="max-w-7xl md:h-[90vh] h-[95vh] p-0 md:overflow-hidden flex flex-col overflow-y-auto">
           {viewingPr && (
-            <div className="flex flex-col h-full overflow-hidden">
+            <div className="flex flex-col h-full md:overflow-hidden">
               {/* Header */}
               <div className="p-6 pr-14 border-b bg-white flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4">

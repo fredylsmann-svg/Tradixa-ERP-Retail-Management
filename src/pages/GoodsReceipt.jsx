@@ -679,7 +679,7 @@ export default function GoodsReceipt({ store }) {
               </DialogFooter>
             </div>
           ) : (
-            <div className="flex flex-col h-[90vh] min-w-0 w-full overflow-hidden">
+            <div className="flex flex-col md:h-[90vh] min-w-0 w-full overflow-hidden">
               {/* Form Header */}
               <div className="p-6 pr-14 border-b bg-white flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4">
@@ -990,7 +990,7 @@ export default function GoodsReceipt({ store }) {
 
       {/* Redesigned View Dialog */}
       <Dialog open={!!viewingReceipt} onOpenChange={() => setViewingReceipt(null)}>
-        <DialogContent hideFullscreen={true} className="max-w-[95vw] xl:max-w-[1400px] h-[90vh] flex flex-col p-0 overflow-hidden rounded-3xl bg-white shadow-2xl border-none">
+        <DialogContent hideFullscreen={true} className="max-w-[95vw] xl:max-w-[1400px] md:h-[90vh] h-[95vh] flex flex-col p-0 md:overflow-hidden overflow-y-auto rounded-3xl bg-white shadow-2xl border-none">
           <div className="p-6 border-b flex items-center justify-between bg-white relative pr-14 flex-shrink-0">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center">
