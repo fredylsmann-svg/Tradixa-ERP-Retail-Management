@@ -102,7 +102,12 @@ export default function OutboundDelivery({ store }) {
     
     const origin = store.latitude && store.longitude 
       ? { lat: Number(store.latitude), lng: Number(store.longitude) } 
-      : (store.address || defaultCenter);
+      : store.address;
+
+    if (!origin) {
+      toast.error('Gagal: Anda harus mengisi alamat yang benar di Company Settings untuk Toko Anda.');
+      return;
+    }
       
     const destinationLatLng = (delivery.latitude && delivery.longitude) 
       ? { lat: Number(delivery.latitude), lng: Number(delivery.longitude) } : null;
@@ -110,7 +115,7 @@ export default function OutboundDelivery({ store }) {
     const destination = destinationLatLng || delivery.shipping_address || delivery.customers?.address;
 
     if (!destination) {
-      toast.error('Pelanggan ini belum memiliki alamat atau koordinat lokasi yang valid.');
+      toast.error('Gagal: Anda harus mengisi alamat yang benar di Customer Master atau secara manual.');
       return;
     }
 
