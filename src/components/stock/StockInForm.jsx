@@ -198,7 +198,7 @@ export default function StockInForm({ open, onClose, storeId, onSuccess }) {
 
           {selectedProduct && (
             <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Jumlah Dibeli</Label>
                   <div className="flex items-center gap-2 mt-1.5">

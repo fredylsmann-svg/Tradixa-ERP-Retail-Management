@@ -388,7 +388,7 @@ export default function StockOpname({ store }) {
   return (
     <div className="space-y-6">
       {/* HERO HEADER */}
-      <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm px-6 py-4">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm px-6 py-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
             <ClipboardCheck className="w-6 h-6 text-white" />
@@ -398,7 +398,7 @@ export default function StockOpname({ store }) {
             <p className="text-sm text-slate-500 dark:text-slate-400">Verifikasi stok fisik vs stok sistem</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <Button variant="outline" size="sm" onClick={() => exportOpnameCSV(opnames)} className="h-9 px-3 text-xs font-semibold">
             <Download className="w-3.5 h-3.5 mr-1.5" />Excel
           </Button>

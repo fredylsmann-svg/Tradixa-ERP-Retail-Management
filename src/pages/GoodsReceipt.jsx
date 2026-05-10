@@ -697,7 +697,7 @@ export default function GoodsReceipt({ store }) {
 
               <div className="flex-1 overflow-y-auto md:overflow-hidden flex flex-col md:flex-row">
                 {/* Left Side: Items & Details */}
-                <div className="flex-1 min-w-0 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
+                <div className="flex-none md:flex-1 min-w-0 md:overflow-y-auto overflow-visible p-6 space-y-6 bg-slate-50/30">
                   {/* Receiving Items Table */}
                   <Card className="border-none shadow-sm overflow-hidden">
                     <CardHeader className="bg-white border-b py-4 px-6 flex flex-row items-center justify-between">
@@ -917,7 +917,7 @@ export default function GoodsReceipt({ store }) {
 
                 {/* Right Side: Summary Sidebar */}
                 <div className="w-full md:w-80 bg-white border-t md:border-t-0 md:border-l p-6 space-y-6 shrink-0 flex flex-col md:overflow-y-auto">
-                  <div className="flex-1 space-y-6 overflow-y-auto">
+                  <div className="flex-none md:flex-1 space-y-6 overflow-visible md:overflow-y-auto">
                     <div>
                       <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Logistics & SLA</h3>
                       <div className="space-y-4">

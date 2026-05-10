@@ -139,7 +139,7 @@ export default function ProductLocations({ store }) {
         subtitle="Kelola titik lokasi gudang/toko dan rak penyimpanan internal"
         icon={MapPin}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button onClick={() => { setEditingLocation(null); setFormData({ name: '', description: '', type: 'store', address: '', postal_code: '', coordinates: '', reference: '' }); setShowForm(true); }} className="bg-emerald-600 hover:bg-emerald-700 h-11 px-6 font-semibold rounded-xl text-white">
               <Plus className="w-4 h-4 mr-2" />
               Tambah Gudang/Toko
