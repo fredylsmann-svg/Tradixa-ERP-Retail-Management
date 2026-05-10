@@ -22,10 +22,12 @@ import { cn } from '@/lib/utils';
 import PrintInvoice from '../invoice/PrintInvoice';
 import { allocateBatches, deductBatches } from '@/utils/fefoEngine';
 import { supabase } from '@/lib/supabase';
+import { useTaxRate } from '@/hooks/useTaxRate';
 
 export default function SalesTransactionForm({ open, onClose, store, onSuccess }) {
   const { toast } = useToast();
   const storeId = store?.id;
+  const { ppnRate, ppnLabel, ppnDecimal } = useTaxRate(storeId);
   const [completedTransaction, setCompletedTransaction] = useState(null);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [products, setProducts] = useState([]);
@@ -323,7 +325,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
     }
   }, [subtotal, cart, selectedDiscount]);
 
-  const taxAmount = includeTax ? Math.round(subtotal * 0.11) : 0;
+  const taxAmount = includeTax ? Math.round(subtotal * ppnDecimal) : 0;
   const numManualDiscount = Number(manualDiscount) || 0;
   let total = subtotal + taxAmount - discount - numManualDiscount;
   if (total < 0) total = 0;
@@ -499,7 +501,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
       })),
       subtotal,
       discount: discount + numManualDiscount,
-      tax_percentage: includeTax ? 11 : 0,
+      tax_percentage: includeTax ? ppnRate : 0,
       tax_amount: taxAmount,
       total,
       profit,
@@ -1142,6 +1144,19 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
 
                   {/* Payment & Totals */}
                   <div className="bg-white p-6 rounded-3xl border shadow-xl space-y-4">
+                    {/* PPN Toggle */}
+                    <div className="flex items-center gap-3 p-3 bg-blue-50/50 rounded-2xl border border-blue-100">
+                      <Checkbox
+                        id="include-tax-pos"
+                        checked={includeTax}
+                        onCheckedChange={setIncludeTax}
+                        className="w-5 h-5 rounded-lg border-blue-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      />
+                      <Label htmlFor="include-tax-pos" className="text-sm font-bold text-blue-900 cursor-pointer">
+                        Kenakan {ppnLabel}
+                      </Label>
+                    </div>
+
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-slate-500 font-medium">Subtotal</span>
@@ -1149,7 +1164,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                       </div>
                       {includeTax && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-slate-500 font-medium">PPN (11%)</span>
+                          <span className="text-slate-500 font-medium">{ppnLabel}</span>
                           <span className="font-bold text-slate-800">Rp {formatCurrency(taxAmount)}</span>
                         </div>
                       )}

@@ -20,11 +20,13 @@ import moment from 'moment';
 import 'moment/locale/id';
 import { useToast } from '@/components/ui/use-toast';
 import PageHeader from '@/components/layout/PageHeader';
+import { useTaxRate } from '@/hooks/useTaxRate';
 
 const COMMON_UNITS = ['pcs', 'box', 'kg', 'gram', 'meter', 'liter', 'roll', 'paket', 'sak', 'bal', 'lusin'];
 
 export default function PurchaseRequisition({ store }) {
   const { toast } = useToast();
+  const { ppnRate, ppnLabel, ppnDecimal } = useTaxRate(store?.id);
   const [prs, setPrs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -125,7 +127,7 @@ export default function PurchaseRequisition({ store }) {
   };
 
   const subtotal = calculateSubtotal();
-  const tax = formData.include_tax ? subtotal * 0.11 : 0; // 11% PPN (Optional)
+  const tax = formData.include_tax ? subtotal * ppnDecimal : 0;
   const grandTotal = subtotal + tax;
 
   const handleAddItem = () => {
@@ -219,7 +221,7 @@ export default function PurchaseRequisition({ store }) {
       }));
 
       const subtotal = items.reduce((sum, i) => sum + (i.qty * i.price), 0);
-      const tax_amount = itemIncludeTax ? subtotal * 0.11 : 0;
+      const tax_amount = itemIncludeTax ? subtotal * ppnDecimal : 0;
 
       await api.entities.PurchaseRequisition.create({
         store_id: store.id,
@@ -635,7 +637,7 @@ export default function PurchaseRequisition({ store }) {
                     onCheckedChange={(checked) => setFormData({ ...formData, include_tax: checked })}
                   />
                   <Label htmlFor="include_tax" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
-                    Kenakan PPN 11%
+                    Kenakan {ppnLabel}
                   </Label>
                 </div>
 
@@ -645,7 +647,7 @@ export default function PurchaseRequisition({ store }) {
                 </div>
                 {formData.include_tax && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">+ PPN 11%</span>
+                    <span className="text-slate-500">+ {ppnLabel}</span>
                     <span className="font-medium text-slate-800">Rp {formatCurrency(tax)}</span>
                   </div>
                 )}
@@ -1089,7 +1091,7 @@ export default function PurchaseRequisition({ store }) {
                       onCheckedChange={(checked) => setItemIncludeTax(checked)}
                     />
                     <Label htmlFor="item_include_tax" className="text-xs font-bold text-slate-600 cursor-pointer">
-                      Kenakan PPN 11%
+                      Kenakan {ppnLabel}
                     </Label>
                   </div>
 
@@ -1097,9 +1099,9 @@ export default function PurchaseRequisition({ store }) {
                     <span className="text-lg font-bold text-slate-800 uppercase tracking-tighter">Total Estimasi:</span>
                     <div className="text-right">
                       <span className="text-xl font-black text-slate-900 font-mono">
-                        Rp {formatCurrency(selectedItems.reduce((acc, item) => acc + (parseFloat(itemDetails[item.id]?.qty || 0) * parseFloat(itemDetails[item.id]?.price || 0)), 0) * (itemIncludeTax ? 1.11 : 1))}
+                        Rp {formatCurrency(selectedItems.reduce((acc, item) => acc + (parseFloat(itemDetails[item.id]?.qty || 0) * parseFloat(itemDetails[item.id]?.price || 0)), 0) * (itemIncludeTax ? (1 + ppnDecimal) : 1))}
                       </span>
-                      {itemIncludeTax && <p className="text-[10px] text-slate-400 font-bold">Terhitung PPN 11%</p>}
+                      {itemIncludeTax && <p className="text-[10px] text-slate-400 font-bold">Terhitung {ppnLabel}</p>}
                     </div>
                   </div>
 

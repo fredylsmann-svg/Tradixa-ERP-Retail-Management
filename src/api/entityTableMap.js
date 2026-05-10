@@ -53,6 +53,7 @@ export const ENTITY_TABLE_MAP = {
   InvoicePayment:    'invoice_payments',
   BankStatementHistory: 'bank_statement_history',
   OutboundDelivery:  'outbound_deliveries',
+  TaxRate:           'tax_rates',
 
   // === AGENT ===
   Agent:             'agents',

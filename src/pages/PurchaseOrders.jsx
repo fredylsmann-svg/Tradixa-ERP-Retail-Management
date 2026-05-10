@@ -24,9 +24,11 @@ import ExportToolbar, { exportToPDF } from '@/components/layout/ExportToolbar';
 import moment from 'moment';
 import 'moment/locale/id';
 import PageHeader from '@/components/layout/PageHeader';
+import { useTaxRate } from '@/hooks/useTaxRate';
 
 export default function PurchaseOrders({ store }) {
   const { toast } = useToast();
+  const { ppnRate, ppnLabel, ppnDecimal } = useTaxRate(store?.id);
   const [orders, setOrders] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [products, setProducts] = useState([]);
@@ -211,7 +213,7 @@ export default function PurchaseOrders({ store }) {
 
     const supplier = suppliers.find(v => v.id === formData.supplier_id);
     const subtotal = formData.items.reduce((sum, item) => sum + item.subtotal, 0);
-    const tax = formData.use_tax ? subtotal * 0.11 : 0;
+    const tax = formData.use_tax ? subtotal * ppnDecimal : 0;
     const total = subtotal + tax;
     const poNumber = `PO-${moment().format('YYYYMMDD')}-${Math.random().toString(36).substring(7).toUpperCase()}`;
 
@@ -270,7 +272,7 @@ export default function PurchaseOrders({ store }) {
 
     const supplier = suppliers.find(v => v.id === poFromPrData.supplier_id);
     const subtotal = selectedPr.subtotal || 0;
-    const tax = poFromPrData.use_tax ? subtotal * 0.11 : 0;
+    const tax = poFromPrData.use_tax ? subtotal * ppnDecimal : 0;
     const total = subtotal + tax;
     const poNumber = `PO-${moment().format('YYYYMMDD')}-${Math.random().toString(36).substring(7).toUpperCase()}`;
 
@@ -493,7 +495,7 @@ export default function PurchaseOrders({ store }) {
     setIsSaving(true);
 
     const newSubtotal = negotiationItems.reduce((acc, curr) => acc + (curr.quantity * curr.unit_price), 0);
-    const newTax = viewingOrder.tax_amount > 0 ? newSubtotal * 0.11 : 0;
+    const newTax = viewingOrder.tax_amount > 0 ? newSubtotal * ppnDecimal : 0;
     const newTotal = newSubtotal + newTax;
 
     const historyEntry = {
@@ -793,7 +795,7 @@ export default function PurchaseOrders({ store }) {
                                 const newItems = [...selectedPr.items];
                                 newItems[i].price = e.target.value;
                                 const newSubtotal = newItems.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
-                                setSelectedPr({ ...selectedPr, items: newItems, subtotal: newSubtotal, total_amount: newSubtotal * 1.11 });
+                                setSelectedPr({ ...selectedPr, items: newItems, subtotal: newSubtotal, total_amount: newSubtotal * (1 + ppnDecimal) });
                               }}
                               className="w-32 text-right h-8 inline-block bg-amber-50 focus:bg-white ml-auto"
                             />
@@ -833,7 +835,7 @@ export default function PurchaseOrders({ store }) {
 
                 <div className="p-4 bg-slate-50 rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-slate-700">Kenakan PPN (11%)?</span>
+                    <span className="text-sm font-medium text-slate-700">Kenakan {ppnLabel}?</span>
                     <div className="flex items-center gap-2">
                       <span className={!poFromPrData.use_tax ? "text-xs font-bold text-blue-600" : "text-xs text-slate-400"}>Tidak</span>
                       <Switch checked={poFromPrData.use_tax} onCheckedChange={v => setPoFromPrData({ ...poFromPrData, use_tax: v })} />
@@ -847,13 +849,13 @@ export default function PurchaseOrders({ store }) {
                   </div>
                   {poFromPrData.use_tax && (
                     <div className="flex justify-between text-sm text-slate-500">
-                      <span>PPN (11%):</span>
-                      <span>Rp {formatCurrency(selectedPr.subtotal * 0.11)}</span>
+                      <span>{ppnLabel}:</span>
+                      <span>Rp {formatCurrency(selectedPr.subtotal * ppnDecimal)}</span>
                     </div>
                   )}
                   <div className="flex justify-between items-center pt-1">
                     <span className="text-base font-bold text-slate-800">Total PO:</span>
-                    <span className="text-xl font-black text-blue-600">Rp {formatCurrency(selectedPr.subtotal * (poFromPrData.use_tax ? 1.11 : 1))}</span>
+                    <span className="text-xl font-black text-blue-600">Rp {formatCurrency(selectedPr.subtotal * (poFromPrData.use_tax ? (1 + ppnDecimal) : 1))}</span>
                   </div>
                 </div>
               </>
@@ -1133,7 +1135,7 @@ export default function PurchaseOrders({ store }) {
                           const draftSubtotal = (Number(newItem.quantity) || 0) * (Number(newItem.unit_price) || 0);
                           const subtotal = subtotalItems + draftSubtotal;
 
-                          const tax = formData.use_tax ? subtotal * 0.11 : 0;
+                          const tax = formData.use_tax ? subtotal * ppnDecimal : 0;
                           const total = subtotal + tax;
 
                           return (
@@ -1146,14 +1148,14 @@ export default function PurchaseOrders({ store }) {
                               <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
                                 <div className="flex flex-col">
                                   <span className="text-xs font-bold text-slate-700">Kenakan PPN?</span>
-                                  <span className="text-[10px] text-slate-400 font-medium italic">Tarif Pajak: 11%</span>
+                                  <span className="text-[10px] text-slate-400 font-medium italic">Tarif Pajak: {ppnRate}%</span>
                                 </div>
                                 <Switch checked={formData.use_tax} onCheckedChange={v => setFormData({ ...formData, use_tax: v })} />
                               </div>
 
                               {formData.use_tax && (
                                 <div className="flex items-center justify-between text-sm">
-                                  <span className="font-medium text-slate-500">PPN (11%)</span>
+                                  <span className="font-medium text-slate-500">{ppnLabel}</span>
                                   <span className="font-bold text-slate-800">Rp {formatCurrency(tax)}</span>
                                 </div>
                               )}
@@ -1373,7 +1375,7 @@ export default function PurchaseOrders({ store }) {
                         {(() => {
                           const origItems = viewingOrder?.original_items || viewingOrder?.items || [];
                           const origSubtotal = origItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0);
-                          const origTax = viewingOrder?.tax_amount > 0 ? origSubtotal * 0.11 : 0;
+                          const origTax = viewingOrder?.tax_amount > 0 ? origSubtotal * ppnDecimal : 0;
                           const origTotal = origSubtotal + origTax;
                           return (
                             <div className="flex flex-col items-end gap-2">
@@ -1383,7 +1385,7 @@ export default function PurchaseOrders({ store }) {
                               </div>
                               {viewingOrder?.tax_amount > 0 && (
                                 <div className="flex gap-12 text-sm text-slate-500">
-                                  <span>PPN (11%)</span>
+                                  <span>{ppnLabel}</span>
                                   <span className="font-semibold text-slate-800 w-32 text-right">Rp {formatCurrency(origTax)}</span>
                                 </div>
                               )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/use-toast';
+import { api } from '@/api/client';
 import {
   Dialog,
   DialogContent,
@@ -26,13 +27,14 @@ import {
 } from '@/components/ui/table';
 import { 
   FileSignature, ArrowUpRight, ArrowDownRight, 
-  Wallet, Settings, Search, Plus, MoreHorizontal, Percent, ArrowRightLeft, Info, Trash2, Edit
+  Wallet, Settings, Search, Plus, MoreHorizontal, Percent, ArrowRightLeft, Info, Trash2, Edit, Loader2
 } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 
-export default function TaxManagement() {
+export default function TaxManagement({ store }) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const { toast } = useToast();
+  const storeId = store?.id;
 
   const handleNotReady = (feature) => {
     toast({
@@ -43,7 +45,7 @@ export default function TaxManagement() {
 
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
 
-  // Mock Data
+  // Mock Data for dashboard metrics (will be real later)
   const taxMetrics = {
     ppnKeluaran: 45500000,
     ppnMasukan: 12400000,
@@ -51,55 +53,127 @@ export default function TaxManagement() {
     trend: '+12.5%'
   };
 
-  const [taxRates, setTaxRates] = useState([
-    { id: 1, name: 'PPN 11%', type: 'Value Added Tax', rate: 11, status: 'active', appliedTo: 'Sales, Purchase' },
-    { id: 2, name: 'PPh 21', type: 'Income Tax', rate: 5, status: 'active', appliedTo: 'Payroll, Services' },
-    { id: 3, name: 'PPh 23', type: 'Income Tax', rate: 2, status: 'active', appliedTo: 'Services, Rent' },
-    { id: 4, name: 'PB1 (Pajak Restoran)', type: 'Local Tax', rate: 10, status: 'inactive', appliedTo: 'Sales' },
-  ]);
+  // Database-backed tax rates
+  const [taxRates, setTaxRates] = useState([]);
+  const [isLoadingRates, setIsLoadingRates] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newTax, setNewTax] = useState({ name: '', rate: '', type: 'Value Added Tax', appliedTo: 'Sales' });
+  const [newTax, setNewTax] = useState({ name: '', rate: '', type: 'Value Added Tax', applied_to: 'Sales' });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingTax, setEditingTax] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleAddTax = () => {
+  // Load tax rates from database
+  const loadTaxRates = async () => {
+    if (!storeId) return;
+    setIsLoadingRates(true);
+    try {
+      const data = await api.entities.TaxRate.filter({ store_id: storeId }, '-created_at');
+      setTaxRates(data || []);
+    } catch (err) {
+      console.error('[TaxManagement] Failed to load tax rates:', err);
+    } finally {
+      setIsLoadingRates(false);
+    }
+  };
+
+  useEffect(() => {
+    if (storeId) loadTaxRates();
+  }, [storeId]);
+
+  // Seed default tax rates if none exist
+  useEffect(() => {
+    if (!isLoadingRates && taxRates.length === 0 && storeId) {
+      const seedDefaults = async () => {
+        const defaults = [
+          { name: 'PPN 11%', type: 'Value Added Tax', rate: 11, status: 'active', applied_to: 'Sales, Purchase', store_id: storeId },
+          { name: 'PPh 21', type: 'Income Tax', rate: 5, status: 'active', applied_to: 'Payroll, Services', store_id: storeId },
+          { name: 'PPh 23', type: 'Income Tax', rate: 2, status: 'active', applied_to: 'Services, Rent', store_id: storeId },
+          { name: 'PB1 (Pajak Restoran)', type: 'Local Tax', rate: 10, status: 'inactive', applied_to: 'Sales', store_id: storeId },
+        ];
+        for (const d of defaults) {
+          try { await api.entities.TaxRate.create(d); } catch(e) { console.error(e); }
+        }
+        await loadTaxRates();
+      };
+      seedDefaults();
+    }
+  }, [isLoadingRates, taxRates.length, storeId]);
+
+  const handleAddTax = async () => {
     if(!newTax.name || !newTax.rate) {
        toast({ title: "Error", description: "Nama dan tarif pajak harus diisi.", variant: "destructive" });
        return;
     }
-    setTaxRates([{ ...newTax, id: Date.now(), status: 'active' }, ...taxRates]);
-    setIsAddModalOpen(false);
-    setNewTax({ name: '', rate: '', type: 'Value Added Tax', appliedTo: 'Sales' });
-    toast({ title: "Berhasil", description: "Tax Rate baru telah ditambahkan." });
+    setIsSaving(true);
+    try {
+      await api.entities.TaxRate.create({
+        ...newTax,
+        rate: Number(newTax.rate),
+        status: 'active',
+        store_id: storeId,
+      });
+      await loadTaxRates();
+      setIsAddModalOpen(false);
+      setNewTax({ name: '', rate: '', type: 'Value Added Tax', applied_to: 'Sales' });
+      toast({ title: "Berhasil", description: "Tax Rate baru telah ditambahkan." });
+    } catch (err) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleEditClick = (tax) => {
-    setEditingTax(tax);
+    setEditingTax({ ...tax });
     setIsEditModalOpen(true);
   };
 
-  const handleUpdateTax = () => {
+  const handleUpdateTax = async () => {
     if(!editingTax.name || !editingTax.rate) {
        toast({ title: "Error", description: "Nama dan tarif pajak harus diisi.", variant: "destructive" });
        return;
     }
-    setTaxRates(taxRates.map(t => t.id === editingTax.id ? editingTax : t));
-    setIsEditModalOpen(false);
-    setEditingTax(null);
-    toast({ title: "Berhasil", description: "Tax Rate telah diperbarui." });
+    setIsSaving(true);
+    try {
+      await api.entities.TaxRate.update(editingTax.id, {
+        name: editingTax.name,
+        rate: Number(editingTax.rate),
+        type: editingTax.type,
+        applied_to: editingTax.applied_to,
+      });
+      await loadTaxRates();
+      setIsEditModalOpen(false);
+      setEditingTax(null);
+      toast({ title: "Berhasil", description: "Tax Rate telah diperbarui." });
+    } catch (err) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDeleteTax = (id) => {
-    setTaxRates(taxRates.filter(t => t.id !== id));
-    toast({ title: "Dihapus", description: "Tax Rate telah dihapus." });
+  const handleDeleteTax = async (id) => {
+    try {
+      await api.entities.TaxRate.delete(id);
+      await loadTaxRates();
+      toast({ title: "Dihapus", description: "Tax Rate telah dihapus." });
+    } catch (err) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
-  const handleToggleStatus = (id) => {
-    setTaxRates(taxRates.map(t => {
-      if(t.id === id) return { ...t, status: t.status === 'active' ? 'inactive' : 'active' };
-      return t;
-    }));
-    toast({ title: "Diperbarui", description: "Status Tax Rate telah diubah." });
+  const handleToggleStatus = async (id) => {
+    const tax = taxRates.find(t => t.id === id);
+    if (!tax) return;
+    try {
+      await api.entities.TaxRate.update(id, {
+        status: tax.status === 'active' ? 'inactive' : 'active'
+      });
+      await loadTaxRates();
+      toast({ title: "Diperbarui", description: "Status Tax Rate telah diubah." });
+    } catch (err) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
   return (
@@ -312,7 +386,7 @@ export default function TaxManagement() {
                           <span className="font-bold text-slate-800 dark:text-slate-200 text-lg">{tax.rate}%</span>
                         </TableCell>
                         <TableCell className="text-slate-500">{tax.type}</TableCell>
-                        <TableCell className="text-slate-500">{tax.appliedTo}</TableCell>
+                        <TableCell className="text-slate-500">{tax.applied_to}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={`capitalize rounded-full ${
                             tax.status === 'active' 
@@ -395,8 +469,8 @@ export default function TaxManagement() {
               <label className="text-sm font-medium">Applied To (Modul Terintegrasi)</label>
               <select 
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={newTax.appliedTo}
-                onChange={(e) => setNewTax({...newTax, appliedTo: e.target.value})}
+                value={newTax.applied_to}
+                onChange={(e) => setNewTax({...newTax, applied_to: e.target.value})}
               >
                 <option value="Sales">Modul Penjualan (Sales/AR)</option>
                 <option value="Purchase">Modul Pembelian (Purchase/AP)</option>
@@ -457,8 +531,8 @@ export default function TaxManagement() {
                 <label className="text-sm font-medium">Applied To (Modul Terintegrasi)</label>
                 <select 
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={editingTax.appliedTo}
-                  onChange={(e) => setEditingTax({...editingTax, appliedTo: e.target.value})}
+                  value={editingTax.applied_to}
+                  onChange={(e) => setEditingTax({...editingTax, applied_to: e.target.value})}
                 >
                   <option value="Sales">Modul Penjualan (Sales/AR)</option>
                   <option value="Purchase">Modul Pembelian (Purchase/AP)</option>
