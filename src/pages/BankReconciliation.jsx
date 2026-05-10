@@ -136,14 +136,20 @@ export default function BankReconciliation({ store }) {
             const isDebit = ['DB', 'DR', 'D'].includes(rawType);
             const isCredit = ['CR', 'K'].includes(rawType);
             const clean = (s) => {
-              const hasComma = s.includes(',');
-              const hasDot = s.includes('.');
-              if (hasComma && hasDot) {
-                 if (s.lastIndexOf('.') > s.lastIndexOf(',')) return s.replace(/,/g, '');
-                 return s.replace(/\./g, '').replace(/,/g, '.');
+              if(!s) return '0';
+              let cleaned = s.replace(/[^\d\.,+-]/g, '');
+              if (/,(\d{3})$/.test(cleaned) && !cleaned.includes('.')) {
+                cleaned = cleaned.replace(/,/g, '');
               }
-              if (hasComma) return s.replace(/,/g, '.');
-              return s;
+              const hasComma = cleaned.includes(',');
+              const hasDot = cleaned.includes('.');
+              if (hasComma && hasDot) {
+                 if (cleaned.lastIndexOf('.') > cleaned.lastIndexOf(',')) return cleaned.replace(/,/g, '');
+                 return cleaned.replace(/\./g, '').replace(/,/g, '.');
+              }
+              if (hasComma) return cleaned.replace(/,/g, '.');
+              if (hasDot) return cleaned.replace(/\./g, '');
+              return cleaned;
             };
             const amount = parseFloat(clean(amountStr));
             const afterMatch = content.substring(m.index + m[0].length).match(/([\d\.,]+)/);
@@ -179,17 +185,18 @@ export default function BankReconciliation({ store }) {
           const clean = (s) => {
              if(!s) return '0';
              let cleaned = s.replace(/[^\d\.,+-]/g, '');
+             if (/,(\d{3})$/.test(cleaned) && !cleaned.includes('.')) {
+                cleaned = cleaned.replace(/,/g, '');
+             }
              const hasComma = cleaned.includes(',');
              const hasDot = cleaned.includes('.');
              
              if (hasComma && hasDot) {
-                 // Dot is thousand separator, comma is decimal
+                 if (cleaned.lastIndexOf('.') > cleaned.lastIndexOf(',')) return cleaned.replace(/,/g, '');
                  return cleaned.replace(/\./g, '').replace(/,/g, '.');
              } else if (hasComma) {
-                 // Comma is decimal
                  return cleaned.replace(/,/g, '.');
              } else if (hasDot) {
-                 // ONLY Dot exists! In IDR, this is a thousand separator (e.g. 78.000 -> 78000)
                  return cleaned.replace(/\./g, '');
              }
              return cleaned;
