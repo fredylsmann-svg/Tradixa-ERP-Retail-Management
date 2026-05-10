@@ -628,7 +628,7 @@ export default function GoodsReceipt({ store }) {
 
       {/* Redesigned Form Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => !open && resetForm()}>
-        <DialogContent hideFullscreen={true} className={selectedPO ? "max-w-[95vw] xl:max-w-[1400px] p-0 overflow-hidden bg-white" : "max-w-2xl"}>
+        <DialogContent hideFullscreen={true} className={selectedPO ? "max-w-[95vw] xl:max-w-[1400px] p-0 md:overflow-hidden overflow-y-auto bg-white h-[95vh] md:h-auto flex flex-col" : "max-w-2xl"}>
           {!selectedPO ? (
             <div className="p-6 space-y-6">
               <DialogHeader>

@@ -718,7 +718,7 @@ export default function PurchaseOrders({ store }) {
       </Card>
 
       <Dialog open={showPrDialog} onOpenChange={setShowPrDialog}>
-        <DialogContent className="max-w-5xl p-0 overflow-hidden flex flex-col max-h-[90vh]">
+        <DialogContent className="max-w-5xl p-0 md:overflow-hidden overflow-y-auto flex flex-col max-h-[90vh]">
           <DialogHeader className="p-6 border-b bg-slate-50 shrink-0">
             <DialogTitle>Buat PO dari PR yang Disetujui</DialogTitle>
           </DialogHeader>
@@ -878,8 +878,8 @@ export default function PurchaseOrders({ store }) {
 
       {/* Redesigned Manual PO Creation Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent hideFullscreen={true} className="max-w-6xl p-0 overflow-hidden bg-white shadow-2xl border-none">
-          <div className="flex flex-col h-[90vh]">
+        <DialogContent hideFullscreen={true} className="max-w-6xl p-0 md:overflow-hidden overflow-y-auto bg-white shadow-2xl border-none">
+          <div className="flex flex-col md:h-[90vh]">
             {/* Header */}
             <div className="bg-blue-600 px-8 py-6 pr-14 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-4">
