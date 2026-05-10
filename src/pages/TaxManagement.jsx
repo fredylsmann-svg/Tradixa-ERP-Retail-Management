@@ -59,6 +59,8 @@ export default function TaxManagement() {
   ]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newTax, setNewTax] = useState({ name: '', rate: '', type: 'Value Added Tax', appliedTo: 'Sales' });
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTax, setEditingTax] = useState(null);
 
   const handleAddTax = () => {
     if(!newTax.name || !newTax.rate) {
@@ -69,6 +71,27 @@ export default function TaxManagement() {
     setIsAddModalOpen(false);
     setNewTax({ name: '', rate: '', type: 'Value Added Tax', appliedTo: 'Sales' });
     toast({ title: "Berhasil", description: "Tax Rate baru telah ditambahkan." });
+  };
+
+  const handleEditClick = (tax) => {
+    setEditingTax(tax);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateTax = () => {
+    if(!editingTax.name || !editingTax.rate) {
+       toast({ title: "Error", description: "Nama dan tarif pajak harus diisi.", variant: "destructive" });
+       return;
+    }
+    setTaxRates(taxRates.map(t => t.id === editingTax.id ? editingTax : t));
+    setIsEditModalOpen(false);
+    setEditingTax(null);
+    toast({ title: "Berhasil", description: "Tax Rate telah diperbarui." });
+  };
+
+  const handleDeleteTax = (id) => {
+    setTaxRates(taxRates.filter(t => t.id !== id));
+    toast({ title: "Dihapus", description: "Tax Rate telah dihapus." });
   };
 
   const handleToggleStatus = (id) => {
@@ -310,7 +333,7 @@ export default function TaxManagement() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleNotReady('Edit Tax Rate')}>
+                              <DropdownMenuItem onClick={() => handleEditClick(tax)}>
                                 <Edit className="w-4 h-4 mr-2" /> Edit
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
@@ -386,6 +409,69 @@ export default function TaxManagement() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
             <Button onClick={handleAddTax} className="bg-blue-600 hover:bg-blue-700 text-white">Save Tax Rate</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* EDIT TAX MODAL */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Tax Rate</DialogTitle>
+            <DialogDescription>
+              Ubah konfigurasi tarif pajak yang telah ada.
+            </DialogDescription>
+          </DialogHeader>
+          {editingTax && (
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Tax Name</label>
+                <Input 
+                  placeholder="e.g. PPN 12%" 
+                  value={editingTax.name}
+                  onChange={(e) => setEditingTax({...editingTax, name: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Rate (%)</label>
+                <Input 
+                  type="number"
+                  placeholder="e.g. 12" 
+                  value={editingTax.rate}
+                  onChange={(e) => setEditingTax({...editingTax, rate: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Tax Type</label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={editingTax.type}
+                  onChange={(e) => setEditingTax({...editingTax, type: e.target.value})}
+                >
+                  <option value="Value Added Tax">Value Added Tax</option>
+                  <option value="Income Tax">Income Tax</option>
+                  <option value="Local Tax">Local Tax</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Applied To (Modul Terintegrasi)</label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={editingTax.appliedTo}
+                  onChange={(e) => setEditingTax({...editingTax, appliedTo: e.target.value})}
+                >
+                  <option value="Sales">Modul Penjualan (Sales/AR)</option>
+                  <option value="Purchase">Modul Pembelian (Purchase/AP)</option>
+                  <option value="Payroll">Modul Payroll (HRIS)</option>
+                  <option value="Sales, Purchase">Semua Transaksi Barang (Sales & Purchase)</option>
+                  <option value="All Modules">Semua Modul</option>
+                </select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdateTax} className="bg-blue-600 hover:bg-blue-700 text-white">Update Tax Rate</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
