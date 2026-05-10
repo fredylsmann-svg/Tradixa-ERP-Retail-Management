@@ -710,7 +710,7 @@ export default function SupplierReturn({ store }) {
                 )}
                 {viewingReturn.status === 'Approved' && (
                   <div className="col-span-1 md:col-span-2 space-y-4">
-                    <div className="p-5 bg-emerald-50 rounded-3xl border border-emerald-100 flex items-center justify-between gap-4 shadow-sm">
+                    <div className="p-5 bg-emerald-50 rounded-3xl border border-emerald-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
                           <CheckCircle2 className="w-6 h-6 text-emerald-600" />

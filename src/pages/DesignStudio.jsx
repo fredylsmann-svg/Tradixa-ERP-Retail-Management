@@ -607,7 +607,7 @@ export default function DesignStudio({ store }) {
               )}
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-slate-100 p-8 min-h-[700px] flex items-start justify-center overflow-y-auto shadow-inner group relative">
+            <div className="rounded-3xl border border-slate-200 bg-slate-100 p-4 md:p-8 min-h-[700px] flex items-start justify-start md:justify-center overflow-x-auto overflow-y-auto shadow-inner group relative">
               {/* Mockup Frame Decor */}
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
               
