@@ -4,7 +4,7 @@ import { api } from '@/api/client';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Loader2, Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
 
@@ -128,16 +128,21 @@ export default function SignUp() {
           style={{ background: 'radial-gradient(circle, #0f2442 0%, transparent 70%)' }} />
         <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full opacity-[0.03]"
           style={{ background: 'radial-gradient(circle, #2563eb 0%, transparent 70%)' }} />
-        {/* Thin top accent line with shimmer during loading */}
-        <motion.div 
-          className="absolute top-0 left-0 right-0 h-1"
-          animate={(isLoading || isGoogleLoading) ? { backgroundPosition: ['200% 0', '-200% 0'] } : {}}
-          transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-          style={{ 
-            background: 'linear-gradient(90deg, #2563eb 0%, #3b82f6 25%, #ffffff 50%, #3b82f6 75%, #2563eb 100%)',
-            backgroundSize: '200% 100%'
-          }} 
-        />
+        <AnimatePresence>
+          {(isLoading || isGoogleLoading) && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              exit={{ opacity: 0 }}
+              className="absolute top-0 left-0 right-0 h-1 z-[100]"
+              animate={{ opacity: 1, backgroundPosition: ['200% 0', '-200% 0'] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+              style={{ 
+                background: 'linear-gradient(90deg, #2563eb 0%, #3b82f6 25%, #ffffff 50%, #3b82f6 75%, #2563eb 100%)',
+                backgroundSize: '200% 100%'
+              }} 
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       <motion.div
