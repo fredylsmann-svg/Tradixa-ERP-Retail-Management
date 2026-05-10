@@ -58,6 +58,7 @@ const StockIn = lazy(() => import('./pages/StockIn'));
 const StockOut = lazy(() => import('./pages/StockOut'));
 const StockOpname = lazy(() => import('./pages/StockOpname'));
 const StockReport = lazy(() => import('./pages/StockReport'));
+const TaxManagement = lazy(() => import('./pages/TaxManagement'));
 const OutboundDelivery = lazy(() => import('./pages/OutboundDelivery'));
 const StoreSetup = lazy(() => import('./pages/StoreSetup'));
 const TradixaAssistant = lazy(() => import('./pages/TradixaAssistant'));
@@ -126,6 +127,7 @@ export const PAGES = {
     "StockOut": StockOut,
     "StockReport": StockReport,
     "StoreSetup": StoreSetup,
+    "TaxManagement": TaxManagement,
     "TradixaAssistant": TradixaAssistant,
     "TransaksiAgen": TransaksiAgen,
     "UserManagement": UserManagement,
