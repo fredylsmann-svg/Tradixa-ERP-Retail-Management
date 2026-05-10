@@ -833,13 +833,13 @@ export default function PurchaseRequisition({ store }) {
               </div>
 
               {/* Main Layout: Split View */}
-              <div className="flex flex-1 overflow-hidden">
+              <div className="flex flex-col md:flex-row flex-1 overflow-y-auto md:overflow-hidden">
                 {/* Left Panel: Content */}
-                <div className="flex-1 overflow-y-auto p-8 space-y-8 border-r bg-slate-50/30">
+                <div className="flex-1 overflow-y-auto p-8 space-y-8 border-b md:border-b-0 md:border-r bg-slate-50/30">
                   {/* Info Pemohon */}
                   <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-6">
                     <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">Informasi Pemohon</h3>
-                    <div className="grid grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="flex items-start gap-3">
                         <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500"><UserCircle className="w-5 h-5" /></div>
                         <div>
@@ -904,7 +904,7 @@ export default function PurchaseRequisition({ store }) {
                 </div>
 
                 {/* Right Panel: Approval Sidebar */}
-                <div className="w-[380px] bg-white p-8 space-y-8 overflow-y-auto border-l shadow-[-4px_0_12px_rgba(0,0,0,0.02)]">
+                <div className="w-full md:w-[380px] bg-white p-8 space-y-8 overflow-y-auto border-t md:border-t-0 md:border-l shadow-[-4px_0_12px_rgba(0,0,0,0.02)]">
                   {/* Approval Form */}
                   {(viewingPr.status === 'Diajukan' || viewingPr.status === 'Menunggu Level 2') && getApprovalStatus().reason !== 'no_authority' && (
                     <div className="bg-blue-600 p-6 rounded-2xl border border-slate-800 space-y-6 shadow-xl">
@@ -993,7 +993,7 @@ export default function PurchaseRequisition({ store }) {
           </DialogHeader>
 
           <div className="flex-1 overflow-hidden flex flex-col p-6 space-y-4">
-            <div className="grid grid-cols-3 gap-4 flex-shrink-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0">
               <div className="space-y-1.5">
                 <Label className="text-xs text-slate-500">Department</Label>
                 <Select value={itemPrDept} onValueChange={setItemPrDept}>

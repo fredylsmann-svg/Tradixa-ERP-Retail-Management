@@ -1273,7 +1273,7 @@ export default function PurchaseOrders({ store }) {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-hidden flex">
+              <div className="flex-1 overflow-y-auto md:overflow-hidden flex flex-col md:flex-row">
                 {/* Left Column: Content */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                   {/* Supplier Info */}
@@ -1612,7 +1612,7 @@ export default function PurchaseOrders({ store }) {
                 </div>
 
                 {/* Right Column: Actions Sidebar */}
-                <div className="w-80 bg-white border-l p-6 space-y-8 shrink-0 overflow-y-auto max-h-[80vh]">
+                <div className="w-full md:w-80 bg-white border-t md:border-t-0 md:border-l p-6 space-y-8 shrink-0 overflow-y-auto max-h-[80vh]">
                   <div className="space-y-4">
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">Actions</h3>
                     <div className="space-y-2">

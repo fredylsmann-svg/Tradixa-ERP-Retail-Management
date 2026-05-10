@@ -679,7 +679,7 @@ export default function GoodsReceipt({ store }) {
               </DialogFooter>
             </div>
           ) : (
-            <div className="flex flex-col h-[90vh] min-w-0 w-full">
+            <div className="flex flex-col h-[90vh] min-w-0 w-full overflow-hidden">
               {/* Form Header */}
               <div className="p-6 pr-14 border-b bg-white flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4">
@@ -695,7 +695,7 @@ export default function GoodsReceipt({ store }) {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-hidden flex">
+              <div className="flex-1 overflow-y-auto md:overflow-hidden flex flex-col md:flex-row">
                 {/* Left Side: Items & Details */}
                 <div className="flex-1 min-w-0 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
                   {/* Receiving Items Table */}
@@ -916,7 +916,7 @@ export default function GoodsReceipt({ store }) {
                 </div>
 
                 {/* Right Side: Summary Sidebar */}
-                <div className="w-80 bg-white border-l p-6 space-y-6 shrink-0 flex flex-col">
+                <div className="w-full md:w-80 bg-white border-t md:border-t-0 md:border-l p-6 space-y-6 shrink-0 flex flex-col md:overflow-y-auto">
                   <div className="flex-1 space-y-6 overflow-y-auto">
                     <div>
                       <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Logistics & SLA</h3>
