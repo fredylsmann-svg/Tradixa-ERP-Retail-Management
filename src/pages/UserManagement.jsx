@@ -29,7 +29,7 @@ const MODULE_GROUPS = [
   },
   {
     category: 'INVENTORY',
-    modules: ['Product Master', 'Location Settings', 'Stock In', 'Stock Out', 'Inventory Ledger', 'Inventory Reports', 'Low Stock Alert', 'Stock Opname']
+    modules: ['Product Master', 'Location Settings', 'Stock In', 'Stock Out', 'Inventory Ledger', 'Inventory Reports', 'Low Stock Alert', 'Stock Opname', 'Outbound Delivery']
   },
   {
     category: 'PROCUREMENT',

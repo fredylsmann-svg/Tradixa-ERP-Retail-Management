@@ -165,7 +165,7 @@ export default function ChatDrawer({ isOpen, onOpenChange, store }) {
       // OPTIMIZED: Column projection — only fetch needed fields
       const { data, error } = await supabase
         .from('internal_messages')
-        .select('id, sender_id, receiver_id, message, content, is_read, created_at, created_date')
+        .select('id, sender_id, receiver_id, message, is_read, created_at, created_date')
         .eq('store_id', store.id)
         .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedContact.id}),and(sender_id.eq.${selectedContact.id},receiver_id.eq.${currentUser.id})`)
         .order('created_at', { ascending: true })
@@ -395,7 +395,7 @@ export default function ChatDrawer({ isOpen, onOpenChange, store }) {
                           ? 'bg-blue-600 text-white rounded-br-none'
                           : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white rounded-bl-none border border-slate-100 dark:border-slate-700'
                       )}>
-                        {msg.message || msg.content}
+                        {msg.message}
                       </div>
                       
                       <div className={cn("flex items-center gap-1 mt-1 px-1", isMe ? "justify-end" : "justify-start")}>

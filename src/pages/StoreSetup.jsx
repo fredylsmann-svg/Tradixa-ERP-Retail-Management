@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/client';
 import { useAuth } from '@/lib/AuthContext';
 import { Store, Upload, Building2, Phone, Mail, FileText, Loader2, User, ArrowRight, ArrowLeft, Info, MapPin, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
+
+const libraries = ['places'];
 
 const InfoTooltip = ({ text }) => {
   const [show, setShow] = useState(false);
@@ -57,6 +60,26 @@ export default function StoreSetup({ onComplete }) {
     bank_name: '',
     bank_account_number: ''
   });
+
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+    libraries
+  });
+
+  const autocompleteRef = useRef(null);
+
+  const handlePlaceChanged = () => {
+    if (autocompleteRef.current) {
+      const place = autocompleteRef.current.getPlace();
+      if (place.geometry && place.geometry.location) {
+        setFormData(prev => ({
+          ...prev,
+          address: place.formatted_address || place.name
+        }));
+      }
+    }
+  };
 
   useEffect(() => {
     if (user?.email) setFormData(prev => ({ ...prev, email: user.email }));
@@ -331,11 +354,21 @@ export default function StoreSetup({ onComplete }) {
                     <div>
                       <label className={labelClass}>Alamat Lengkap *</label>
                       <div className="relative">
-                        <MapPin className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
-                        <textarea placeholder="Masukkan alamat lengkap toko"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none transition-all resize-none text-slate-800 placeholder-slate-400"
-                          style={inputStyle} onFocus={inputFocus} onBlur={inputBlur}
-                          rows={2} value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} required />
+                        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+                        {isLoaded ? (
+                          <Autocomplete
+                            onLoad={(autocomplete) => (autocompleteRef.current = autocomplete)}
+                            onPlaceChanged={handlePlaceChanged}
+                          >
+                            <input type="text" placeholder="Ketik alamat untuk pencarian otomatis..." className={inputClass} style={inputStyle}
+                              onFocus={inputFocus} onBlur={inputBlur}
+                              value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} required />
+                          </Autocomplete>
+                        ) : (
+                          <input type="text" placeholder="Masukkan alamat lengkap toko" className={inputClass} style={inputStyle}
+                            onFocus={inputFocus} onBlur={inputBlur}
+                            value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} required />
+                        )}
                       </div>
                     </div>
 

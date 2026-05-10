@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,9 @@ import { useToast } from '@/components/ui/use-toast';
 import PageHeader from '@/components/layout/PageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
+
+const libraries = ['places'];
 
 const InfoTooltip = ({ text }) => {
   const [show, setShow] = useState(false);
@@ -67,6 +70,26 @@ export default function CompanySettings({ store }) {
     mayar_api_key: store?.mayar_api_key || ''
   });
   const [saved, setSaved] = useState(false);
+
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+    libraries
+  });
+
+  const autocompleteRef = useRef(null);
+
+  const handlePlaceChanged = () => {
+    if (autocompleteRef.current) {
+      const place = autocompleteRef.current.getPlace();
+      if (place.geometry && place.geometry.location) {
+        setFormData(prev => ({
+          ...prev,
+          address: place.formatted_address || place.name
+        }));
+      }
+    }
+  };
 
   useEffect(() => {
     if (store && (!formData.store_name || store.id !== formData.id)) {
@@ -175,13 +198,28 @@ export default function CompanySettings({ store }) {
                 <Building2 className="w-4 h-4 text-slate-400" />
                 Alamat Lengkap *
               </Label>
-              <Textarea
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="mt-1.5"
-                rows={2}
-                required
-              />
+              {isLoaded ? (
+                <Autocomplete
+                  onLoad={(autocomplete) => (autocompleteRef.current = autocomplete)}
+                  onPlaceChanged={handlePlaceChanged}
+                >
+                  <Input
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className="mt-1.5"
+                    placeholder="Ketik alamat untuk pencarian otomatis..."
+                    required
+                  />
+                </Autocomplete>
+              ) : (
+                <Textarea
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  className="mt-1.5"
+                  rows={2}
+                  required
+                />
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
