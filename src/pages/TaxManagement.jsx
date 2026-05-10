@@ -14,12 +14,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { 
-  Calculator, Receipt, ArrowUpRight, ArrowDownRight, 
-  Wallet, Settings, Search, Plus, MoreHorizontal, Percent, ArrowRightLeft, Info
+  ReceiptText, ArrowUpRight, ArrowDownRight, 
+  Wallet, Settings, Search, Plus, MoreHorizontal, Percent, ArrowRightLeft, Info, Trash2, Edit
 } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 
@@ -77,7 +84,7 @@ export default function TaxManagement() {
       <PageHeader 
         title="Tax Management" 
         subtitle="Manage centralized tax rates and monitor value added tax summaries."
-        icon={Calculator}
+        icon={ReceiptText}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -118,8 +125,10 @@ export default function TaxManagement() {
                       <p className="text-sm font-medium text-slate-500 dark:text-slate-400">PPN Keluaran (Sales VAT)</p>
                       <TooltipProvider>
                         <Tooltip>
-                          <TooltipTrigger>
-                            <Info className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+                          <TooltipTrigger asChild>
+                            <button type="button" className="focus:outline-none">
+                              <Info className="w-4 h-4 text-slate-400 hover:text-slate-600 cursor-help" />
+                            </button>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>Data mock. Akan ditarik dari pajak transaksi modul Sales Invoices.</p>
@@ -152,8 +161,10 @@ export default function TaxManagement() {
                       <p className="text-sm font-medium text-slate-500 dark:text-slate-400">PPN Masukan (Purchase VAT)</p>
                       <TooltipProvider>
                         <Tooltip>
-                          <TooltipTrigger>
-                            <Info className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+                          <TooltipTrigger asChild>
+                            <button type="button" className="focus:outline-none">
+                              <Info className="w-4 h-4 text-slate-400 hover:text-slate-600 cursor-help" />
+                            </button>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>Data mock. Akan ditarik dari pajak transaksi modul Payable Invoices/PO.</p>
@@ -178,7 +189,7 @@ export default function TaxManagement() {
               </CardContent>
             </Card>
 
-            <Card className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 border-none shadow-[0_8px_30px_rgb(37,99,235,0.3)]">
+            <Card className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
               {/* Decorative background shapes */}
               <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
               <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl"></div>
@@ -190,8 +201,10 @@ export default function TaxManagement() {
                       <p className="text-sm font-medium text-blue-100">PPN Kurang Bayar (Payable)</p>
                       <TooltipProvider>
                         <Tooltip>
-                          <TooltipTrigger>
-                            <Info className="w-4 h-4 text-blue-200 hover:text-white" />
+                          <TooltipTrigger asChild>
+                            <button type="button" className="focus:outline-none">
+                              <Info className="w-4 h-4 text-blue-200 hover:text-white cursor-help" />
+                            </button>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>Data mock. Hasil selisih PPN Keluaran dikurangi PPN Masukan bulan ini.</p>
@@ -226,7 +239,7 @@ export default function TaxManagement() {
               <div className="h-[300px] flex items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
                 <div className="text-center space-y-3">
                   <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto">
-                    <Receipt className="w-8 h-8 text-slate-400" />
+                    <ReceiptText className="w-8 h-8 text-slate-400" />
                   </div>
                   <p className="text-slate-500 font-medium">Connect to Sales & Purchasing modules to see transaction breakdown.</p>
                 </div>
@@ -290,9 +303,22 @@ export default function TaxManagement() {
                           <Button onClick={() => handleToggleStatus(tax.id)} variant="ghost" size="sm" className="text-xs text-blue-600 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 mr-2">
                             Toggle Status
                           </Button>
-                          <Button onClick={() => handleNotReady('Opsi Lainnya')} variant="ghost" size="icon" className="text-slate-400 hover:text-slate-600">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-slate-600">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleNotReady('Edit Tax Rate')}>
+                                <Edit className="w-4 h-4 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDeleteTax(tax.id)}>
+                                <Trash2 className="w-4 h-4 mr-2" /> Hapus
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -343,12 +369,18 @@ export default function TaxManagement() {
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Applied To</label>
-              <Input 
-                placeholder="e.g. Sales, Purchase" 
+              <label className="text-sm font-medium">Applied To (Modul Terintegrasi)</label>
+              <select 
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={newTax.appliedTo}
                 onChange={(e) => setNewTax({...newTax, appliedTo: e.target.value})}
-              />
+              >
+                <option value="Sales">Modul Penjualan (Sales/AR)</option>
+                <option value="Purchase">Modul Pembelian (Purchase/AP)</option>
+                <option value="Payroll">Modul Payroll (HRIS)</option>
+                <option value="Sales, Purchase">Semua Transaksi Barang (Sales & Purchase)</option>
+                <option value="All Modules">Semua Modul</option>
+              </select>
             </div>
           </div>
           <DialogFooter>

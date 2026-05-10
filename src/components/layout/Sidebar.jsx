@@ -96,7 +96,7 @@ const getFilteredMenuGroups = (isOwner) => {
         { name: 'Operational Expenses', icon: ReceiptText, page: 'Expenses' },
         { name: 'Journal Entries', icon: BookOpen, page: 'JournalEntries' },
         { name: 'Chart of Accounts', icon: List, page: 'ChartOfAccounts' },
-        { name: 'Tax Management', icon: FileCheck, page: 'TaxManagement' }
+        { name: 'Tax Management', icon: ReceiptText, page: 'TaxManagement' }
       ]
     },
     {
