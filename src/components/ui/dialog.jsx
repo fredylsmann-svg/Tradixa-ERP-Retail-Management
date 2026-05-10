@@ -34,8 +34,8 @@ const DialogContent = React.forwardRef(({ className, children, hideClose = false
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] overflow-y-auto",
-          !isFullscreen && "max-w-lg sm:rounded-lg max-h-[90vh]",
+          "fixed left-[50%] top-[50%] z-50 grid w-[95vw] sm:w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] overflow-y-auto overflow-x-hidden",
+          !isFullscreen && "max-w-[95vw] sm:max-w-lg rounded-2xl sm:rounded-lg max-h-[90vh]",
           className,
           isFullscreen && "!max-w-[95vw] !w-[95vw] !h-[95vh] !max-h-[95vh] !rounded-2xl md:!p-10 text-lg [&_input]:text-lg [&_input]:h-14 [&_label]:text-base [&_h2]:text-3xl [&_td]:text-base [&_th]:text-base"
         )}

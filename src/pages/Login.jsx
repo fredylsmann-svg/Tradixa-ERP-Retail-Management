@@ -181,20 +181,32 @@ export default function Login() {
           fetchpriority="high"
           disablePictureInPicture
           onCanPlayThrough={() => setVideoReady(true)}
-          className="absolute w-full h-full object-cover scale-[1.02] transition-opacity duration-1000 ease-in-out"
+          className="absolute w-full h-full object-cover scale-[1.02] transition-opacity duration-1000 ease-in-out pointer-events-none"
           style={{ opacity: videoReady ? 1 : 0 }}
         >
           <source src="/assets/login-bg.mp4" type="video/mp4" />
         </video>
         {/* Deep Overlay for readability - Removed blur to keep video sharp */}
-        <div className="absolute inset-0 bg-[#020617]/40" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#020617]/60 via-transparent to-[#020617]/80" />
+        <div className="absolute inset-0 bg-[#020617]/40 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#020617]/60 via-transparent to-[#020617]/80 pointer-events-none" />
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
         input::selection {
           background-color: #bfdbfe !important;
           color: #000000 !important;
+        }
+        video::-webkit-media-controls {
+          display: none !important;
+        }
+        video::-webkit-media-controls-enclosure {
+          display: none !important;
+        }
+        video::-webkit-media-controls-panel {
+          display: none !important;
+        }
+        video {
+          pointer-events: none !important;
         }
       `}} />
 
