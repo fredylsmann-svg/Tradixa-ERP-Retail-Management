@@ -13,7 +13,7 @@ import {
   ArrowRightLeft, List, DollarSign, Settings, UserCircle, GitBranch, Network,
   Workflow, ChevronDown, Menu, X, MessageCircle, Award, Layers, Mail, Zap, Megaphone, Banknote, PieChart, Contact, Landmark,
   BookOpen, ReceiptText, LineChart, BarChart, Activity, Warehouse, ClipboardCheck, MapPin, Palette, Boxes, BarChart3, HandCoins, History,
-  Lock, CreditCard as CreditCardIcon, Calculator
+  Lock, CreditCard as CreditCardIcon, Calculator, FileSignature
 } from 'lucide-react';
 
 const getFilteredMenuGroups = (isOwner) => {
@@ -94,7 +94,7 @@ const getFilteredMenuGroups = (isOwner) => {
         { name: 'Account Payable Invoices', icon: FileOutput, page: 'PayableInvoices' },
         { name: 'Payments', icon: HandCoins, page: 'Payments' },
         { name: 'Operational Expenses', icon: ReceiptText, page: 'Expenses' },
-        { name: 'Tax Management', icon: ReceiptText, page: 'TaxManagement' },
+        { name: 'Tax Management', icon: FileSignature, page: 'TaxManagement' },
         { name: 'Journal Entries', icon: BookOpen, page: 'JournalEntries' },
         { name: 'Chart of Accounts', icon: List, page: 'ChartOfAccounts' }
       ]

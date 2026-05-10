@@ -25,7 +25,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { 
-  ReceiptText, ArrowUpRight, ArrowDownRight, 
+  FileSignature, ArrowUpRight, ArrowDownRight, 
   Wallet, Settings, Search, Plus, MoreHorizontal, Percent, ArrowRightLeft, Info, Trash2, Edit
 } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
@@ -106,8 +106,8 @@ export default function TaxManagement() {
     <div className="pt-2 md:pt-4 p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in zoom-in-95 duration-300">
       <PageHeader 
         title="Tax Management" 
-        subtitle="Manage centralized tax rates and monitor value added tax summaries."
-        icon={ReceiptText}
+        subtitle="Kelola tarif pajak terpusat dan pantau ringkasan pajak pertambahan nilai (PPN)."
+        icon={FileSignature}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -262,7 +262,7 @@ export default function TaxManagement() {
               <div className="h-[300px] flex items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
                 <div className="text-center space-y-3">
                   <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto">
-                    <ReceiptText className="w-8 h-8 text-slate-400" />
+                    <FileSignature className="w-8 h-8 text-slate-400" />
                   </div>
                   <p className="text-slate-500 font-medium">Connect to Sales & Purchasing modules to see transaction breakdown.</p>
                 </div>
