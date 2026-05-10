@@ -6,6 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
@@ -36,12 +44,33 @@ export default function TaxManagement() {
     trend: '+12.5%'
   };
 
-  const taxRates = [
+  const [taxRates, setTaxRates] = useState([
     { id: 1, name: 'PPN 11%', type: 'Value Added Tax', rate: 11, status: 'active', appliedTo: 'Sales, Purchase' },
     { id: 2, name: 'PPh 21', type: 'Income Tax', rate: 5, status: 'active', appliedTo: 'Payroll, Services' },
     { id: 3, name: 'PPh 23', type: 'Income Tax', rate: 2, status: 'active', appliedTo: 'Services, Rent' },
     { id: 4, name: 'PB1 (Pajak Restoran)', type: 'Local Tax', rate: 10, status: 'inactive', appliedTo: 'Sales' },
-  ];
+  ]);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newTax, setNewTax] = useState({ name: '', rate: '', type: 'Value Added Tax', appliedTo: 'Sales' });
+
+  const handleAddTax = () => {
+    if(!newTax.name || !newTax.rate) {
+       toast({ title: "Error", description: "Nama dan tarif pajak harus diisi.", variant: "destructive" });
+       return;
+    }
+    setTaxRates([...taxRates, { ...newTax, id: Date.now(), status: 'active' }]);
+    setIsAddModalOpen(false);
+    setNewTax({ name: '', rate: '', type: 'Value Added Tax', appliedTo: 'Sales' });
+    toast({ title: "Berhasil", description: "Tax Rate baru telah ditambahkan." });
+  };
+
+  const handleToggleStatus = (id) => {
+    setTaxRates(taxRates.map(t => {
+      if(t.id === id) return { ...t, status: t.status === 'active' ? 'inactive' : 'active' };
+      return t;
+    }));
+    toast({ title: "Diperbarui", description: "Status Tax Rate telah diubah." });
+  };
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in zoom-in-95 duration-300">
@@ -71,7 +100,7 @@ export default function TaxManagement() {
           </TabsList>
 
           {activeTab === 'setup' && (
-            <Button onClick={() => handleNotReady('New Tax Rate')} className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20">
+            <Button onClick={() => setIsAddModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20">
               <Plus className="w-4 h-4 mr-2" /> New Tax Rate
             </Button>
           )}
@@ -258,8 +287,8 @@ export default function TaxManagement() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button onClick={() => handleNotReady('Pengaturan Pajak')} variant="ghost" size="icon" className="text-slate-400 hover:text-blue-600">
-                            <Settings className="w-4 h-4" />
+                          <Button onClick={() => handleToggleStatus(tax.id)} variant="ghost" size="sm" className="text-xs text-blue-600 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 mr-2">
+                            Toggle Status
                           </Button>
                           <Button onClick={() => handleNotReady('Opsi Lainnya')} variant="ghost" size="icon" className="text-slate-400 hover:text-slate-600">
                             <MoreHorizontal className="w-4 h-4" />
@@ -274,6 +303,60 @@ export default function TaxManagement() {
           </Card>
         </TabsContent>
       </Tabs>
+      {/* ADD TAX MODAL */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Tax Rate</DialogTitle>
+            <DialogDescription>
+              Buat tarif pajak baru yang akan digunakan pada seluruh transaksi ERP.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tax Name</label>
+              <Input 
+                placeholder="e.g. PPN 12%" 
+                value={newTax.name}
+                onChange={(e) => setNewTax({...newTax, name: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Rate (%)</label>
+              <Input 
+                type="number"
+                placeholder="e.g. 12" 
+                value={newTax.rate}
+                onChange={(e) => setNewTax({...newTax, rate: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tax Type</label>
+              <select 
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={newTax.type}
+                onChange={(e) => setNewTax({...newTax, type: e.target.value})}
+              >
+                <option value="Value Added Tax">Value Added Tax</option>
+                <option value="Income Tax">Income Tax</option>
+                <option value="Local Tax">Local Tax</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Applied To</label>
+              <Input 
+                placeholder="e.g. Sales, Purchase" 
+                value={newTax.appliedTo}
+                onChange={(e) => setNewTax({...newTax, appliedTo: e.target.value})}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddTax} className="bg-blue-600 hover:bg-blue-700 text-white">Save Tax Rate</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
