@@ -87,17 +87,29 @@ export default function SignUp() {
       });
       if (authError) throw authError;
 
-      await api.entities.User.create({
-        full_name: formData.full_name,
-        email: formData.email,
-        password: formData.password,
-        role: 'owner',
-        is_store_setup_completed: false
-      });
+      // 3. Simpan data tambahan di tabel users
+      // Gunakan try-catch terpisah untuk menangani race condition dengan AuthContext
+      try {
+        await api.entities.User.create({
+          full_name: formData.full_name,
+          email: formData.email,
+          password: formData.password,
+          role: 'owner',
+          is_store_setup_completed: false
+        });
+      } catch (insertErr) {
+        // Jika error kode 23505 (Unique Violation), artinya AuthContext 
+        // sudah berhasil membuat data di background. Kita bisa abaikan.
+        if (insertErr.code !== '23505') {
+          throw insertErr;
+        }
+        console.log('[SignUp] User record already created by AuthContext, continuing...');
+      }
 
       await supabase.auth.signOut();
       navigate('/login?registered=true');
     } catch (err) {
+      console.error('[SignUp Error]', err);
       if (err.message?.includes('already registered')) {
         setError('Email ini sudah terdaftar. Silakan login.');
       } else {
