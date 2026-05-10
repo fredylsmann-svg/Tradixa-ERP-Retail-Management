@@ -11,6 +11,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from '@/components/ui/sonner';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
 
 export default function Layout({ children, currentPageName }) {
   const [store, setStore] = useState(null);
@@ -121,7 +122,7 @@ export default function Layout({ children, currentPageName }) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
         <div className="text-center animate-in fade-in zoom-in duration-500 flex flex-col items-center -mt-32">
-          <img src="/src/assets/tradixa-logo-transparent.png" alt="Tradixa" className="h-48 md:h-60 mx-auto animate-pulse" />
+          <img src={tradixaLogo} alt="Tradixa" className="h-48 md:h-60 mx-auto animate-pulse" />
           <div className="flex items-center gap-1.5 -mt-16">
             <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.3s]"></div>
             <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.15s]"></div>

@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Store, Upload, Building2, Phone, Mail, FileText, Loader2, User, ArrowRight, ArrowLeft, Info, MapPin, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
+import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
 
 const libraries = ['places'];
 
@@ -215,7 +216,7 @@ export default function StoreSetup({ onComplete }) {
                 <div className="pt-2 px-8 pb-8">
                   {/* Logo */}
                   <div className="text-center mb-6">
-                    <img src="/src/assets/tradixa-logo-transparent.png" alt="Tradixa" className="h-52 mx-auto -mb-8" />
+                    <img src={tradixaLogo} alt="Tradixa" className="h-52 mx-auto -mb-8" />
                   </div>
 
                   <div className="mb-3">
@@ -306,7 +307,7 @@ export default function StoreSetup({ onComplete }) {
                 <div className="pt-2 px-8 pb-8">
                   {/* Logo */}
                   <div className="text-center mb-6">
-                    <img src="/src/assets/tradixa-logo-transparent.png" alt="Tradixa" className="h-52 mx-auto -mb-8" />
+                    <img src={tradixaLogo} alt="Tradixa" className="h-52 mx-auto -mb-8" />
                   </div>
 
                   <div className="mb-3">
