@@ -411,10 +411,10 @@ export default function PurchaseOrders({ store }) {
     }
 
     const publicUrl = `${window.location.origin}/public/po/${order.id}/sign`;
-    let message = `Halo ${supplier.name},\n\nBerikut kami kirimkan Purchase Order *${order.po_number}* dari *${store?.store_name}*.\n\nMohon tinjau detail pesanan dan bubuhkan tanda tangan persetujuan melalui link berikut:\n${publicUrl}\n\nTerima kasih.`;
+    let message = `Halo ${supplier.name},\n\nBerikut kami kirimkan Purchase Order *${order.po_number}* dari *${store?.store_name}*.\n\nMohon tinjau detail pesanan dan bubuhkan tanda tangan persetujuan melalui link berikut:\n${publicUrl} \n\nTerima kasih.`;
 
     if (order.status === 'Negotiation') {
-      message = `Halo ${supplier.name},\n\nTerkait negosiasi pada Purchase Order *${order.po_number}* dari *${store?.store_name}*, kami telah *mengajukan penawaran harga baru* berdasarkan diskusi kita.\n\nMohon tinjau kembali detail pesanan dengan harga terbaru dan bubuhkan tanda tangan persetujuan melalui link berikut:\n${publicUrl}\n\nTerima kasih.`;
+      message = `Halo ${supplier.name},\n\nTerkait negosiasi pada Purchase Order *${order.po_number}* dari *${store?.store_name}*, kami telah *mengajukan penawaran harga baru* berdasarkan diskusi kita.\n\nMohon tinjau kembali detail pesanan dengan harga terbaru dan bubuhkan tanda tangan persetujuan melalui link berikut:\n${publicUrl} \n\nTerima kasih.`;
     }
 
     const cleanPhone = supplier.phone.replace(/[^0-9]/g, '');
@@ -1696,8 +1696,8 @@ export default function PurchaseOrders({ store }) {
                           const publicLink = `${window.location.origin}/public/po/${viewingOrder?.id}/sign`;
                           if (phone) {
                             const message = viewingOrder?.status === 'Confirmed'
-                              ? `Halo, berikut adalah Purchase Order Final ${viewingOrder?.po_number} yang telah ditandatangani lengkap. Anda dapat mengunduh salinannya di sini: ${publicLink}`
-                              : `Halo, berikut adalah Purchase Order ${viewingOrder?.po_number}. Silakan tinjau dan tanda tangani dokumen di sini: ${publicLink}`;
+                              ? `Halo, berikut adalah Purchase Order Final ${viewingOrder?.po_number} yang telah ditandatangani lengkap. Anda dapat mengunduh salinannya di sini:\n${publicLink} `
+                              : `Halo, berikut adalah Purchase Order ${viewingOrder?.po_number}. Silakan tinjau dan tanda tangani dokumen di sini:\n${publicLink} `;
 
                             window.open(`https://wa.me/${phone.startsWith('0') ? '62' + phone.slice(1) : phone}?text=${encodeURIComponent(message)}`, '_blank');
                           } else {
@@ -1748,7 +1748,7 @@ export default function PurchaseOrders({ store }) {
                                   const phone = supplierPhone?.replace(/[^0-9]/g, '');
                                   const publicLink = `${window.location.origin}/public/po/${viewingOrder?.id}/sign`;
                                   if (phone) {
-                                    const message = `Halo, terima kasih telah menyetujui PO ${viewingOrder?.po_number}. Silakan lengkapi detail pengiriman (No. Surat Jalan, driver, kendaraan) melalui link berikut agar kami dapat memproses penerimaan barang: ${publicLink}`;
+                                    const message = `Halo, terima kasih telah menyetujui PO ${viewingOrder?.po_number}. Silakan lengkapi detail pengiriman (No. Surat Jalan, driver, kendaraan) melalui link berikut agar kami dapat memproses penerimaan barang:\n${publicLink} `;
                                     window.open(`https://wa.me/${phone.startsWith('0') ? '62' + phone.slice(1) : phone}?text=${encodeURIComponent(message)}`, '_blank');
                                   } else {
                                     alert("Nomor WA supplier tidak tersedia.");

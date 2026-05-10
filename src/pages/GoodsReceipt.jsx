@@ -504,7 +504,7 @@ export default function GoodsReceipt({ store }) {
       return;
     }
     const publicUrl = `${window.location.origin}/public/grn/${grn.id}/sign`;
-    const message = `Halo Bapak/Ibu Driver dari ${grn.supplier_name},\n\nBerikut adalah GOODS RECEIPT NOTES (GRN No: ${grn.gr_number}) dari kami.\n\nMohon untuk mengecek rincian barang dan memberikan tanda tangan secara digital pada link berikut:\n\n${publicUrl}\n\nTerima kasih.`;
+    const message = `Halo Bapak/Ibu Driver dari ${grn.supplier_name},\n\nBerikut adalah GOODS RECEIPT NOTES (GRN No: ${grn.gr_number}) dari kami.\n\nMohon untuk mengecek rincian barang dan memberikan tanda tangan secara digital pada link berikut:\n\n${publicUrl} \n\nTerima kasih.`;
 
     let phone = grn.driver_phone.replace(/\D/g, '');
     if (phone.startsWith('0')) phone = '62' + phone.substring(1);

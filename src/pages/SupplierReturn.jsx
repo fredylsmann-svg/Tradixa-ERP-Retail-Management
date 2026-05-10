@@ -239,7 +239,7 @@ export default function SupplierReturn({ store }) {
 
     const reviewLink = `${window.location.origin}/public/return/${retur.id}/review`;
 
-    const message = `Halo ${retur.supplier_name},\n\nKami mengajukan pengembalian barang (Retur) dengan No: ${retur.return_number}.\n\nSilakan klik tautan berikut untuk melihat rincian, bukti foto, dan melakukan konfirmasi (Setujui/Tolak):\n${reviewLink}\n\n*Daftar Barang:*\n${itemText}\n\nTerima kasih.`;
+    const message = `Halo ${retur.supplier_name},\n\nKami mengajukan pengembalian barang (Retur) dengan No: ${retur.return_number}.\n\nSilakan klik tautan berikut untuk melihat rincian, bukti foto, dan melakukan konfirmasi (Setujui/Tolak):\n${reviewLink} \n\n*Daftar Barang:*\n${itemText}\n\nTerima kasih.`;
 
     const cleanPhone = supplier.phone.replace(/\D/g, '');
     const finalPhone = cleanPhone.startsWith('0') ? '62' + cleanPhone.substring(1) : cleanPhone;
