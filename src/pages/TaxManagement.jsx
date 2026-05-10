@@ -103,7 +103,7 @@ export default function TaxManagement() {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in zoom-in-95 duration-300">
+    <div className="pt-2 md:pt-4 p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in zoom-in-95 duration-300">
       <PageHeader 
         title="Tax Management" 
         subtitle="Manage centralized tax rates and monitor value added tax summaries."
@@ -130,7 +130,7 @@ export default function TaxManagement() {
           </TabsList>
 
           {activeTab === 'setup' && (
-            <Button onClick={() => setIsAddModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20">
+            <Button onClick={() => setIsAddModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="w-4 h-4 mr-2" /> New Tax Rate
             </Button>
           )}

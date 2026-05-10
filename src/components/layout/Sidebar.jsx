@@ -94,9 +94,9 @@ const getFilteredMenuGroups = (isOwner) => {
         { name: 'Account Payable Invoices', icon: FileOutput, page: 'PayableInvoices' },
         { name: 'Payments', icon: HandCoins, page: 'Payments' },
         { name: 'Operational Expenses', icon: ReceiptText, page: 'Expenses' },
+        { name: 'Tax Management', icon: ReceiptText, page: 'TaxManagement' },
         { name: 'Journal Entries', icon: BookOpen, page: 'JournalEntries' },
-        { name: 'Chart of Accounts', icon: List, page: 'ChartOfAccounts' },
-        { name: 'Tax Management', icon: ReceiptText, page: 'TaxManagement' }
+        { name: 'Chart of Accounts', icon: List, page: 'ChartOfAccounts' }
       ]
     },
     {
