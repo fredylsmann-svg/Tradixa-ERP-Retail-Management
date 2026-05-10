@@ -28,7 +28,7 @@ const StatCard = ({ title, value, subtitle, icon: Icon, trendColor = 'text-emera
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-base font-medium text-slate-500 mb-1">{title}</p>
-          <div className="text-2xl font-bold text-slate-800 mt-2">
+          <div className="text-xl md:text-2xl font-bold text-slate-800 mt-2 truncate">
             <AnimatedNumber value={typeof value === 'number' ? value : 0} prefix={typeof value === 'number' ? 'Rp ' : ''} />
             {typeof value === 'string' && <span>{value}</span>}
           </div>
@@ -289,7 +289,7 @@ export default function FinancialStatements({ store }) {
       </div>
 
       {/* KPI */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           title="Pendapatan"
           value={f.revenue}
@@ -351,7 +351,8 @@ function PnLReport({ data, storeName, period, logoUrl }) {
   return (
     <Card className="border-slate-200 shadow-sm overflow-hidden">
       <CardContent className="p-0">
-        <table id="print-pnl" className={tableStyle}>
+        <div className="overflow-x-auto">
+        <table id="print-pnl" className={tableStyle + ' min-w-[600px]'}>
           <thead>
             <tr><th colSpan="3" className="bg-white text-center py-6 border-b-2 border-slate-300">
               {logoUrl && <img src={logoUrl} alt="Logo" className="w-10 h-10 mx-auto mb-2 rounded-lg object-cover" />}
@@ -390,6 +391,7 @@ function PnLReport({ data, storeName, period, logoUrl }) {
             <tr className={totalStyle}><td className="py-3 px-4 border border-slate-700">Laba Bersih</td><td className="py-3 px-4 border border-slate-700"></td><td className="py-3 px-4 border border-slate-700 text-right font-mono">{data.netProfit < 0 ? `(${fmt(data.netProfit)})` : fmt(data.netProfit)}</td></tr>
           </tbody>
         </table>
+        </div>
       </CardContent>
     </Card>
   );
@@ -402,7 +404,8 @@ function BalanceSheetReport({ data, storeName, period, logoUrl }) {
   return (
     <Card className="border-slate-200 shadow-sm overflow-hidden">
       <CardContent className="p-0">
-        <table id="print-balance" className={tableStyle}>
+        <div className="overflow-x-auto">
+        <table id="print-balance" className={tableStyle + ' min-w-[600px]'}>
           <thead>
             <tr><th colSpan="3" className="bg-white text-center py-6 border-b-2 border-slate-300">
               {logoUrl && <img src={logoUrl} alt="Logo" className="w-10 h-10 mx-auto mb-2 rounded-lg object-cover" />}
@@ -448,6 +451,7 @@ function BalanceSheetReport({ data, storeName, period, logoUrl }) {
             </tr>
           </tbody>
         </table>
+        </div>
       </CardContent>
     </Card>
   );
@@ -460,7 +464,8 @@ function CashFlowReport({ data, storeName, period, logoUrl }) {
   return (
     <Card className="border-slate-200 shadow-sm overflow-hidden">
       <CardContent className="p-0">
-        <table id="print-cashflow" className={tableStyle}>
+        <div className="overflow-x-auto">
+        <table id="print-cashflow" className={tableStyle + ' min-w-[600px]'}>
           <thead>
             <tr><th colSpan="3" className="bg-white text-center py-6 border-b-2 border-slate-300">
               {logoUrl && <img src={logoUrl} alt="Logo" className="w-10 h-10 mx-auto mb-2 rounded-lg object-cover" />}
@@ -490,6 +495,7 @@ function CashFlowReport({ data, storeName, period, logoUrl }) {
             <tr className={totalStyle}><td className="py-3 px-4 border border-slate-700">Arus Kas Bersih (Net Cash Flow)</td><td className="py-3 px-4 border border-slate-700"></td><td className="py-3 px-4 border border-slate-700 text-right font-mono">{data.netCashFlow < 0 ? `(${fmt(data.netCashFlow)})` : fmt(data.netCashFlow)}</td></tr>
           </tbody>
         </table>
+        </div>
       </CardContent>
     </Card>
   );

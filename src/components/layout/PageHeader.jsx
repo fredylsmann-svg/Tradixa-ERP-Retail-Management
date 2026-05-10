@@ -29,7 +29,7 @@ export default function PageHeader({
         </div>
       </div>
       {actions && (
-        <div className="flex items-center gap-3 print:hidden">
+        <div className="flex items-center gap-2 flex-wrap print:hidden">
           {actions}
         </div>
       )}
