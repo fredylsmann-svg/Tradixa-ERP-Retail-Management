@@ -34,11 +34,13 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as pdfjsLib from 'pdfjs-dist';
 import PageHeader from '@/components/layout/PageHeader';
+import { useAuth } from '@/lib/AuthContext';
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 export default function BankReconciliation({ store }) {
+  const { user } = useAuth();
   const [bankAccounts, setBankAccounts] = useState([]);
   const [selectedBankId, setSelectedBankId] = useState('');
   const [systemTransactions, setSystemTransactions] = useState([]);
@@ -99,10 +101,9 @@ export default function BankReconciliation({ store }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    // AI OCR Premium Check
-    if (file.name.match(/\.(pdf|png|jpe?g)$/i)) {
-      const plan = store?.subscription_plan || 'free';
-      if (plan === 'free') {
+    const isPremium = store?.subscription_plan !== 'free' || user?.email === 'dev@tradixa.com';
+    const checkOcrPermission = () => {
+      if (!isPremium) {
         toast.error(
           <div className="flex flex-col gap-1">
             <span className="font-bold text-sm">Upgrade ke Pro/Enterprise</span>
@@ -110,10 +111,11 @@ export default function BankReconciliation({ store }) {
           </div>,
           { duration: 5000 }
         );
-        e.target.value = ''; // Reset input
-        return;
+        setIsProcessing(false);
+        return false;
       }
-    }
+      return true;
+    };
 
     setIsProcessing(true);
     setProcessingMessage('Sedang Memproses File...');
@@ -314,6 +316,7 @@ export default function BankReconciliation({ store }) {
           setIsProcessing(false);
         } else {
           // Fallback to OCR if digital parsing fails
+          if (!checkOcrPermission()) return;
           setProcessingMessage('Teks Digital tidak terbaca. Beralih ke Smart AI OCR...');
 
           let combinedOcrText = '';
@@ -350,6 +353,7 @@ export default function BankReconciliation({ store }) {
           setIsProcessing(false);
         }
       } else if (file.name.match(/\.(png|jpe?g)$/i)) {
+        if (!checkOcrPermission()) return;
         setProcessingMessage('Menganalisis Gambar dengan Smart AI OCR...');
         const reader = new FileReader();
         reader.onloadend = async () => {
