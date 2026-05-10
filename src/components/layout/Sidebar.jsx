@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import SidebarTimeDisplay from './SidebarTimeDisplay';
 import { api } from '@/api/client';
 import { isModuleAccessible } from '@/planConfig';
-import tradixaLogo from '@/assets/logo-tradixa.png';
+import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
 import {
   LayoutGrid, Package, Download, Upload, FileText, FileCheck, AlertTriangle,
   ShoppingCart, Receipt, FileInput, TrendingUp, Users, ClipboardList, Truck,
@@ -237,7 +237,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none z-10 flex-shrink-0">
         <div className="flex items-center gap-4">
-          <img src={tradixaLogo} alt="Tradixa" className="w-14 h-14 rounded-2xl object-cover shadow-sm" />
+          <img src={tradixaLogo} alt="Tradixa" className="w-14 h-14 object-contain" />
           <div>
             <h1 className="font-black text-xl text-slate-900 dark:text-slate-100 leading-none tracking-tighter">Tradixa</h1>
             <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1 tracking-tight">Management Retail System</p>

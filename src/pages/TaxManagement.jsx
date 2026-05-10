@@ -4,17 +4,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useToast } from '@/components/ui/use-toast';
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
 import { 
   Calculator, Receipt, ArrowUpRight, ArrowDownRight, 
-  Wallet, Settings, Search, Plus, MoreHorizontal, Percent, ArrowRightLeft
+  Wallet, Settings, Search, Plus, MoreHorizontal, Percent, ArrowRightLeft, Info
 } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 
 export default function TaxManagement() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const { toast } = useToast();
+
+  const handleNotReady = (feature) => {
+    toast({
+      title: "Fitur Belum Tersedia",
+      description: `${feature} masih dalam tahap pengembangan dan belum tersinkronisasi ke database utama.`,
+    });
+  };
 
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
 
@@ -61,7 +71,7 @@ export default function TaxManagement() {
           </TabsList>
 
           {activeTab === 'setup' && (
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20">
+            <Button onClick={() => handleNotReady('New Tax Rate')} className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20">
               <Plus className="w-4 h-4 mr-2" /> New Tax Rate
             </Button>
           )}
@@ -75,7 +85,19 @@ export default function TaxManagement() {
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">PPN Keluaran (Sales VAT)</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400">PPN Keluaran (Sales VAT)</p>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Data mock. Akan ditarik dari pajak transaksi modul Sales Invoices.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                     <p className="text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
                       {formatCurrency(taxMetrics.ppnKeluaran)}
                     </p>
@@ -97,7 +119,19 @@ export default function TaxManagement() {
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">PPN Masukan (Purchase VAT)</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400">PPN Masukan (Purchase VAT)</p>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Data mock. Akan ditarik dari pajak transaksi modul Payable Invoices/PO.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                     <p className="text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
                       {formatCurrency(taxMetrics.ppnMasukan)}
                     </p>
@@ -123,7 +157,19 @@ export default function TaxManagement() {
               <CardContent className="p-6 relative z-10 text-white">
                 <div className="flex justify-between items-start">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-blue-100">PPN Kurang Bayar (Payable)</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-blue-100">PPN Kurang Bayar (Payable)</p>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="w-4 h-4 text-blue-200 hover:text-white" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Data mock. Hasil selisih PPN Keluaran dikurangi PPN Masukan bulan ini.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                     <p className="text-3xl font-black tracking-tight drop-shadow-md">
                       {formatCurrency(taxMetrics.kurangBayar)}
                     </p>
@@ -212,10 +258,10 @@ export default function TaxManagement() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-blue-600">
+                          <Button onClick={() => handleNotReady('Pengaturan Pajak')} variant="ghost" size="icon" className="text-slate-400 hover:text-blue-600">
                             <Settings className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="text-slate-400 hover:text-slate-600">
+                          <Button onClick={() => handleNotReady('Opsi Lainnya')} variant="ghost" size="icon" className="text-slate-400 hover:text-slate-600">
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </TableCell>
