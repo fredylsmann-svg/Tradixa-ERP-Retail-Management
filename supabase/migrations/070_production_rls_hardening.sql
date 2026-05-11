@@ -116,7 +116,7 @@ END;
 $$;
 
 -- =============================================
--- STEP 3: USERS TABLE — Self-access via email
+-- STEP 3: USERS TABLE — Same-store access
 -- =============================================
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
@@ -126,19 +126,34 @@ DROP POLICY IF EXISTS "Users can insert" ON users;
 DROP POLICY IF EXISTS "Anon can insert users" ON users;
 DROP POLICY IF EXISTS "Anon can read users" ON users;
 DROP POLICY IF EXISTS "Authenticated full access users" ON users;
+DROP POLICY IF EXISTS "Users can read same store" ON users;
 
--- Users can read their own record (matched by email from JWT)
-CREATE POLICY "Users can read own data" ON users
+-- SELECT: Read own record + users from same store (UserManagement, chat)
+CREATE POLICY "Users can read same store" ON users
   FOR SELECT TO authenticated
-  USING (email = auth.jwt()->>'email');
+  USING (
+    email = auth.jwt()->>'email'
+    OR current_store_id IN (
+      SELECT current_store_id FROM users WHERE email = auth.jwt()->>'email'
+      UNION SELECT id::text FROM stores WHERE owner_user_id IN (
+        SELECT id::text FROM users WHERE email = auth.jwt()->>'email'
+      )
+    )
+    OR store_id IN (
+      SELECT store_id FROM users WHERE email = auth.jwt()->>'email'
+      UNION SELECT id::text FROM stores WHERE owner_user_id IN (
+        SELECT id::text FROM users WHERE email = auth.jwt()->>'email'
+      )
+    )
+  );
 
--- Users can update their own record
+-- UPDATE: Only own record
 CREATE POLICY "Users can update own data" ON users
   FOR UPDATE TO authenticated
   USING (email = auth.jwt()->>'email')
   WITH CHECK (email = auth.jwt()->>'email');
 
--- Allow insert during signup
+-- INSERT: Allow for signup + staff invite flow
 CREATE POLICY "Users can insert" ON users
   FOR INSERT TO authenticated
   WITH CHECK (true);
@@ -147,22 +162,22 @@ CREATE POLICY "Anon can insert users" ON users
   FOR INSERT TO anon
   WITH CHECK (true);
 
--- Anon can read for login flow
+-- Anon SELECT: staff invite flow + login check
 CREATE POLICY "Anon can read users" ON users
   FOR SELECT TO anon
   USING (true);
 
 -- =============================================
--- STEP 4: STORES TABLE — Owner access via user bridge
+-- STEP 4: STORES TABLE — Owner + Staff access
 -- =============================================
 ALTER TABLE stores ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Authenticated full access stores" ON stores;
 DROP POLICY IF EXISTS "Owner can manage store" ON stores;
+DROP POLICY IF EXISTS "Staff can read store" ON stores;
 DROP POLICY IF EXISTS "Anon read stores" ON stores;
 
--- Owner can manage their own store
--- Bridge: auth email -> users.id -> stores.owner_user_id
+-- Owner: full CRUD
 CREATE POLICY "Owner can manage store" ON stores
   FOR ALL TO authenticated
   USING (
@@ -173,6 +188,16 @@ CREATE POLICY "Owner can manage store" ON stores
   WITH CHECK (
     owner_user_id IN (
       SELECT id::text FROM users WHERE email = auth.jwt()->>'email'
+    )
+  );
+
+-- Staff: read their assigned store
+CREATE POLICY "Staff can read store" ON stores
+  FOR SELECT TO authenticated
+  USING (
+    id::text IN (
+      SELECT current_store_id FROM users WHERE email = auth.jwt()->>'email' AND current_store_id IS NOT NULL
+      UNION SELECT store_id FROM users WHERE email = auth.jwt()->>'email' AND store_id IS NOT NULL
     )
   );
 
