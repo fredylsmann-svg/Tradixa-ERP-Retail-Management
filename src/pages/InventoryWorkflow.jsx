@@ -15,7 +15,7 @@ const steps = [
     id: 'product-master',
     title: 'Product Master',
     subtitle: 'Konfigurasi Pelacakan Stok',
-    description: 'Atur tipe pelacakan (Standard, Batch, Serial) dan Shelf Life bawaan (Usia Simpan) untuk tiap produk agar sistem bisa mengawasi FEFO.',
+    description: 'Atur tipe pelacakan (Standard, Batch, Serial), Shelf Life, dan Issue Method (FIFO/LIFO/FEFO) untuk tiap produk.',
     icon: Boxes,
     gradient: 'from-blue-500 to-blue-600',
     path: '/ProductMaster',
@@ -82,12 +82,12 @@ const steps = [
   {
     id: 'sales',
     title: 'Sales & POS',
-    subtitle: 'Auto-FEFO Deduction',
-    description: 'Saat kasir atau tenaga penjual membuat transaksi, sistem FEFO Engine otomatis mencari batch terlama (paling cepat kedaluwarsa) untuk dipotong lebih dulu.',
+    subtitle: 'Auto-Batch Deduction',
+    description: 'Saat kasir membuat transaksi, sistem Batch Engine otomatis mencari batch yang sesuai dengan pengaturan produk (FIFO/LIFO/FEFO) untuk dipotong lebih dulu.',
     icon: ShoppingCart,
     gradient: 'from-emerald-500 to-emerald-600',
     path: '/SalesTransaction',
-    tip: 'Kasir tidak perlu memilih batch secara manual. Otak FEFO berjalan otomatis di belakang layar untuk mencegah dead-stock.',
+    tip: 'Kasir tidak perlu memilih batch secara manual. Otak alokasi berjalan otomatis di belakang layar.',
     output: 'Stok berkurang dari batch terlama secara presisi',
     journal: 'DR Kas/Piutang | CR Pendapatan & DR HPP | CR Persediaan',
     subSteps: [
@@ -162,7 +162,7 @@ export default function InventoryWorkflow() {
           </div>
           <div>
             <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">Inventory Workflow</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">SOP Manajemen Stok Enterprise dengan Otomatisasi FEFO & Batch Tracking</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">SOP Manajemen Stok Enterprise dengan Otomatisasi Batch (FIFO/LIFO/FEFO)</p>
           </div>
         </div>
         <Badge className="bg-blue-50 text-blue-700 border-blue-200 font-bold text-[10px] uppercase tracking-widest hidden md:inline-flex">
@@ -226,7 +226,7 @@ export default function InventoryWorkflow() {
       <Card className="border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50/50 dark:bg-slate-900/50">
         <div className="bg-slate-900 dark:bg-black px-6 py-3">
           <h3 className="text-white font-bold text-sm tracking-tight flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-slate-300" /> Sistem FEFO Engine Otomatis (First Expired, First Out)
+            <Cpu className="w-4 h-4 text-slate-300" /> Sistem Batch Engine Otomatis (FIFO, LIFO, FEFO)
           </h3>
         </div>
         <CardContent className="p-6">
@@ -259,16 +259,20 @@ export default function InventoryWorkflow() {
                   </div>
                 </div>
                 <div className="pt-2">
-                  <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                    Jika kasir menjual <strong>15 botol</strong>, FEFO Engine akan secara transparan memotong:
-                    <br /><span className="font-bold text-emerald-600 dark:text-emerald-400">10 dari Batch A (Habis)</span> dan <span className="font-bold text-emerald-600 dark:text-emerald-400">5 dari Batch B (Sisa 75)</span>.
-                  </p>
+                  <div className="text-xs font-medium text-slate-700 dark:text-slate-300 space-y-2">
+                    <p>Jika kasir menjual <strong>15 botol</strong>, Batch Engine akan memotong berdasarkan <em>Issue Method</em>:</p>
+                    <ul className="list-disc pl-4 space-y-1">
+                      <li><span className="font-bold text-blue-600 dark:text-blue-400">FIFO:</span> Memotong 10 dari Batch masuk pertama, 5 dari masuk kedua.</li>
+                      <li><span className="font-bold text-indigo-600 dark:text-indigo-400">LIFO:</span> Memotong 15 langsung dari Batch masuk paling akhir (terbaru).</li>
+                      <li><span className="font-bold text-emerald-600 dark:text-emerald-400">FEFO:</span> Memotong 10 dari Batch A (Exp terdekat) dan 5 dari Batch B.</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4 flex flex-col justify-center">
-              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2">Manfaat Enterprise FEFO:</h4>
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2">Manfaat Enterprise Batch Management:</h4>
 
               <div className="flex gap-3 items-start">
                 <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0 mt-0.5">
