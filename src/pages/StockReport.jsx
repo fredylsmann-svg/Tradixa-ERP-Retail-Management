@@ -271,8 +271,8 @@ export default function StockReport({ store }) {
                 onClick={() => setActiveTab('batch')}
                 className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center ${activeTab === 'batch' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
               >
-                Batch Breakdown (FEFO)
-                <InfoTip text="Detail rincian stok per nomor batch, tanggal produksi, dan kadaluarsa. Membantu pelacakan metode First Expired First Out." />
+                Batch Tracking
+                <InfoTip text="Detail rincian stok per nomor batch. Berguna untuk pelacakan barang dengan metode FIFO, FEFO, atau LIFO." />
               </button>
               <button
                 onClick={() => setActiveTab('expiry')}
@@ -366,7 +366,7 @@ export default function StockReport({ store }) {
                     <TableHead>Expired Date</TableHead>
                     <TableHead className="text-center">Sisa Stok</TableHead>
                     <TableHead className="text-center">Initial</TableHead>
-                    <TableHead className="text-center pr-8">Status FEFO</TableHead>
+                    <TableHead className="text-center pr-8">Status Batch</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -410,7 +410,7 @@ export default function StockReport({ store }) {
                               ) : isNearExpiry ? (
                                 <Badge className="bg-amber-500 text-white border-none font-black text-[9px] uppercase tracking-tighter">NEAR EXPIRY</Badge>
                               ) : (
-                                <Badge className="bg-emerald-500 text-white border-none font-black text-[9px] uppercase tracking-tighter">GOOD (FEFO OK)</Badge>
+                                <Badge className="bg-emerald-500 text-white border-none font-black text-[9px] uppercase tracking-tighter">GOOD (OK)</Badge>
                               )}
                             </TableCell>
                           </TableRow>

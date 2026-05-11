@@ -32,18 +32,27 @@ export const allocateBatches = async (storeId, productId, requestedQty) => {
       return qty > 0 && !isExpired;
     });
 
-    // 3. Sort by FEFO (Expiry Date Ascending)
-    // If expiry date is missing or same, fallback to FIFO (received_date ascending)
+    // 2.5 Fetch product to know its issue_method
+    const product = await api.entities.Product.get(productId);
+    const issueMethod = product?.issue_method || 'FIFO';
+
+    // 3. Sort based on issueMethod (FIFO, LIFO, FEFO)
     availableBatches.sort((a, b) => {
-      const expA = a.expiry_date ? new Date(a.expiry_date).getTime() : Infinity;
-      const expB = b.expiry_date ? new Date(b.expiry_date).getTime() : Infinity;
-      
-      if (expA !== expB) {
-        return expA - expB;
+      if (issueMethod === 'FEFO') {
+        const expA = a.expiry_date ? new Date(a.expiry_date).getTime() : Infinity;
+        const expB = b.expiry_date ? new Date(b.expiry_date).getTime() : Infinity;
+        if (expA !== expB) return expA - expB;
+        // fallback to FIFO if expiry dates are the same or missing
       }
       
-      const recA = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const recB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      const recA = a.created_date ? new Date(a.created_date).getTime() : (a.created_at ? new Date(a.created_at).getTime() : 0);
+      const recB = b.created_date ? new Date(b.created_date).getTime() : (b.created_at ? new Date(b.created_at).getTime() : 0);
+      
+      if (issueMethod === 'LIFO') {
+        return recB - recA; // Newest first
+      }
+      
+      // Default to FIFO (Oldest first)
       return recA - recB;
     });
 
