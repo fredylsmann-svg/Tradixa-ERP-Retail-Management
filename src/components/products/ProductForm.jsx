@@ -38,6 +38,32 @@ export default function ProductForm({ open, onClose, product, storeId, onSuccess
     issue_method: product?.issue_method || 'FIFO'
   });
 
+  // Sync formData + imagePreview when product changes (edit mode) or dialog opens
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        barcode: product?.barcode || '',
+        sku: product?.sku || '',
+        name: product?.name || '',
+        category: product?.category || 'Sembako',
+        location_name: product?.location_name || '',
+        buy_unit: product?.buy_unit || 'Dus',
+        sell_unit: product?.sell_unit || 'Pcs',
+        conversion_rate: product?.conversion_rate || 24,
+        buy_price: product?.buy_price || 0,
+        sell_price: product?.sell_price || 0,
+        stock: product?.stock || 0,
+        reorder_level: product?.reorder_level || 10,
+        tracking_type: product?.tracking_type || 'None',
+        track_expiry: product?.track_expiry || false,
+        default_shelf_life: product?.default_shelf_life || 365,
+        issue_method: product?.issue_method || 'FIFO'
+      });
+      setImagePreview(product?.image_url || null);
+      setImageFile(null);
+    }
+  }, [open, product]);
+
   // Auto Generate SKU
   useEffect(() => {
     if (open && !product && (!formData.sku || formData.sku.startsWith('SKU-'))) {
@@ -156,7 +182,16 @@ export default function ProductForm({ open, onClose, product, storeId, onSuccess
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label>Barcode</Label>
+            <Label className="flex items-center gap-1.5">
+              Barcode / Barcode Scanner
+              <div className="group relative">
+                <Info className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-blue-500" />
+                <div className="hidden group-hover:block absolute z-50 w-64 p-3 mt-1 text-[11px] text-white bg-slate-800 rounded-xl shadow-xl left-1/2 -translate-x-1/2 top-full font-normal">
+                  <p className="font-bold mb-1">Integrasi Kasir (POS):</p>
+                  Barcode ini terintegrasi penuh dengan modul Kasir (Sales/POS). Anda bisa scan kemasan produk langsung di kasir (pakai alat scanner atau kamera HP), lalu produk otomatis masuk ke keranjang belanja!
+                </div>
+              </div>
+            </Label>
             <div className="flex gap-2 mt-1.5">
               <Input value={formData.barcode} onChange={(e) => setFormData({ ...formData, barcode: e.target.value })} placeholder="Scan atau input manual" className="flex-1" />
               <Button type="button" variant="outline" size="icon" onClick={() => setShowScanner(true)}><Scan className="w-4 h-4" /></Button>
@@ -256,7 +291,7 @@ export default function ProductForm({ open, onClose, product, storeId, onSuccess
                 <SelectContent>
                   <SelectItem value="None">Tanpa Pelacakan (Standard)</SelectItem>
                   <SelectItem value="Batch">Pelacakan Per Batch (Expired Date)</SelectItem>
-                  <SelectItem value="Serial" disabled className="text-slate-400 italic">Serial Tracking (Coming Soon)</SelectItem>
+                  <SelectItem value="Serial" className="font-medium">Pelacakan Per Serial (IMEI/SN)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

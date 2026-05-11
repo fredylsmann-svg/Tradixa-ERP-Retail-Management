@@ -19,6 +19,10 @@ export default defineConfig({
     chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {
+        // Hash-only filenames — hide component names from browser Sources tab
+        entryFileNames: 'assets/[hash].js',
+        chunkFileNames: 'assets/[hash].js',
+        assetFileNames: 'assets/[hash].[ext]',
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-ui': [
@@ -52,6 +56,10 @@ export default defineConfig({
         }
       }
     }
+  },
+  // Strip all console.log and debugger statements in production build
+  esbuild: {
+    drop: ['console', 'debugger'],
   },
   server: {
     port: 5173,

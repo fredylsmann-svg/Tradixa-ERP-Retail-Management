@@ -48,17 +48,18 @@ const steps = [
   {
     id: 'igrn',
     title: 'Inventory GRN',
-    subtitle: 'Input Batch & Expiry',
-    description: 'Tim Gudang Inti memasukkan barang ke sistem Ledger. Jika barang memiliki tipe pelacakan Batch, sistem mewajibkan input Nomor Batch & Tanggal Kedaluwarsa.',
+    subtitle: 'Input Batch & Serial',
+    description: 'Tim Gudang Inti memasukkan barang ke sistem Ledger. Jika barang memiliki tipe pelacakan Batch, sistem mewajibkan input Nomor Batch. Jika Serial, wajib input IMEI/SN sesuai kuantitas.',
     icon: Warehouse,
     gradient: 'from-orange-500 to-orange-600',
     path: '/InventoryGRN',
     tip: 'Inventory GRN adalah Single Source of Truth. Stok tidak akan bertambah sebelum proses ini diselesaikan.',
-    output: 'Stok bertambah + Batch ID terekam di database',
+    output: 'Stok bertambah + Batch/Serial ID terekam di database',
     journal: 'DR Persediaan | CR Hutang Dagang (A/P)',
     subSteps: [
       'Tarik data dari Goods Receipt',
       'Jika produk batch-tracked, alokasikan Nomor Batch & Tanggal Expiry',
+      'Jika produk serial-tracked, scan nomor seri (IMEI) sejumlah kuantitas',
       'Posting untuk menambah stok riil dan hutang dagang'
     ]
   },
@@ -82,18 +83,18 @@ const steps = [
   {
     id: 'sales',
     title: 'Sales & POS',
-    subtitle: 'Auto-Batch Deduction',
-    description: 'Saat kasir membuat transaksi, sistem Batch Engine otomatis mencari batch yang sesuai dengan pengaturan produk (FIFO/LIFO/FEFO) untuk dipotong lebih dulu.',
+    subtitle: 'Auto-Batch & Manual Serial Allocation',
+    description: 'Saat kasir memproses transaksi, sistem Batch Engine otomatis memotong batch yang sesuai (FIFO/LIFO/FEFO). Untuk barang Serial, kasir wajib men-scan Nomor Seri spesifik pada kotak Pop-Up Validasi sebelum pembayaran diselesaikan.',
     icon: ShoppingCart,
     gradient: 'from-emerald-500 to-emerald-600',
     path: '/SalesTransaction',
-    tip: 'Kasir tidak perlu memilih batch secara manual. Otak alokasi berjalan otomatis di belakang layar.',
-    output: 'Stok berkurang dari batch terlama secara presisi',
+    tip: 'Batch dipotong otomatis, tetapi Serial wajib di-scan manual untuk memastikan unit fisik yang terjual 100% akurat.',
+    output: 'Stok berkurang, riwayat Batch terupdate, dan Status Serial menjadi "Sold"',
     journal: 'DR Kas/Piutang | CR Pendapatan & DR HPP | CR Persediaan',
     subSteps: [
       'Kasir memasukkan total kuantitas penjualan',
-      'Sistem mengecek batch aktif, diurutkan dari Expiry terdekat',
-      'Jika 1 batch tidak cukup, sistem akan memecah otomatis ke batch berikutnya'
+      'Untuk Batch, sistem memotong dari Expiry terdekat (FEFO) atau masuk pertama (FIFO)',
+      'Untuk Serial, sistem memblokir checkout dan mewajibkan scan IMEI/SN unit tersebut'
     ]
   },
   {

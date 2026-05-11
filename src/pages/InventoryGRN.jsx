@@ -34,7 +34,8 @@ import {
   X,
   ChevronLeft,
   Boxes,
-  Info
+  Info,
+  Barcode
 } from 'lucide-react';
 import SignaturePad from '@/components/ui/SignaturePad';
 import PageDatePicker from '@/components/layout/PageDatePicker';
@@ -88,6 +89,8 @@ export default function InventoryGRN({ store }) {
   const [signatureHistory, setSignatureHistory] = useState([]);
   const [showBatchDialog, setShowBatchDialog] = useState(false);
   const [currentBatchItemIdx, setCurrentBatchItemIdx] = useState(null);
+  const [showSerialDialog, setShowSerialDialog] = useState(false);
+  const [currentSerialItemIdx, setCurrentSerialItemIdx] = useState(null);
 
   const [form, setForm] = useState({
     storage_location: '',
@@ -184,6 +187,7 @@ export default function InventoryGRN({ store }) {
         ) || {};
 
         const isBatchTracked = (prod.tracking_type || 'None') === 'Batch';
+        const isSerialTracked = (prod.tracking_type || 'None') === 'Serial';
         const warehouseQty = item.received_qty || 0;
 
         // Auto-generate batch untuk produk batch-tracked (seperti real ERP)
@@ -201,6 +205,12 @@ export default function InventoryGRN({ store }) {
           }];
         }
 
+        // Initialize empty serials for Serial tracked products
+        let initialSerials = [];
+        if (isSerialTracked && warehouseQty > 0) {
+          initialSerials = Array(warehouseQty).fill({ serial_number: '' });
+        }
+
         return {
           ...item,
           sku: item.sku || prod.sku || '',
@@ -211,7 +221,8 @@ export default function InventoryGRN({ store }) {
           tracking_type: prod.tracking_type || 'None',
           track_expiry: prod.track_expiry || false,
           default_shelf_life: prod.default_shelf_life || 365,
-          batches: autoBatches
+          batches: autoBatches,
+          serials: initialSerials
         };
       }));
       setForm(prev => ({
@@ -245,6 +256,20 @@ export default function InventoryGRN({ store }) {
           updated.batches = []; // Reset batches if they exceed new quantity
         }
       }
+
+      // Auto-adjust serials array length
+      if ((field === 'reject_qty' || field === 'warehouse_qty') && updated.tracking_type === 'Serial') {
+        const currentLen = (updated.serials || []).length;
+        if (currentLen > updated.warehouse_qty) {
+          updated.serials = updated.serials.slice(0, updated.warehouse_qty);
+        } else if (currentLen < updated.warehouse_qty) {
+          updated.serials = [
+            ...(updated.serials || []),
+            ...Array(updated.warehouse_qty - currentLen).fill({ serial_number: '' })
+          ];
+        }
+      }
+
       return updated;
     }));
   };
@@ -279,18 +304,39 @@ export default function InventoryGRN({ store }) {
   };
 
   const updateBatchField = (batchIdx, field, value) => {
-    const newItems = [...items];
-    newItems[currentBatchItemIdx].batches[batchIdx] = {
-      ...newItems[currentBatchItemIdx].batches[batchIdx],
-      [field]: value
-    };
+    setItems(prevItems => {
+      const newItems = [...prevItems];
+      const newItem = { ...newItems[currentBatchItemIdx] };
+      const newBatches = [...newItem.batches];
+      newBatches[batchIdx] = {
+        ...newBatches[batchIdx],
+        [field]: value
+      };
 
-    // Auto calculate expiry if manufacture_date changes and shelf_life exists
-    if (field === 'manufacture_date' && newItems[currentBatchItemIdx].track_expiry && newItems[currentBatchItemIdx].default_shelf_life) {
-      newItems[currentBatchItemIdx].batches[batchIdx].expiry_date = moment(value).add(newItems[currentBatchItemIdx].default_shelf_life, 'days').format('YYYY-MM-DD');
-    }
+      // Auto calculate expiry if manufacture_date changes and shelf_life exists
+      if (field === 'manufacture_date' && newItem.track_expiry && newItem.default_shelf_life) {
+        newBatches[batchIdx].expiry_date = moment(value).add(newItem.default_shelf_life, 'days').format('YYYY-MM-DD');
+      }
 
-    setItems(newItems);
+      newItem.batches = newBatches;
+      newItems[currentBatchItemIdx] = newItem;
+      return newItems;
+    });
+  };
+
+  const updateSerialField = (serialIdx, value) => {
+    setItems(prevItems => {
+      const newItems = [...prevItems];
+      const newItem = { ...newItems[currentSerialItemIdx] };
+      const newSerials = [...newItem.serials];
+      newSerials[serialIdx] = {
+        ...newSerials[serialIdx],
+        serial_number: value
+      };
+      newItem.serials = newSerials;
+      newItems[currentSerialItemIdx] = newItem;
+      return newItems;
+    });
   };
 
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID').format(val);
@@ -325,6 +371,22 @@ export default function InventoryGRN({ store }) {
       toast({
         title: "Batch Belum Lengkap",
         description: `Produk "${missingBatches.product_name}" memerlukan alokasi batch sejumlah Diterima ke Gudang (${missingBatches.warehouse_qty}).`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validation for Serials
+    const serialTrackedItems = items.filter(i => i.tracking_type === 'Serial' && i.warehouse_qty > 0);
+    const missingSerials = serialTrackedItems.find(i => {
+      const validSerials = (i.serials || []).filter(s => s.serial_number && s.serial_number.trim() !== '');
+      return validSerials.length !== i.warehouse_qty;
+    });
+
+    if (missingSerials) {
+      toast({
+        title: "Nomor Seri Belum Lengkap",
+        description: `Produk "${missingSerials.product_name}" memerlukan input ${missingSerials.warehouse_qty} Nomor Seri spesifik.`,
         variant: "destructive"
       });
       return;
@@ -518,8 +580,35 @@ export default function InventoryGRN({ store }) {
                 timestamp_wib: getWIBTimestamp()
               });
             }
+          } else if (item.tracking_type === 'Serial' && item.serials?.length > 0) {
+            // --- SERIAL MANAGEMENT INTEGRATION ---
+            for (let s of item.serials) {
+              await api.entities.InventorySerial.create({
+                store_id: store.id,
+                product_id: productId,
+                serial_number: s.serial_number,
+                status: 'Available',
+                supplier_id: selectedGrn.supplier_id || null,
+                po_id: selectedGrn.po_id || null,
+                inventory_grn_id: null,
+                unit_cost: Number(item.unit_price || item.price || 0)
+              });
+
+              // Each serial gets its own StockMovement row
+              await api.entities.StockMovement.create({
+                store_id: store.id,
+                reference: igrnNumber,
+                product_id: productId,
+                product_name: item.product_name || item.description,
+                movement_type: 'in',
+                stock_type: 'IGRN',
+                quantity: 1,
+                notes: `SN: ${s.serial_number}`,
+                timestamp_wib: getWIBTimestamp()
+              });
+            }
           } else {
-            // Add StockMovement without batch
+            // Add StockMovement without batch/serial
             await api.entities.StockMovement.create({
               store_id: store.id,
               reference: igrnNumber,
@@ -732,7 +821,7 @@ export default function InventoryGRN({ store }) {
                 <div className="space-y-4">
                   <Label className="text-base font-black text-slate-900 underline decoration-slate-300">Pilih Procurement GRN</Label>
                   <p className="text-xs text-slate-500 mb-2 font-medium italic">Pilih berkas GRN dari supplier yang sudah diverifikasi</p>
-                  <Select value={selectedGrn?.id} onValueChange={handleSelectGrn}>
+                  <Select value={selectedGrn?.id || ""} onValueChange={handleSelectGrn}>
                     <SelectTrigger className="h-12 border-slate-200 bg-white">
                       <SelectValue placeholder="Pilih Procurement GRN..." />
                     </SelectTrigger>
@@ -762,7 +851,7 @@ export default function InventoryGRN({ store }) {
                         <TableHeader className="bg-white border-b">
                           <TableRow>
                             <TableHead className="pl-6">Nama Barang / Deskripsi</TableHead>
-                            <TableHead className="w-[160px] text-center">Batch Entry</TableHead>
+                            <TableHead className="w-[160px] text-center">Batch/Serial Entry</TableHead>
                             <TableHead className="w-[140px] text-center">Expired Date</TableHead>
                             <TableHead className="w-[140px] text-center">Masuk Gudang</TableHead>
                             <TableHead className="w-[120px] text-center">Reject</TableHead>
@@ -778,6 +867,9 @@ export default function InventoryGRN({ store }) {
                                     <p className="font-bold text-slate-900">{item.product_name}</p>
                                     {item.tracking_type === 'Batch' && (
                                       <Badge className="bg-blue-50 text-blue-600 border-blue-200 text-[8px] font-black uppercase tracking-wider h-4 px-1 rounded-sm whitespace-nowrap">Batch Tracked</Badge>
+                                    )}
+                                    {item.tracking_type === 'Serial' && (
+                                      <Badge className="bg-purple-50 text-purple-600 border-purple-200 text-[8px] font-black uppercase tracking-wider h-4 px-1 rounded-sm whitespace-nowrap">Serial Tracked</Badge>
                                     )}
                                   </div>
                                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium">
@@ -802,6 +894,16 @@ export default function InventoryGRN({ store }) {
                                   <Boxes className="w-3 h-3 mr-1" />
                                   {item.batches?.length > 0 ? `${item.batches.reduce((s, b) => s + Number(b.quantity), 0)} PCS` : 'Manage'}
                                 </Button>
+                              ) : item.tracking_type === 'Serial' ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => { setCurrentSerialItemIdx(items.findIndex(i => i.product_id === item.product_id)); setShowSerialDialog(true); }}
+                                  className={`h-8 w-full text-[10px] font-black uppercase tracking-tighter shadow-sm transition-all ${item.serials?.filter(s => s.serial_number).length === item.warehouse_qty && item.warehouse_qty > 0 ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700' : 'text-purple-700 bg-purple-50/50 hover:bg-purple-100 border-purple-200'}`}
+                                >
+                                  <Barcode className="w-3 h-3 mr-1" />
+                                  {item.serials?.filter(s => s.serial_number).length === item.warehouse_qty && item.warehouse_qty > 0 ? `${item.warehouse_qty} OK` : 'Scan SN'}
+                                </Button>
                               ) : (
                                 <span className="text-[10px] text-slate-400 font-bold uppercase">Standard</span>
                               )}
@@ -819,6 +921,8 @@ export default function InventoryGRN({ store }) {
                                     <span className="text-[10px] text-slate-400 font-bold uppercase italic">Via Batch</span>
                                   )}
                                 </div>
+                              ) : item.tracking_type === 'Serial' ? (
+                                <span className="text-[10px] text-slate-400 font-bold uppercase italic">No Expiry (Serial)</span>
                               ) : (
                                 <Input
                                   type="date"
@@ -1013,7 +1117,9 @@ export default function InventoryGRN({ store }) {
 
           {/* Batch Entry Dialog */}
           <Dialog open={showBatchDialog} onOpenChange={setShowBatchDialog}>
-            <DialogContent className="max-w-3xl p-0 overflow-hidden rounded-[32px] bg-white border-none shadow-2xl">
+            <DialogContent className="max-w-3xl p-0 overflow-hidden rounded-[32px] bg-white border-none shadow-2xl" aria-describedby="batch-dialog-desc">
+              <DialogTitle className="sr-only">Batch Entry</DialogTitle>
+              <p id="batch-dialog-desc" className="sr-only">Kelola nomor batch dan kadaluarsa produk</p>
               {currentBatchItemIdx !== null && items[currentBatchItemIdx] && (
                 <>
                   <div className="bg-blue-600 p-8 text-white relative">
@@ -1156,6 +1262,87 @@ export default function InventoryGRN({ store }) {
             </DialogContent>
           </Dialog>
 
+          {/* Serial Entry Dialog */}
+          <Dialog open={showSerialDialog} onOpenChange={setShowSerialDialog}>
+            <DialogContent className="max-w-3xl p-0 overflow-hidden rounded-[32px] bg-white border-none shadow-2xl" aria-describedby="serial-dialog-desc">
+              <DialogTitle className="sr-only">Serial Entry</DialogTitle>
+              <p id="serial-dialog-desc" className="sr-only">Kelola nomor seri produk (IMEI/SN)</p>
+              {currentSerialItemIdx !== null && items[currentSerialItemIdx] && (
+                <>
+                  <div className="bg-purple-600 p-8 text-white relative">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl font-bold flex items-center gap-3">
+                        <Barcode className="w-6 h-6" />
+                        Pindai Nomor Seri (IMEI/SN)
+                      </DialogTitle>
+                      <p className="text-purple-100 text-xs font-medium opacity-80 mt-1">
+                        {items[currentSerialItemIdx].product_name} • Total Wajib Scan: {items[currentSerialItemIdx].warehouse_qty} Unit
+                      </p>
+                    </DialogHeader>
+                  </div>
+
+                  <div className="p-8 space-y-6">
+                    <div className="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden max-h-[50vh] overflow-y-auto">
+                      <Table>
+                        <TableHeader className="bg-white sticky top-0 z-10">
+                          <TableRow>
+                            <TableHead className="w-16 text-center">No.</TableHead>
+                            <TableHead className="text-xs font-black uppercase tracking-widest pl-4">Nomor Seri / IMEI</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {(!items[currentSerialItemIdx].serials || items[currentSerialItemIdx].serials.length === 0) ? (
+                            <TableRow>
+                              <TableCell colSpan={2} className="text-center py-10 text-slate-400 italic text-sm">
+                                Kuantitas masuk gudang 0. Tidak perlu scan serial.
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            items[currentSerialItemIdx].serials.map((serial, sIdx) => (
+                              <TableRow key={sIdx} className="bg-white border-b border-slate-100">
+                                <TableCell className="text-center font-bold text-slate-400">{sIdx + 1}</TableCell>
+                                <TableCell className="pl-4 py-3">
+                                  <Input
+                                    value={serial.serial_number}
+                                    onChange={(e) => updateSerialField(sIdx, e.target.value)}
+                                    className="h-12 text-sm font-bold bg-slate-50 border-slate-200"
+                                    placeholder="Arahkan kursor kesini, lalu Scan Barcode..."
+                                    autoFocus={sIdx === 0} // Auto-focus on first empty row if possible
+                                  />
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-4">
+                        <div className="bg-purple-50 px-4 py-2 rounded-xl border border-purple-100">
+                          <p className="text-[9px] font-black text-purple-500 uppercase tracking-widest mb-1">Status Pindai</p>
+                          <p className={`text-lg font-black tracking-tighter ${items[currentSerialItemIdx].serials?.filter(s => s.serial_number && s.serial_number.trim() !== '').length !== items[currentSerialItemIdx].warehouse_qty ? 'text-amber-600' : 'text-emerald-600'}`}>
+                            {items[currentSerialItemIdx].serials?.filter(s => s.serial_number && s.serial_number.trim() !== '').length || 0} / {items[currentSerialItemIdx].warehouse_qty}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-6 border-t">
+                      <Button
+                        className="h-12 px-8 rounded-2xl bg-slate-900 hover:bg-black font-black uppercase tracking-widest text-[10px]"
+                        onClick={() => setShowSerialDialog(false)}
+                        disabled={items[currentSerialItemIdx].serials?.filter(s => s.serial_number && s.serial_number.trim() !== '').length !== items[currentSerialItemIdx].warehouse_qty}
+                      >
+                        Save & Close
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
+
           <div className="space-y-6">
             <Card className="rounded-3xl border-none shadow-2xl sticky top-8">
               <CardHeader className="bg-white p-6 border-b">
@@ -1208,6 +1395,7 @@ export default function InventoryGRN({ store }) {
               <DialogTitle className="flex items-center gap-2 text-slate-900 font-black">
                 <SignatureIcon className="w-5 h-5 text-slate-900" /> Tanda Tangan Konfirmasi
               </DialogTitle>
+              <p id="signpad-dialog-desc" className="sr-only">Masukkan tanda tangan Anda di sini</p>
             </DialogHeader>
             <div className="p-6">
               <SignaturePad onSave={(data) => {

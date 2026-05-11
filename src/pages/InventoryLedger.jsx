@@ -280,6 +280,11 @@ export default function InventoryLedger({ store }) {
                               )}
                             </div>
                           )}
+                          {m.notes && m.notes.startsWith('SN:') && (
+                            <div className="flex gap-2 mt-1">
+                              <Badge variant="outline" className="text-[9px] bg-purple-50 text-purple-600 border-purple-200 uppercase tracking-tighter">{m.notes}</Badge>
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-center">

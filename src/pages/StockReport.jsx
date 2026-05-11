@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Package, TrendingDown, DollarSign, AlertTriangle, Search, Download, FileDown, Loader2, Boxes, Info } from 'lucide-react';
+import { Package, TrendingDown, DollarSign, AlertTriangle, Search, Download, FileDown, Loader2, Boxes, Info, ShieldCheck, Cpu } from 'lucide-react';
 import moment from 'moment';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -49,6 +49,8 @@ export default function StockReport({ store }) {
   const [activeTab, setActiveTab] = useState('general');
   const [batches, setBatches] = useState([]);
   const [isBatchLoading, setIsBatchLoading] = useState(false);
+  const [serials, setSerials] = useState([]);
+  const [isSerialLoading, setIsSerialLoading] = useState(false);
 
   useEffect(() => {
     if (store?.id) loadData();
@@ -59,6 +61,7 @@ export default function StockReport({ store }) {
     setProducts(data);
     setIsLoading(false);
     loadBatches();
+    loadSerials();
   };
 
   const loadBatches = async () => {
@@ -66,6 +69,18 @@ export default function StockReport({ store }) {
     const data = await api.entities.InventoryBatch.filter({ store_id: store.id, status: 'Available' });
     setBatches(data);
     setIsBatchLoading(false);
+  };
+
+  const loadSerials = async () => {
+    setIsSerialLoading(true);
+    try {
+      const data = await api.entities.InventorySerial.filter({ store_id: store.id });
+      setSerials(data || []);
+    } catch (e) {
+      console.warn('[Tradixa] InventorySerial table may not exist yet:', e.message);
+      setSerials([]);
+    }
+    setIsSerialLoading(false);
   };
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
@@ -282,8 +297,15 @@ export default function StockReport({ store }) {
                 <InfoTip text="Pemantauan khusus untuk barang yang mendekati tanggal kadaluarsa. Memudahkan pencegahan kerugian akibat barang expired." />
               </button>
               <button
+                onClick={() => setActiveTab('serial')}
+                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center ${activeTab === 'serial' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+              >
+                Serial Tracking
+                <InfoTip text="Pelacakan unit per unit berdasarkan nomor seri (IMEI/SN). Berguna untuk produk seperti smartphone, laptop, dan mesin." />
+              </button>
+              <button
                 onClick={() => setActiveTab('slow_moving')}
-                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center ${activeTab === 'slow_moving' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center ${activeTab === 'slow_moving' ? 'bg-slate-700 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
               >
                 Slow Moving
                 <InfoTip text="Daftar barang dengan perputaran stok rendah (tidak terjual dalam 30+ hari terakhir). Berguna untuk strategi cuci gudang." />
@@ -333,6 +355,7 @@ export default function StockReport({ store }) {
                         <TableCell>
                           <p className="font-bold text-slate-900 leading-tight">{p.name}</p>
                           {p.tracking_type === 'Batch' && <Badge className="mt-1 bg-blue-50 text-blue-600 border-none text-[9px] h-4">BATCH TRACKED</Badge>}
+                          {p.tracking_type === 'Serial' && <Badge className="mt-1 bg-purple-50 text-purple-600 border-none text-[9px] h-4">SERIAL TRACKED</Badge>}
                         </TableCell>
                         <TableCell className="font-medium text-slate-500">{p.category}</TableCell>
                         <TableCell className="text-center font-black text-slate-900">{p.stock}</TableCell>
@@ -475,6 +498,76 @@ export default function StockReport({ store }) {
                                 <Badge className="bg-amber-500 text-white border-none font-black text-[9px] uppercase tracking-tighter">NEAR EXPIRY</Badge>
                               )}
                             </TableCell>
+                          </TableRow>
+                        );
+                      })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {activeTab === 'serial' && (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-white border-b">
+                  <TableRow>
+                    <TableHead className="w-12 text-center pl-8">No.</TableHead>
+                    <TableHead>Serial / IMEI</TableHead>
+                    <TableHead>Produk</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead>Referensi GRN</TableHead>
+                    <TableHead>Tanggal Masuk</TableHead>
+                    <TableHead className="text-center pr-8">Terjual Ke</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isSerialLoading ? (
+                    <TableRow><TableCell colSpan={7} className="text-center py-20"><Loader2 className="w-8 h-8 animate-spin mx-auto text-purple-500" /></TableCell></TableRow>
+                  ) : serials.filter(s =>
+                      s.serial_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      (products.find(p => p.id === s.product_id)?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+                    ).length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-20 text-slate-400 italic">
+                        <div className="flex flex-col items-center gap-3">
+                          <Cpu className="w-10 h-10 text-slate-200" />
+                          <p>Belum ada data serial number.</p>
+                          <p className="text-[11px]">Atur produk dengan Tracking Type &quot;Serial&quot; di Product Master, lalu proses barang masuk melalui Inventory GRN.</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    serials
+                      .filter(s =>
+                        s.serial_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (products.find(p => p.id === s.product_id)?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+                      )
+                      .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
+                      .map((s, idx) => {
+                        const prod = products.find(p => p.id === s.product_id);
+                        return (
+                          <TableRow key={s.id} className="hover:bg-slate-50/50">
+                            <TableCell className="text-center text-slate-400 font-bold pl-8">{idx + 1}</TableCell>
+                            <TableCell>
+                              <span className="font-black text-slate-800 uppercase tracking-wider text-sm">{s.serial_number}</span>
+                            </TableCell>
+                            <TableCell>
+                              <p className="font-bold text-slate-900">{prod?.name || '-'}</p>
+                              <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">{prod?.sku || '-'}</p>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {s.status === 'Available' ? (
+                                <Badge className="bg-emerald-500 text-white border-none font-black text-[9px] uppercase tracking-tighter">AVAILABLE</Badge>
+                              ) : s.status === 'Sold' ? (
+                                <Badge className="bg-red-500 text-white border-none font-black text-[9px] uppercase tracking-tighter">SOLD</Badge>
+                              ) : (
+                                <Badge className="bg-amber-500 text-white border-none font-black text-[9px] uppercase tracking-tighter">{s.status?.toUpperCase()}</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-slate-500 font-medium">{s.inventory_grn_id ? s.inventory_grn_id.substring(0, 8) + '...' : '-'}</TableCell>
+                            <TableCell className="text-xs text-slate-500 font-medium">{s.created_date ? moment(s.created_date).format('DD MMM YYYY') : '-'}</TableCell>
+                            <TableCell className="text-center text-xs text-slate-400 pr-8">{s.sales_transaction_id ? s.sales_transaction_id.substring(0, 8) + '...' : <span className="text-slate-300">—</span>}</TableCell>
                           </TableRow>
                         );
                       })

@@ -65,6 +65,9 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [needsDelivery, setNeedsDelivery] = useState(false);
+  const [showSerialModal, setShowSerialModal] = useState(false);
+  const [serialAssignments, setSerialAssignments] = useState({});
+  const [serialTrackedItemsInCart, setSerialTrackedItemsInCart] = useState([]);
   const containerRef = React.useRef(null);
 
   useEffect(() => {
@@ -368,6 +371,27 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
         return;
       }
     }
+
+    // --- SERIAL TRACKING INTERCEPT ---
+    const serialItems = cart.filter(item => {
+      const p = products.find(prod => prod.id === item.product_id);
+      return p && p.tracking_type === 'Serial';
+    });
+
+    if (serialItems.length > 0) {
+      const incomplete = serialItems.some(item => {
+        const assigned = serialAssignments[item.product_id] || [];
+        const validAssigned = assigned.filter(s => s && s.trim() !== '');
+        return validAssigned.length !== item.quantity;
+      });
+
+      if (incomplete) {
+        setSerialTrackedItemsInCart(serialItems);
+        setShowSerialModal(true);
+        return; // Pause submission, wait for modal
+      }
+    }
+    // ---------------------------------
 
     setIsLoading(true);
 
@@ -684,6 +708,31 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
               timestamp_wib: getWIBTimestamp()
             });
           }
+        } else if (product.tracking_type === 'Serial') {
+          // Serial Logic
+          const assignedSerials = serialAssignments[item.product_id] || [];
+          
+          for (const sNumber of assignedSerials) {
+            // Find the specific serial record
+            const serialRecords = await api.entities.InventorySerial.filter({ store_id: storeId, serial_number: sNumber, status: 'Available' });
+            if (serialRecords.length > 0) {
+              await api.entities.InventorySerial.update(serialRecords[0].id, {
+                status: 'Sold',
+                sales_transaction_id: salesTransaction.id
+              });
+            }
+
+            await api.entities.StockMovement.create({
+              store_id: storeId,
+              reference: invoiceNumber,
+              product_id: item.product_id,
+              product_name: item.product_name,
+              movement_type: 'out',
+              stock_type: 'Sales',
+              quantity: 1, // 1 per serial
+              timestamp_wib: getWIBTimestamp()
+            });
+          }
         } else {
           // Standard Logic
           await api.entities.StockMovement.create({
@@ -882,6 +931,24 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                     placeholder="Cari nama produk, SKU, atau scan barcode..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const exactMatch = filteredProducts.find(p => 
+                          (p.barcode && p.barcode.toLowerCase() === searchQuery.toLowerCase()) || 
+                          (p.sku && p.sku.toLowerCase() === searchQuery.toLowerCase())
+                        );
+                        if (exactMatch && exactMatch.stock > 0) {
+                          addToCart(exactMatch);
+                          setSearchQuery('');
+                        } else if (filteredProducts.length === 1 && filteredProducts[0].stock > 0) {
+                          addToCart(filteredProducts[0]);
+                          setSearchQuery('');
+                        } else if (!exactMatch && filteredProducts.length === 0) {
+                          toast({ title: "Tidak Ditemukan", description: "Produk dengan barcode tersebut tidak ada atau stok habis.", variant: "destructive" });
+                        }
+                      }
+                    }}
                     className="pl-12 h-14 text-base rounded-2xl border-slate-200 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                   />
                 </div>
@@ -891,40 +958,45 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                 <ScrollArea className="h-full w-full">
                   <div className="p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 gap-6 pb-10">
-                      {filteredProducts.map(product => (
-                        <div
-                          key={product.id}
-                          onClick={() => product.stock > 0 && addToCart(product)}
-                          className={`group relative bg-white border border-slate-100 rounded-3xl overflow-hidden cursor-pointer transition-all hover:shadow-2xl hover:border-blue-300 active:scale-[0.98] ${product.stock <= 0 ? 'opacity-50 grayscale' : ''
-                            }`}
-                        >
-                          {/* Product Image */}
-                          <div className="aspect-[4/3] bg-slate-50 relative overflow-hidden">
-                            {product.image_url ? (
-                              <img
-                                src={product.image_url}
-                                alt={product.name}
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-slate-50">
-                                <Package className="w-12 h-12 text-slate-200" />
+                      {filteredProducts.map(product => {
+                        const cartItem = cart.find(item => item.product_id === product.id);
+                        const availableStock = product.stock - (cartItem ? cartItem.quantity : 0);
+                        const isOutOfStock = availableStock <= 0;
+
+                        return (
+                          <div
+                            key={product.id}
+                            onClick={() => !isOutOfStock && addToCart(product)}
+                            className={`group relative bg-white border border-slate-100 rounded-3xl overflow-hidden cursor-pointer transition-all hover:shadow-2xl hover:border-blue-300 active:scale-[0.98] ${isOutOfStock ? 'opacity-50 grayscale' : ''
+                              }`}
+                          >
+                            {/* Product Image */}
+                            <div className="aspect-[4/3] bg-slate-50 relative overflow-hidden">
+                              {product.image_url ? (
+                                <img
+                                  src={product.image_url}
+                                  alt={product.name}
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                                  <Package className="w-12 h-12 text-slate-200" />
+                                </div>
+                              )}
+
+                              {/* Price Badge Overlay */}
+                              <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-lg">
+                                <p className="text-sm font-black text-blue-600">Rp {formatCurrency(product.sell_price)}</p>
                               </div>
-                            )}
 
-                            {/* Price Badge Overlay */}
-                            <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-lg">
-                              <p className="text-sm font-black text-blue-600">Rp {formatCurrency(product.sell_price)}</p>
+                              {/* Stock Badge Overlay */}
+                              <div className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-sm ${isOutOfStock ? 'bg-red-500' :
+                                availableStock <= (product.reorder_level || 5) ? 'bg-amber-500' :
+                                  'bg-blue-600/80'
+                                }`}>
+                                {isOutOfStock ? 'Habis' : `Stok: ${availableStock}`}
+                              </div>
                             </div>
-
-                            {/* Stock Badge Overlay */}
-                            <div className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-sm ${product.stock <= 0 ? 'bg-red-500' :
-                              product.stock <= (product.reorder_level || 5) ? 'bg-amber-500' :
-                                'bg-blue-600/80'
-                              }`}>
-                              {product.stock <= 0 ? 'Habis' : `Stok: ${product.stock}`}
-                            </div>
-                          </div>
 
                           <div className="p-4 space-y-1">
                             <p className="font-bold text-slate-800 text-sm leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
@@ -936,11 +1008,12 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                           </div>
 
                           {/* Quick Add Overlay */}
-                          {product.stock > 0 && (
+                          {!isOutOfStock && (
                             <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/5 transition-colors pointer-events-none" />
                           )}
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </ScrollArea>
@@ -1430,6 +1503,113 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                 </div>
               )}
             </ScrollArea>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* SERIAL ALLOCATION MODAL */}
+      <Dialog open={showSerialModal} onOpenChange={setShowSerialModal}>
+        <DialogContent className="max-w-xl p-0 overflow-hidden rounded-[32px] bg-white border-none shadow-2xl">
+          <div className="bg-purple-600 p-8 text-white relative">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-3">
+                <ShieldCheck className="w-6 h-6" />
+                Alokasi Nomor Seri
+              </DialogTitle>
+              <p className="text-purple-100 text-xs font-medium opacity-80 mt-1">
+                Harap pindai (scan) Nomor Seri untuk produk yang memerlukan pelacakan IMEI/SN sebelum melanjutkan pembayaran.
+              </p>
+            </DialogHeader>
+          </div>
+          <div className="p-8 space-y-6">
+            <div className="max-h-[50vh] overflow-y-auto space-y-6 pr-2">
+              {serialTrackedItemsInCart.map((item, idx) => {
+                const requiredQty = item.quantity;
+                const assignments = serialAssignments[item.product_id] || Array(requiredQty).fill('');
+
+                return (
+                  <div key={item.product_id} className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="font-bold text-slate-900">{item.product_name}</p>
+                        <p className="text-xs text-slate-500 font-medium">Butuh {requiredQty} Nomor Seri</p>
+                      </div>
+                      <Badge className="bg-purple-100 text-purple-700">Serial</Badge>
+                    </div>
+                    <div className="space-y-2">
+                      {assignments.map((serial, sIdx) => (
+                        <div key={sIdx} className="relative">
+                          <Input
+                            value={serial}
+                            onChange={(e) => {
+                              const newArr = [...assignments];
+                              newArr[sIdx] = e.target.value;
+                              setSerialAssignments({ ...serialAssignments, [item.product_id]: newArr });
+                            }}
+                            placeholder={`Scan Nomor Seri ke-${sIdx + 1}...`}
+                            className="pl-10 h-11 font-bold bg-white border-slate-200 uppercase"
+                            autoFocus={idx === 0 && sIdx === 0}
+                          />
+                          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex justify-end gap-3 pt-6 border-t">
+              <Button
+                variant="outline"
+                className="h-12 px-6 rounded-2xl border-slate-200 text-slate-600 hover:bg-slate-50 font-bold"
+                onClick={() => setShowSerialModal(false)}
+              >
+                Kembali
+              </Button>
+              <Button
+                className="h-12 px-8 rounded-2xl bg-purple-600 hover:bg-purple-700 font-black uppercase tracking-widest text-[10px]"
+                onClick={async () => {
+                  // Final Verification against DB
+                  setIsLoading(true);
+                  let allValid = true;
+                  let errMsg = '';
+                  
+                  for (const item of serialTrackedItemsInCart) {
+                    const assigned = serialAssignments[item.product_id] || [];
+                    const validAssigned = assigned.filter(s => s && s.trim() !== '');
+                    if (validAssigned.length !== item.quantity) {
+                      allValid = false;
+                      errMsg = `Produk ${item.product_name} masih kurang nomor seri!`;
+                      break;
+                    }
+                    
+                    // Verify if each serial is Available
+                    for (const s of validAssigned) {
+                      const records = await api.entities.InventorySerial.filter({ store_id: storeId, serial_number: s, status: 'Available' });
+                      if (records.length === 0) {
+                        allValid = false;
+                        errMsg = `Nomor Seri ${s} tidak ditemukan di gudang atau sudah terjual!`;
+                        break;
+                      }
+                    }
+                  }
+                  
+                  setIsLoading(false);
+                  
+                  if (!allValid) {
+                    toast({ title: 'Gagal Verifikasi Seri', description: errMsg, variant: 'destructive' });
+                    return;
+                  }
+                  
+                  setShowSerialModal(false);
+                  handleSubmit(); // Process actual checkout
+                }}
+                disabled={isLoading}
+              >
+                {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Konfirmasi & Bayar
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

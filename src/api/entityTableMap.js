@@ -19,6 +19,7 @@ export const ENTITY_TABLE_MAP = {
   StockOpname:        'stock_opnames',
   StockOpnameItem:    'stock_opname_items',
   InventoryBatch:     'inventory_batches',
+  InventorySerial:    'inventory_serials',
 
   // === PROCUREMENT ===
   Supplier:           'suppliers',
