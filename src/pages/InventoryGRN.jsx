@@ -53,10 +53,10 @@ const InfoTip = ({ text }) => {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" onClick={() => setOpen(!open)}
+        <span role="button" tabIndex={0} onClick={() => setOpen(!open)}
           className="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-200 transition-colors shrink-0 ml-1.5 cursor-pointer">
           <Info className="w-2.5 h-2.5 pointer-events-none" />
-        </button>
+        </span>
       </PopoverTrigger>
       <PopoverContent
         side="top"
