@@ -426,7 +426,7 @@ export default function InventoryGRN({ store }) {
       }
       // --------------------------------------------------
 
-      await api.entities.InventoryGRN.create({
+      const igrnRecord = await api.entities.InventoryGRN.create({
         store_id: store.id,
         igrn_number: igrnNumber,
         journal_id: `JV-${moment().format('YYYYMMDD')}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
@@ -557,7 +557,7 @@ export default function InventoryGRN({ store }) {
                 supplier_id: selectedGrn.supplier_id || null,
                 po_id: selectedGrn.po_id || null,
                 procurement_grn_id: selectedGrn.id,
-                inventory_grn_id: null,
+                inventory_grn_id: igrnRecord?.id || null,
                 unit_cost: Number(item.unit_price || item.price || 0),
                 qty_received: Number(b.quantity),
                 qty_on_hand: Number(b.quantity),
@@ -590,7 +590,7 @@ export default function InventoryGRN({ store }) {
                 status: 'Available',
                 supplier_id: selectedGrn.supplier_id || null,
                 po_id: selectedGrn.po_id || null,
-                inventory_grn_id: null,
+                inventory_grn_id: igrnRecord?.id || null,
                 unit_cost: Number(item.unit_price || item.price || 0)
               });
 
