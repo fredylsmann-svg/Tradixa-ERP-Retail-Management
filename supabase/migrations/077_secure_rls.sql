@@ -213,15 +213,14 @@ CREATE POLICY "Anon read supplier_returns" ON supplier_returns
 CREATE POLICY "Anon update supplier_returns" ON supplier_returns
   FOR UPDATE TO anon USING (true) WITH CHECK (true);
 
--- Portal data pendukung
+-- Portal data pendukung (hanya tabel yang benar-benar dipakai portal publik)
 CREATE POLICY "Anon read suppliers" ON suppliers
   FOR SELECT TO anon USING (true);
 CREATE POLICY "Anon read bank_accounts" ON bank_accounts
   FOR SELECT TO anon USING (true);
-CREATE POLICY "Anon read products" ON products
-  FOR SELECT TO anon USING (true);
-CREATE POLICY "Anon read sales_transactions" ON sales_transactions
-  FOR SELECT TO anon USING (true);
+-- CATATAN: products & sales_transactions TIDAK perlu anon read
+-- products: portal menggunakan embedded JSONB items, bukan query terpisah
+-- sales_transactions: webhook Mayar menggunakan SERVICE_ROLE_KEY
 
 -- ============================================================
 -- STEP 9: CATCH-ALL — Safety net
