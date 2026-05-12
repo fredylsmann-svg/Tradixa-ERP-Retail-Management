@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/client';
 import { useAuth } from '@/lib/AuthContext';
-import { Store, Upload, Building2, Phone, Mail, FileText, Loader2, User, ArrowRight, ArrowLeft, Info, MapPin, Camera } from 'lucide-react';
+import { Store, Upload, Building2, Phone, Mail, FileText, Loader2, User, ArrowRight, ArrowLeft, Info, MapPin, Camera, CheckCircle2, ShieldCheck, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
 import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
+import { Checkbox } from '@/components/ui/checkbox';
+import { supabase } from '@/api/client';
 
 const libraries = ['places'];
 
@@ -40,10 +42,37 @@ const InfoTooltip = ({ text }) => {
   );
 };
 
+const ScrollBox = ({ children, onScrolledToBottom }) => {
+  const handleScroll = (e) => {
+    const bottom = e.target.scrollHeight - e.target.scrollTop <= e.target.clientHeight + 20;
+    if (bottom) {
+      onScrolledToBottom(true);
+    }
+  };
+  return (
+    <div 
+      onScroll={handleScroll}
+      className="w-full h-[300px] overflow-y-auto p-5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 leading-relaxed custom-scrollbar shadow-inner"
+    >
+      {children}
+    </div>
+  );
+};
+
 export default function StoreSetup({ onComplete }) {
   const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isTrialLoading, setIsTrialLoading] = useState(false);
+  const [createdStore, setCreatedStore] = useState(null);
+  
+  // Legal Steps State
+  const [scrolledTerms, setScrolledTerms] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [scrolledPrivacy, setScrolledPrivacy] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+
+  // Form State
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [ownerPhotoFile, setOwnerPhotoFile] = useState(null);
@@ -97,10 +126,10 @@ export default function StoreSetup({ onComplete }) {
     if (file) { setOwnerPhotoFile(file); const r = new FileReader(); r.onloadend = () => setOwnerPhotoPreview(r.result); r.readAsDataURL(file); }
   };
 
-  const handleNext = (e) => { e.preventDefault(); setStep(2); };
-  const handleBack = () => setStep(1);
+  const handleNext = (e) => { if (e) e.preventDefault(); setStep(prev => prev + 1); };
+  const handleBack = () => setStep(prev => prev - 1);
 
-  const handleSubmit = async (e) => {
+  const handleCreateStore = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
@@ -116,16 +145,48 @@ export default function StoreSetup({ onComplete }) {
         owner_name: formData.owner_name, owner_position: formData.owner_position,
         owner_phone: formData.owner_phone, owner_photo_url: ownerPhotoUrl,
         owner_notes: formData.owner_notes, bank_name: formData.bank_name,
-        bank_account_number: formData.bank_account_number, is_active: true
+        bank_account_number: formData.bank_account_number, is_active: true,
+        has_used_trial: false // default initialization
       });
 
       await api.auth.updateMe({ current_store_id: store.id, is_store_setup_completed: true });
+      setCreatedStore(store);
       setIsLoading(false);
-      onComplete(store);
+      setStep(5); // Go to Welcome & Plan Selection
     } catch (error) {
       console.error('Setup error:', error);
       alert('Terjadi kesalahan saat setup toko. Silakan coba lagi.');
       setIsLoading(false);
+    }
+  };
+
+  const handleStartTrial = async () => {
+    if (!createdStore) return;
+    setIsTrialLoading(true);
+    try {
+      // 14 days from now
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+      const { error } = await supabase
+        .from('stores')
+        .update({
+          plan: 'pro',
+          has_used_trial: true,
+          plan_started_at: now.toISOString(),
+          plan_expires_at: expiresAt.toISOString()
+        })
+        .eq('id', createdStore.id);
+
+      if (error) throw error;
+      
+      const updatedStore = { ...createdStore, plan: 'pro', has_used_trial: true, plan_started_at: now.toISOString(), plan_expires_at: expiresAt.toISOString() };
+      setIsTrialLoading(false);
+      onComplete(updatedStore);
+    } catch (error) {
+      console.error('Failed to start trial:', error);
+      alert('Gagal memulai trial. Silakan hubungi support.');
+      setIsTrialLoading(false);
     }
   };
 
@@ -173,36 +234,35 @@ export default function StoreSetup({ onComplete }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-[520px] relative z-10"
+        className={`w-full relative z-10 transition-all duration-300 ${step === 5 ? 'max-w-[700px]' : 'max-w-[520px]'}`}
       >
-        {/* Step Indicator */}
-        <div className="relative flex items-center justify-center mb-6 w-full">
-          <button 
-            type="button"
-            onClick={async () => { await api.auth.logout(); window.location.replace('/login'); }} 
-            className="absolute left-0 flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-red-500 transition-colors"
-            title="Kembali ke halaman login"
-          >
-            <ArrowLeft className="w-4 h-4" /> Keluar
-          </button>
-          <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-              step >= 1 ? 'text-white' : 'text-slate-400'
-            }`} style={{ background: step >= 1 ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#f1f5f9', boxShadow: step >= 1 ? '0 2px 8px rgba(37,99,235,0.35)' : 'none' }}>1</div>
-            <span className="text-xs font-semibold" style={{ color: step >= 1 ? '#1e40af' : '#94a3b8' }}>Data Pemilik</span>
+        {/* Step Indicator (Hidden on Welcome Page) */}
+        {step < 5 && (
+          <div className="relative flex items-center justify-center mb-6 w-full">
+            <button 
+              type="button"
+              onClick={async () => { await api.auth.logout(); window.location.replace('/login'); }} 
+              className="absolute left-0 flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-red-500 transition-colors"
+              title="Kembali ke halaman login"
+            >
+              <ArrowLeft className="w-4 h-4" /> Keluar
+            </button>
+            <div className="flex items-center gap-1.5 sm:gap-3">
+              {[1, 2, 3, 4].map((s) => (
+                <React.Fragment key={s}>
+                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ${
+                    step >= s ? 'text-white' : 'text-slate-400'
+                  }`} style={{ background: step >= s ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#f1f5f9', boxShadow: step >= s ? '0 2px 8px rgba(37,99,235,0.35)' : 'none' }}>
+                    {s}
+                  </div>
+                  {s < 4 && <div className="w-4 sm:w-6 h-px bg-slate-200" />}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
-          <div className="w-8 h-px bg-slate-200" />
-          <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-              step >= 2 ? 'text-white' : 'text-slate-400'
-            }`} style={{ background: step >= 2 ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#f1f5f9', boxShadow: step >= 2 ? '0 2px 8px rgba(37,99,235,0.35)' : 'none' }}>2</div>
-            <span className="text-xs font-semibold" style={{ color: step >= 2 ? '#1e40af' : '#94a3b8' }}>Data Toko</span>
-          </div>
-        </div>
-        </div>
+        )}
 
-        {/* Card — no overflow hidden so tooltip can show */}
+        {/* Card */}
         <div className="rounded-2xl border"
           style={{
             background: '#ffffff',
@@ -211,10 +271,165 @@ export default function StoreSetup({ onComplete }) {
           }}>
 
           <AnimatePresence mode="wait" custom={step}>
-            {step === 1 ? (
+            {/* STEP 1: TERMS OF SERVICE */}
+            {step === 1 && (
               <motion.div key="step1" custom={1} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
-                <div className="pt-2 px-8 pb-8">
-                  {/* Logo */}
+                <div className="pt-2 px-6 pb-8 sm:px-8">
+                  <div className="text-center mb-6">
+                    <img src={tradixaLogo} alt="Tradixa" className="h-52 mx-auto -mb-8" />
+                  </div>
+                  <div className="mb-4">
+                    <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: '#1e3a5f' }}>
+                      <FileText className="w-5 h-5 text-blue-600" /> Terms of Service
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-1">Silakan baca dan setujui ketentuan layanan kami.</p>
+                  </div>
+
+                  <ScrollBox onScrolledToBottom={setScrolledTerms}>
+                    <h3 className="font-bold text-slate-800 mb-2">01. Gambaran Umum Layanan</h3>
+                    <p className="mb-4">Tradixa Systems menyediakan platform integrasi digital berbasis cloud (SaaS) yang mencakup sistem ERP, HRIS, dan modul operasional bisnis lainnya. Layanan kami dirancang untuk membantu perusahaan (B2B) dalam mengelola alur kerja, data karyawan, dan efisiensi operasional harian.</p>
+
+                    <h3 className="font-bold text-slate-800 mb-2">02. Akun Pengguna dan Keamanan</h3>
+                    <p className="mb-2">Untuk mengakses layanan Tradixa, Anda setuju untuk:</p>
+                    <ul className="list-disc pl-5 mb-4 space-y-1">
+                      <li>Memberikan informasi pendaftaran perusahaan yang akurat dan lengkap.</li>
+                      <li>Menjaga kerahasiaan kredensial akun Anda dan bertanggung jawab atas semua aktivitas di bawah akun tersebut.</li>
+                      <li>Segera memberitahu kami jika terdapat indikasi penyalahgunaan akun atau pelanggaran keamanan.</li>
+                    </ul>
+
+                    <h3 className="font-bold text-slate-800 mb-2">03. Aturan Penggunaan dan Larangan</h3>
+                    <p className="mb-2">Kami menghargai lingkungan profesional. Anda dilarang untuk:</p>
+                    <ul className="list-disc pl-5 mb-4 space-y-1">
+                      <li>Menggunakan platform untuk aktivitas ilegal, penipuan, atau melanggar hukum RI.</li>
+                      <li>Melakukan rekayasa balik (reverse engineering) atau mencoba menyalin kode sumber platform.</li>
+                      <li>Mengunggah konten yang mengandung virus, malware, atau skrip berbahaya.</li>
+                      <li>Mengganggu integritas atau stabilitas sistem cloud Tradixa Systems.</li>
+                    </ul>
+
+                    <h3 className="font-bold text-slate-800 mb-2">04. Kepemilikan Data Bisnis</h3>
+                    <p className="mb-4">Anda memegang kepemilikan penuh atas semua data bisnis, catatan karyawan, dan konten yang Anda unggah ke Tradixa Systems. Kami hanya bertindak sebagai pemroses data untuk memfasilitasi operasional Anda sesuai dengan instruksi yang diberikan melalui fitur-fitur aplikasi.</p>
+
+                    <h3 className="font-bold text-slate-800 mb-2">05. Ketersediaan dan Dukungan</h3>
+                    <p className="mb-4">Meskipun kami berkomitmen untuk menyediakan layanan terbaik, kami tidak menjamin ketersediaan sistem 100% tanpa gangguan (uptime). Kami melakukan pemeliharaan rutin yang mungkin menyebabkan downtime singkat, dan kami akan berusaha memberikan notifikasi sebelumnya melalui dashboard aplikasi.</p>
+
+                    <h3 className="font-bold text-slate-800 mb-2">06. Batasan Tanggung Jawab</h3>
+                    <p className="mb-4">Tradixa Systems tidak bertanggung jawab atas kerugian tidak langsung, kehilangan keuntungan bisnis, atau kerusakan data yang disebabkan oleh kelalaian pihak ketiga atau penggunaan platform yang tidak sesuai instruksi teknis kami. Layanan disediakan dengan basis "sebagaimana adanya" (as is).</p>
+
+                    <h3 className="font-bold text-slate-800 mb-2">07. Penghentian Akun</h3>
+                    <p className="mb-4">Anda dapat menghentikan penggunaan layanan kapan saja. Tradixa Systems juga berhak menangguhkan atau menghentikan akses jika ditemukan pelanggaran serius terhadap ketentuan penggunaan ini, demi melindungi keamanan pengguna lainnya.</p>
+
+                    <h3 className="font-bold text-slate-800 mb-2">08. Hukum yang Berlaku</h3>
+                    <p className="mb-4">Ketentuan ini diatur dan ditafsirkan sesuai dengan hukum yang berlaku di Republik Indonesia. Setiap perselisihan yang timbul akan diselesaikan melalui musyawarah untuk mufakat atau melalui yurisdiksi pengadilan yang berwenang.</p>
+                  </ScrollBox>
+
+                  <div className="mt-4 flex items-center space-x-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <Checkbox 
+                      id="terms" 
+                      disabled={!scrolledTerms}
+                      checked={acceptedTerms}
+                      onCheckedChange={setAcceptedTerms}
+                      className={!scrolledTerms ? 'opacity-50 cursor-not-allowed' : ''}
+                    />
+                    <label htmlFor="terms" className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed ${!scrolledTerms ? 'text-slate-400' : 'text-slate-700 cursor-pointer'}`}>
+                      Saya menyetujui Terms of Service Tradixa Systems
+                    </label>
+                  </div>
+                  {!scrolledTerms && <p className="text-[10px] text-amber-600 mt-1.5 ml-1 font-medium">Scroll sampai ke bawah untuk mencentang persetujuan.</p>}
+
+                  <div className="mt-6">
+                    <button type="button" onClick={() => handleNext()} disabled={!acceptedTerms}
+                      className="w-full h-[46px] rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg"
+                      style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', boxShadow: acceptedTerms ? '0 4px 14px rgba(37,99,235,0.35)' : 'none' }}>
+                      Lanjutkan <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* STEP 2: PRIVACY POLICY */}
+            {step === 2 && (
+              <motion.div key="step2" custom={2} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+                <div className="pt-2 px-6 pb-8 sm:px-8">
+                  <div className="text-center mb-6">
+                    <img src={tradixaLogo} alt="Tradixa" className="h-52 mx-auto -mb-8" />
+                  </div>
+                  <div className="mb-4">
+                    <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: '#1e3a5f' }}>
+                      <ShieldCheck className="w-5 h-5 text-blue-600" /> Privacy Policy
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-1">Kebijakan privasi dan keamanan data Anda.</p>
+                  </div>
+
+                  <ScrollBox onScrolledToBottom={setScrolledPrivacy}>
+                    <h3 className="font-bold text-slate-800 mb-2">01. Pendekatan Kami Terhadap Privasi</h3>
+                    <p className="mb-4">Di Tradixa Systems, kami percaya bahwa data Anda adalah aset paling berharga Anda. Kami berkomitmen untuk menjaga kepercayaan Anda dengan bersikap transparan tentang bagaimana kami mengelola dan melindungi informasi yang dipercayakan kepada platform SaaS kami. Kebijakan ini menjelaskan praktik kami dalam memproses data untuk solusi ERP, HRIS, dan sistem operasional lainnya.</p>
+
+                    <h3 className="font-bold text-slate-800 mb-2">02. Informasi yang Kami Kelola</h3>
+                    <p className="mb-2">Untuk memberikan layanan yang optimal, kami memproses beberapa kategori data berikut:</p>
+                    <ul className="list-disc pl-5 mb-4 space-y-1">
+                      <li><strong>Data Perusahaan:</strong> Nama entitas bisnis, alamat kantor, NPWP, dan informasi identitas perusahaan lainnya.</li>
+                      <li><strong>Informasi Karyawan:</strong> Data yang dimasukkan ke dalam sistem HRIS seperti nama, jabatan, struktur organisasi, dan catatan operasional terkait.</li>
+                      <li><strong>Data Operasional:</strong> Catatan transaksi, manajemen stok, dan alur kerja bisnis yang Anda kelola melalui sistem ERP kami.</li>
+                      <li><strong>Informasi Teknis:</strong> Alamat IP, jenis perangkat, dan catatan log penggunaan aplikasi untuk tujuan keamanan dan peningkatan performa.</li>
+                    </ul>
+
+                    <h3 className="font-bold text-slate-800 mb-2">03. Tujuan Penggunaan Data</h3>
+                    <p className="mb-2">Kami memproses informasi Anda semata-mata untuk:</p>
+                    <ul className="list-disc pl-5 mb-4 space-y-1">
+                      <li>Menyediakan, menjaga, dan memelihara fitur-fitur layanan cloud Tradixa Systems.</li>
+                      <li>Memastikan akurasi perhitungan operasional dan pelaporan bisnis Anda.</li>
+                      <li>Memberikan dukungan teknis yang responsif dan bantuan pengguna.</li>
+                      <li>Mendeteksi, mencegah, dan menangani masalah keamanan atau teknis secara proaktif.</li>
+                    </ul>
+
+                    <h3 className="font-bold text-slate-800 mb-2">04. Keamanan dan Penyimpanan</h3>
+                    <p className="mb-4">Kami mengimplementasikan standar keamanan kelas industri untuk melindungi data Anda. Seluruh data disimpan dalam infrastruktur cloud yang terenkripsi dan dipantau selama 24/7. Kami menggunakan protokol enkripsi saat data dikirimkan (in-transit) maupun saat data disimpan (at-rest) untuk meminimalisir risiko akses yang tidak sah.</p>
+
+                    <h3 className="font-bold text-slate-800 mb-2">05. Prinsip Berbagi Data</h3>
+                    <p className="mb-4">Tradixa Systems tidak pernah menjual data Anda kepada pihak ketiga. Kami hanya berbagi informasi dengan penyedia layanan infrastruktur (seperti provider cloud) yang terikat kontrak ketat untuk melindungi data Anda, atau jika diwajibkan oleh hukum yang berlaku di Republik Indonesia.</p>
+
+                    <h3 className="font-bold text-slate-800 mb-2">06. Hak Pengguna dan Retensi</h3>
+                    <p className="mb-4">Sebagai pemilik data, Anda memiliki kontrol penuh. Anda berhak untuk mengakses, memperbaiki, serta meminta penghapusan data perusahaan Anda dari sistem kami. Kami menyimpan data selama akun Anda aktif atau sesuai dengan kewajiban retensi data legal yang berlaku bagi perusahaan B2B.</p>
+
+                    <h3 className="font-bold text-slate-800 mb-2">07. Perubahan Kebijakan</h3>
+                    <p className="mb-4">Kami dapat memperbarui kebijakan privasi ini secara berkala untuk mencerminkan perubahan pada layanan kami. Anda akan menerima notifikasi melalui aplikasi atau email jika terdapat perubahan yang signifikan dalam cara kami mengelola data Anda.</p>
+                  </ScrollBox>
+
+                  <div className="mt-4 flex items-center space-x-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <Checkbox 
+                      id="privacy" 
+                      disabled={!scrolledPrivacy}
+                      checked={acceptedPrivacy}
+                      onCheckedChange={setAcceptedPrivacy}
+                      className={!scrolledPrivacy ? 'opacity-50 cursor-not-allowed' : ''}
+                    />
+                    <label htmlFor="privacy" className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed ${!scrolledPrivacy ? 'text-slate-400' : 'text-slate-700 cursor-pointer'}`}>
+                      Saya memahami & menyetujui Privacy Policy Tradixa Systems
+                    </label>
+                  </div>
+                  {!scrolledPrivacy && <p className="text-[10px] text-amber-600 mt-1.5 ml-1 font-medium">Scroll sampai ke bawah untuk mencentang persetujuan.</p>}
+
+                  <div className="mt-6 flex gap-3">
+                    <button type="button" onClick={handleBack}
+                      className="flex-1 h-[46px] rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:bg-blue-50"
+                      style={{ border: '1.5px solid #bfdbfe', color: '#64748b' }}>
+                      <ArrowLeft className="w-4 h-4" /> Kembali
+                    </button>
+                    <button type="button" onClick={() => handleNext()} disabled={!acceptedPrivacy}
+                      className="flex-[2] h-[46px] rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg"
+                      style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', boxShadow: acceptedPrivacy ? '0 4px 14px rgba(37,99,235,0.35)' : 'none' }}>
+                      Lanjutkan Setup <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* STEP 3: DATA PEMILIK */}
+            {step === 3 && (
+              <motion.div key="step3" custom={3} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+                <div className="pt-2 px-6 pb-8 sm:px-8">
                   <div className="text-center mb-6">
                     <img src={tradixaLogo} alt="Tradixa" className="h-52 mx-auto -mb-8" />
                   </div>
@@ -294,18 +509,27 @@ export default function StoreSetup({ onComplete }) {
                         rows={2} value={formData.owner_notes} onChange={(e) => setFormData({ ...formData, owner_notes: e.target.value })} />
                     </div>
 
-                    <button type="submit"
-                      className="w-full h-[46px] rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] hover:shadow-lg"
-                      style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', boxShadow: '0 4px 14px rgba(37,99,235,0.35)' }}>
-                      Lanjutkan <ArrowRight className="w-4 h-4" />
-                    </button>
+                    <div className="flex gap-3 mt-6">
+                      <button type="button" onClick={handleBack}
+                        className="flex-1 h-[46px] rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:bg-blue-50"
+                        style={{ border: '1.5px solid #bfdbfe', color: '#64748b' }}>
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+                      <button type="submit"
+                        className="flex-[4] h-[46px] rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] hover:shadow-lg"
+                        style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', boxShadow: '0 4px 14px rgba(37,99,235,0.35)' }}>
+                        Lanjutkan <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </form>
                 </div>
               </motion.div>
-            ) : (
-              <motion.div key="step2" custom={2} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
-                <div className="pt-2 px-8 pb-8">
-                  {/* Logo */}
+            )}
+
+            {/* STEP 4: DATA TOKO */}
+            {step === 4 && (
+              <motion.div key="step4" custom={4} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+                <div className="pt-2 px-6 pb-8 sm:px-8">
                   <div className="text-center mb-6">
                     <img src={tradixaLogo} alt="Tradixa" className="h-52 mx-auto -mb-8" />
                   </div>
@@ -318,7 +542,7 @@ export default function StoreSetup({ onComplete }) {
                     <p className="text-sm text-slate-400 mt-1">Informasi usaha yang akan Anda kelola</p>
                   </div>
 
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={handleCreateStore} className="space-y-4">
                     {/* Logo Upload */}
                     <div className="flex justify-center mb-2">
                       <div className="relative group">
@@ -377,7 +601,6 @@ export default function StoreSetup({ onComplete }) {
                       <div>
                         <label className="text-[13px] font-semibold text-slate-600 mb-1.5 flex items-center">
                           Nomor Telepon
-                          <InfoTooltip text="Nomor telepon ini akan digunakan untuk kepentingan operasional toko Anda, seperti komunikasi dengan supplier dan pelanggan." />
                         </label>
                         <div className="relative">
                           <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -389,7 +612,6 @@ export default function StoreSetup({ onComplete }) {
                       <div>
                         <label className="text-[13px] font-semibold text-slate-600 mb-1.5 flex items-center">
                           Email Toko
-                          <InfoTooltip text="Email ini akan digunakan untuk keperluan yang berkaitan dengan operasional perusahaan, termasuk invoice, laporan, dan notifikasi bisnis." />
                         </label>
                         <div className="relative">
                           <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -437,28 +659,83 @@ export default function StoreSetup({ onComplete }) {
                       </div>
                     </div>
 
-                    <div className="flex gap-3 pt-1">
+                    <div className="flex gap-3 pt-2">
                       <button type="button" onClick={handleBack}
                         className="flex-1 h-[46px] rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:bg-blue-50"
                         style={{ border: '1.5px solid #bfdbfe', color: '#64748b' }}>
-                        <ArrowLeft className="w-4 h-4" /> Kembali
+                        <ArrowLeft className="w-4 h-4" />
                       </button>
                       <button type="submit" disabled={isLoading}
-                        className="flex-[2] h-[46px] rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-60 hover:shadow-lg"
+                        className="flex-[4] h-[46px] rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-60 hover:shadow-lg"
                         style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', boxShadow: '0 4px 14px rgba(37,99,235,0.35)' }}>
-                        {isLoading ? <><Loader2 className="w-5 h-5 animate-spin" /> Menyimpan...</> : <><Store className="w-4 h-4" /> Mulai Menggunakan Sistem</>}
+                        {isLoading ? <><Loader2 className="w-5 h-5 animate-spin" /> Menyimpan...</> : <><Store className="w-4 h-4" /> Buat Toko</>}
                       </button>
                     </div>
                   </form>
                 </div>
               </motion.div>
             )}
+
+            {/* STEP 5: WELCOME & PLAN SELECTION */}
+            {step === 5 && (
+              <motion.div key="step5" custom={5} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
+                <div className="p-8 text-center sm:p-12">
+                  <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-6">
+                    <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+                  </div>
+                  <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Selamat Datang di Tradixa!</h1>
+                  <p className="text-slate-500 mb-8 max-w-sm mx-auto">Akun dan Toko Anda berhasil didaftarkan. Silakan pilih opsi di bawah ini untuk memulai.</p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                    {/* Free Plan Option */}
+                    <div className="border-2 border-slate-200 rounded-2xl p-6 text-left hover:border-slate-300 transition-colors bg-white">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-slate-100 rounded-lg"><Store className="w-5 h-5 text-slate-600" /></div>
+                        <h3 className="font-bold text-lg text-slate-800">Free Plan</h3>
+                      </div>
+                      <p className="text-sm text-slate-500 mb-6 min-h-[40px]">Akses dasar untuk operasional ringan. Modul Pro & Enterprise terkunci.</p>
+                      <button 
+                        onClick={() => onComplete(createdStore)}
+                        className="w-full h-11 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+                      >
+                        Gunakan Free Plan
+                      </button>
+                    </div>
+
+                    {/* Pro Trial Option */}
+                    <div className="border-2 border-blue-500 rounded-2xl p-6 text-left shadow-lg relative bg-blue-50/30 overflow-hidden">
+                      <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-widest">
+                        Rekomendasi
+                      </div>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md"><Zap className="w-5 h-5 text-white" /></div>
+                        <h3 className="font-bold text-lg text-slate-900">Pro Trial 14 Hari</h3>
+                      </div>
+                      <p className="text-sm text-slate-600 mb-6 min-h-[40px]">Coba seluruh fitur Premium, Procurement & HRIS gratis selama 14 hari.</p>
+                      <button 
+                        onClick={handleStartTrial}
+                        disabled={isTrialLoading}
+                        className="w-full h-11 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 transition-all hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {isTrialLoading ? (
+                          <><Loader2 className="w-5 h-5 animate-spin" /> Diproses...</>
+                        ) : (
+                          <>Start Free Trial <ArrowRight className="w-4 h-4" /></>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 
-        <p className="text-center text-xs mt-6 text-slate-400">
-          © 2026 Tradixa — Management Retail System
-        </p>
+        {step < 5 && (
+          <p className="text-center text-xs mt-6 text-slate-400">
+            © 2026 Tradixa — Management Retail System
+          </p>
+        )}
       </motion.div>
     </div>
   );
