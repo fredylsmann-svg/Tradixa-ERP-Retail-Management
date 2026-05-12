@@ -287,7 +287,7 @@ export default function StoreSetup({ onComplete }) {
 
                   <ScrollBox onScrolledToBottom={setScrolledTerms}>
                     <h3 className="font-bold text-slate-800 mb-2">01. Gambaran Umum Layanan</h3>
-                    <p className="mb-4">Tradixa Systems menyediakan platform integrasi digital berbasis cloud (SaaS) yang mencakup sistem ERP, HRIS, dan modul operasional bisnis lainnya. Layanan kami dirancang untuk membantu perusahaan (B2B) dalam mengelola alur kerja, data karyawan, dan efisiensi operasional harian.</p>
+                    <p className="mb-4">Tradixa Systems menyediakan platform integrasi digital berbasis cloud (SaaS) yang mencakup sistem ERP, HRIS, dan modul operasional bisnis lainnya. Layanan kami dirancang untuk membantu perusahaan (B2B maupun B2C) dalam mengelola alur kerja, data karyawan, dan efisiensi operasional harian.</p>
 
                     <h3 className="font-bold text-slate-800 mb-2">02. Akun Pengguna dan Keamanan</h3>
                     <p className="mb-2">Untuk mengakses layanan Tradixa, Anda setuju untuk:</p>
@@ -313,7 +313,7 @@ export default function StoreSetup({ onComplete }) {
                     <p className="mb-4">Meskipun kami berkomitmen untuk menyediakan layanan terbaik, kami tidak menjamin ketersediaan sistem 100% tanpa gangguan (uptime). Kami melakukan pemeliharaan rutin yang mungkin menyebabkan downtime singkat, dan kami akan berusaha memberikan notifikasi sebelumnya melalui dashboard aplikasi.</p>
 
                     <h3 className="font-bold text-slate-800 mb-2">06. Batasan Tanggung Jawab</h3>
-                    <p className="mb-4">Tradixa Systems tidak bertanggung jawab atas kerugian tidak langsung, kehilangan keuntungan bisnis, atau kerusakan data yang disebabkan oleh kelalaian pihak ketiga atau penggunaan platform yang tidak sesuai instruksi teknis kami. Layanan disediakan dengan basis "sebagaimana adanya" (as is).</p>
+                    <p className="mb-4">Tradixa Systems tidak bertanggung jawab atas kerugian tidak langsung, kehilangan keuntungan bisnis, atau kerusakan data yang disebabkan oleh kelalaian pihak ketiga atau penggunaan platform yang tidak sesuai instruksi teknis kami. Layanan disediakan apa adanya sesuai dengan spesifikasi fitur yang tersedia pada sistem.</p>
 
                     <h3 className="font-bold text-slate-800 mb-2">07. Penghentian Akun</h3>
                     <p className="mb-4">Anda dapat menghentikan penggunaan layanan kapan saja. Tradixa Systems juga berhak menangguhkan atau menghentikan akses jika ditemukan pelanggaran serius terhadap ketentuan penggunaan ini, demi melindungi keamanan pengguna lainnya.</p>
@@ -334,7 +334,6 @@ export default function StoreSetup({ onComplete }) {
                       Saya menyetujui Terms of Service Tradixa Systems
                     </label>
                   </div>
-                  {!scrolledTerms && <p className="text-[10px] text-amber-600 mt-1.5 ml-1 font-medium">Scroll sampai ke bawah untuk mencentang persetujuan.</p>}
 
                   <div className="mt-6">
                     <button type="button" onClick={() => handleNext()} disabled={!acceptedTerms}
@@ -370,7 +369,7 @@ export default function StoreSetup({ onComplete }) {
                     <ul className="list-disc pl-5 mb-4 space-y-1">
                       <li><strong>Data Perusahaan:</strong> Nama entitas bisnis, alamat kantor, NPWP, dan informasi identitas perusahaan lainnya.</li>
                       <li><strong>Informasi Karyawan:</strong> Data yang dimasukkan ke dalam sistem HRIS seperti nama, jabatan, struktur organisasi, dan catatan operasional terkait.</li>
-                      <li><strong>Data Operasional:</strong> Catatan transaksi, manajemen stok, dan alur kerja bisnis yang Anda kelola melalui sistem ERP kami.</li>
+                      <li><strong>Data Operasional:</strong> Catatan transaksi, manajemen stok, dan aktivitas operasional yang Anda jalankan menggunakan sistem ERP kami.</li>
                       <li><strong>Informasi Teknis:</strong> Alamat IP, jenis perangkat, dan catatan log penggunaan aplikasi untuk tujuan keamanan dan peningkatan performa.</li>
                     </ul>
 
@@ -390,7 +389,7 @@ export default function StoreSetup({ onComplete }) {
                     <p className="mb-4">Tradixa Systems tidak pernah menjual data Anda kepada pihak ketiga. Kami hanya berbagi informasi dengan penyedia layanan infrastruktur (seperti provider cloud) yang terikat kontrak ketat untuk melindungi data Anda, atau jika diwajibkan oleh hukum yang berlaku di Republik Indonesia.</p>
 
                     <h3 className="font-bold text-slate-800 mb-2">06. Hak Pengguna dan Retensi</h3>
-                    <p className="mb-4">Sebagai pemilik data, Anda memiliki kontrol penuh. Anda berhak untuk mengakses, memperbaiki, serta meminta penghapusan data perusahaan Anda dari sistem kami. Kami menyimpan data selama akun Anda aktif atau sesuai dengan kewajiban retensi data legal yang berlaku bagi perusahaan B2B.</p>
+                    <p className="mb-4">Sebagai pemilik data, Anda memiliki kontrol penuh. Anda berhak untuk mengakses, memperbaiki, serta meminta penghapusan data perusahaan Anda dari sistem kami. Kami menyimpan data selama akun Anda aktif atau sesuai dengan kewajiban retensi data legal yang berlaku bagi bisnis Anda (B2B maupun B2C).</p>
 
                     <h3 className="font-bold text-slate-800 mb-2">07. Perubahan Kebijakan</h3>
                     <p className="mb-4">Kami dapat memperbarui kebijakan privasi ini secara berkala untuk mencerminkan perubahan pada layanan kami. Anda akan menerima notifikasi melalui aplikasi atau email jika terdapat perubahan yang signifikan dalam cara kami mengelola data Anda.</p>
@@ -408,7 +407,6 @@ export default function StoreSetup({ onComplete }) {
                       Saya memahami & menyetujui Privacy Policy Tradixa Systems
                     </label>
                   </div>
-                  {!scrolledPrivacy && <p className="text-[10px] text-amber-600 mt-1.5 ml-1 font-medium">Scroll sampai ke bawah untuk mencentang persetujuan.</p>}
 
                   <div className="mt-6 flex gap-3">
                     <button type="button" onClick={handleBack}
