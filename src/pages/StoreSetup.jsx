@@ -678,17 +678,14 @@ export default function StoreSetup({ onComplete }) {
             {step === 5 && (
               <motion.div key="step5" custom={5} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
                 <div className="p-8 text-center sm:p-12">
-                  <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-6">
-                    <CheckCircle2 className="w-10 h-10 text-emerald-600" />
-                  </div>
+                  <div className="mb-6" />
                   <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Selamat Datang di Tradixa!</h1>
                   <p className="text-slate-500 mb-8 max-w-sm mx-auto">Akun dan Toko Anda berhasil didaftarkan. Silakan pilih opsi di bawah ini untuk memulai.</p>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
                     {/* Free Plan Option */}
                     <div className="border-2 border-slate-200 rounded-2xl p-6 text-left hover:border-slate-300 transition-colors bg-white">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-slate-100 rounded-lg"><Store className="w-5 h-5 text-slate-600" /></div>
+                      <div className="mb-3">
                         <h3 className="font-bold text-lg text-slate-800">Free Plan</h3>
                       </div>
                       <p className="text-sm text-slate-500 mb-6 min-h-[40px]">Akses dasar untuk operasional ringan. Modul Pro & Enterprise terkunci.</p>
@@ -705,8 +702,7 @@ export default function StoreSetup({ onComplete }) {
                       <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-widest">
                         Rekomendasi
                       </div>
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md"><Zap className="w-5 h-5 text-white" /></div>
+                      <div className="mb-3">
                         <h3 className="font-bold text-lg text-slate-900">Pro Trial 14 Hari</h3>
                       </div>
                       <p className="text-sm text-slate-600 mb-6 min-h-[40px]">Coba seluruh fitur Premium, Procurement & HRIS gratis selama 14 hari.</p>
