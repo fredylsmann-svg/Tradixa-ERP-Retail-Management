@@ -24,6 +24,8 @@ END $$;
 -- STEP 2: Sekarang drop functions (sudah tidak ada yang depend)
 DROP FUNCTION IF EXISTS get_user_store_id();
 DROP FUNCTION IF EXISTS get_my_store_id_text();
+DROP FUNCTION IF EXISTS get_my_store_id();
+DROP FUNCTION IF EXISTS get_my_email();
 DROP FUNCTION IF EXISTS safe_apply_store_rls(TEXT);
 
 -- STEP 3: Buat ulang policy open untuk SEMUA tabel

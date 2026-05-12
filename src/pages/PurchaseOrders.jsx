@@ -427,10 +427,15 @@ export default function PurchaseOrders({ store }) {
     if (!viewingOrder) return;
     setIsSaving(true);
 
+    const isNegotiationApproval = viewingOrder.status === 'Negotiation';
+    const newStatus = isNegotiationApproval ? 'Approved' : 'Confirmed';
+
     const historyEntry = {
       time_wib: getWIBTimestamp(),
       activity: 'Admin Signed',
-      detail: `PO ditandatangani secara digital oleh Administrator. Status berubah menjadi Confirmed.`,
+      detail: isNegotiationApproval 
+        ? `Negosiasi harga disetujui dan ditandatangani oleh Administrator. Status PO menjadi Approved.`
+        : `Penerimaan pengiriman PO dikonfirmasi dan ditandatangani secara digital oleh Administrator. Status berubah menjadi Confirmed.`,
       type: 'sign'
     };
 
@@ -441,7 +446,7 @@ export default function PurchaseOrders({ store }) {
         admin_signature: signatureData,
         admin_name: adminName,
         admin_role: adminRole,
-        status: 'Confirmed',
+        status: newStatus,
         approval_history: updatedHistory
       });
 
@@ -461,6 +466,33 @@ export default function PurchaseOrders({ store }) {
       loadData();
     } catch (err) {
       console.error("Failed to sign PO", err);
+    }
+    setIsSaving(false);
+  };
+
+  const handleConfirmWithoutSign = async () => {
+    if (!viewingOrder) return;
+    setIsSaving(true);
+    
+    const historyEntry = {
+      time_wib: getWIBTimestamp(),
+      activity: 'PO Confirmed',
+      detail: `Penerimaan pengiriman PO dikonfirmasi oleh Administrator. Status berubah menjadi Confirmed.`,
+      type: 'sign'
+    };
+
+    const updatedHistory = [...(viewingOrder.approval_history || []), historyEntry];
+
+    try {
+      await api.entities.PurchaseOrder.update(viewingOrder.id, {
+        status: 'Confirmed',
+        approval_history: updatedHistory
+      });
+      const refreshed = await api.entities.PurchaseOrder.get(viewingOrder.id);
+      if (refreshed) setViewingOrder(refreshed);
+      loadData();
+    } catch (err) {
+      console.error("Failed to confirm PO", err);
     }
     setIsSaving(false);
   };
@@ -494,7 +526,7 @@ export default function PurchaseOrders({ store }) {
     if (!viewingOrder) return;
     setIsSaving(true);
 
-    const newSubtotal = negotiationItems.reduce((acc, curr) => acc + (curr.quantity * curr.unit_price), 0);
+    const newSubtotal = negotiationItems.reduce((acc, curr) => acc + ((curr.proposed_qty || curr.quantity) * curr.unit_price), 0);
     const newTax = viewingOrder.tax_amount > 0 ? newSubtotal * ppnDecimal : 0;
     const newTotal = newSubtotal + newTax;
 
@@ -1338,7 +1370,7 @@ export default function PurchaseOrders({ store }) {
                     <CardHeader className="bg-white border-b py-4 px-6 flex flex-row items-center justify-between">
                       <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
                         <ShoppingCart className="w-4 h-4 text-blue-500" />
-                        Item Pesanan (Harga Awal)
+                        {viewingOrder?.status === 'Negotiation' ? 'Item Pesanan (Harga Awal)' : 'Item Pesanan'}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0 bg-white">
@@ -1353,19 +1385,19 @@ export default function PurchaseOrders({ store }) {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {(viewingOrder?.original_items || viewingOrder?.items || []).map((item, idx) => (
+                          {(viewingOrder?.status === 'Negotiation' ? (viewingOrder?.original_items || viewingOrder?.items || []) : (viewingOrder?.items || [])).map((item, idx) => (
                             <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors">
                               <TableCell className="pl-6">
                                 <div className="font-bold text-slate-700">{item.product_name || 'Tanpa Nama'}</div>
                                 <div className="text-[10px] text-slate-400 font-mono">{item.sku || '-'}</div>
                               </TableCell>
                               <TableCell className="text-center">
-                                {item.quantity || 0} <span className="text-slate-900 font-bold">{item.unit || 'pcs'}</span>
+                                {item.proposed_qty || item.quantity || 0} <span className="text-slate-900 font-bold">{item.unit || 'pcs'}</span>
                               </TableCell>
                               <TableCell className="text-right">Rp {formatCurrency(item.unit_price)}</TableCell>
-                              <TableCell className="text-right font-semibold">Rp {formatCurrency(item.quantity * item.unit_price)}</TableCell>
+                              <TableCell className="text-right font-semibold">Rp {formatCurrency((item.proposed_qty || item.quantity) * item.unit_price)}</TableCell>
                               <TableCell className="text-center pr-6 text-slate-400 text-xs">
-                                <span className="font-bold text-blue-600">{getReceivedQty(viewingOrder.po_number, item.product_id, item.product_name)}</span> / {item.quantity}
+                                <span className="font-bold text-blue-600">{getReceivedQty(viewingOrder.po_number, item.product_id, item.product_name)}</span> / {item.proposed_qty || item.quantity}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -1373,8 +1405,8 @@ export default function PurchaseOrders({ store }) {
                       </Table>
                       <div className="p-6 bg-slate-50/30">
                         {(() => {
-                          const origItems = viewingOrder?.original_items || viewingOrder?.items || [];
-                          const origSubtotal = origItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0);
+                          const origItems = viewingOrder?.status === 'Negotiation' ? (viewingOrder?.original_items || viewingOrder?.items || []) : (viewingOrder?.items || []);
+                          const origSubtotal = origItems.reduce((sum, i) => sum + ((i.proposed_qty || i.quantity) * i.unit_price), 0);
                           const origTax = viewingOrder?.tax_amount > 0 ? origSubtotal * ppnDecimal : 0;
                           const origTotal = origSubtotal + origTax;
                           return (
@@ -1457,27 +1489,27 @@ export default function PurchaseOrders({ store }) {
                             {negotiationItems.map((item, idx) => (
                               <TableRow key={idx}>
                                 <TableCell className="pl-6 font-medium text-slate-700">{item.product_name}</TableCell>
-                                <TableCell className="text-center">{item.quantity} {item.unit}</TableCell>
+                                <TableCell className="text-center">{item.proposed_qty || item.quantity} {item.unit}</TableCell>
                                 <TableCell className="text-right">
                                   <NumberInput
                                     value={item.unit_price}
                                     onChange={e => {
                                       const newArr = [...negotiationItems];
                                       newArr[idx].unit_price = Number(e.target.value);
-                                      newArr[idx].subtotal = newArr[idx].quantity * newArr[idx].unit_price;
+                                      newArr[idx].subtotal = (newArr[idx].proposed_qty || newArr[idx].quantity) * newArr[idx].unit_price;
                                       setNegotiationItems(newArr);
                                     }}
                                     className="w-32 text-right h-8 inline-block"
                                   />
                                 </TableCell>
-                                <TableCell className="text-right pr-6 font-bold">Rp {formatCurrency(item.quantity * item.unit_price)}</TableCell>
+                                <TableCell className="text-right pr-6 font-bold">Rp {formatCurrency((item.proposed_qty || item.quantity) * item.unit_price)}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
                         </Table>
                         <div className="p-4 bg-slate-50 flex items-center justify-between">
                           <div className="text-sm text-slate-600">
-                            <span className="font-bold text-slate-800">Total Negosiasi:</span> Rp {formatCurrency(negotiationItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0) * (viewingOrder?.tax_amount > 0 ? 1.11 : 1))}
+                            <span className="font-bold text-slate-800">Total Negosiasi:</span> Rp {formatCurrency(negotiationItems.reduce((sum, i) => sum + ((i.proposed_qty || i.quantity) * i.unit_price), 0) * (viewingOrder?.tax_amount > 0 ? 1.11 : 1))}
                           </div>
                           <Button onClick={handleSaveNegotiation} disabled={isSaving} size="sm" className="bg-amber-500 hover:bg-amber-600 text-white font-bold">
                             {isSaving && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Simpan Revisi Harga
@@ -1765,17 +1797,27 @@ export default function PurchaseOrders({ store }) {
                           )}
 
                           {/* Status In Transit: barang sudah dikirim → admin bisa konfirmasi & TTD */}
-                          {viewingOrder?.status === 'In Transit' && !viewingOrder?.admin_signature && (
+                          {viewingOrder?.status === 'In Transit' && (
                             <div className="space-y-3 pt-2">
-                              <Button
-                                onClick={() => setShowSignaturePad(true)}
-                                className="w-full bg-blue-600 hover:bg-blue-700 h-11 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 group text-white font-bold"
-                              >
-                                <Signature className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                                Konfirmasi & Tanda Tangan
-                              </Button>
+                              {!viewingOrder?.admin_signature ? (
+                                <Button
+                                  onClick={() => setShowSignaturePad(true)}
+                                  className="w-full bg-blue-600 hover:bg-blue-700 h-11 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 group text-white font-bold"
+                                >
+                                  <Signature className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                  Konfirmasi & Tanda Tangan
+                                </Button>
+                              ) : (
+                                <Button
+                                  onClick={() => handleConfirmWithoutSign()}
+                                  className="w-full bg-blue-600 hover:bg-blue-700 h-11 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 group text-white font-bold"
+                                >
+                                  <CheckCircle2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                  Konfirmasi PO
+                                </Button>
+                              )}
                               <p className="text-[10px] text-center text-slate-500 font-medium italic">
-                                Barang sedang dikirim. Klik untuk konfirmasi penerimaan & tanda tangan admin.
+                                Barang sedang dikirim. Klik untuk konfirmasi penerimaan{viewingOrder?.admin_signature ? ' akhir PO.' : ' & tanda tangan admin.'}
                               </p>
                             </div>
                           )}

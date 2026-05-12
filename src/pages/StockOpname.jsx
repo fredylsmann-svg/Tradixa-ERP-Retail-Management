@@ -11,6 +11,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import BarcodeScanner from '@/components/barcode/BarcodeScanner';
 import {
   ClipboardCheck, Plus, Search, Eye, CheckCircle2, XCircle, ArrowUpCircle, ArrowDownCircle,
@@ -100,6 +110,7 @@ export default function StockOpname({ store }) {
   const [locations, setLocations] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [showRefreshConfirm, setShowRefreshConfirm] = useState(false);
   const activeInputRef = useRef(null);
 
   useEffect(() => {
@@ -300,7 +311,6 @@ export default function StockOpname({ store }) {
   };
 
   const handleRefreshSystemStock = async () => {
-    if (!confirm('Perbarui stok sistem dengan data terbaru dari Master Produk? Ini akan mereset selisih yang sudah dihitung.')) return;
     setIsSaving(true);
     try {
       const latestProducts = await api.entities.Product.filter({ store_id: store.id });
@@ -565,7 +575,7 @@ export default function StockOpname({ store }) {
               </Dialog>
 
               {(showDetail?.status === 'In Progress' || showDetail?.status === 'Draft') && (
-                <Button variant="outline" size="sm" onClick={handleRefreshSystemStock} disabled={isSaving} className="h-10 px-3 border-blue-200 text-blue-600 hover:bg-blue-50">
+                <Button variant="outline" size="sm" onClick={() => setShowRefreshConfirm(true)} disabled={isSaving} className="h-10 px-3 border-blue-200 text-blue-600 hover:bg-blue-50">
                   <RefreshCw className={`w-4 h-4 mr-2 ${isSaving ? 'animate-spin' : ''}`} /> Refresh Stok
                 </Button>
               )}
@@ -660,6 +670,21 @@ export default function StockOpname({ store }) {
       </Dialog>
 
       <BarcodeScanner open={showScanner} onClose={() => setShowScanner(false)} onBarcodeScanned={handleBarcodeScan} />
+
+      <AlertDialog open={showRefreshConfirm} onOpenChange={setShowRefreshConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Sinkronisasi</AlertDialogTitle>
+            <AlertDialogDescription>
+              Perbarui stok sistem dengan data terbaru dari Master Produk? Ini akan mereset selisih yang sudah dihitung jika terjadi perubahan pada stok sistem.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRefreshSystemStock} className="bg-blue-600 hover:bg-blue-700">Lanjutkan</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

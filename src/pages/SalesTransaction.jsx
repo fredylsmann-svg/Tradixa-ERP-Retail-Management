@@ -129,17 +129,6 @@ export default function SalesTransaction({ store }) {
                           <Button variant="ghost" size="icon" onClick={() => setViewingTransaction(tx)} title="Lihat Detail">
                             <Eye className="w-4 h-4 text-slate-500" />
                           </Button>
-                          {tx.payment_status === 'Pending' && tx.payment_proof_url && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="text-amber-600 hover:bg-amber-50 hover:text-amber-700"
-                              onClick={() => window.open(tx.payment_proof_url, '_blank')}
-                              title="Lanjutkan Pembayaran"
-                            >
-                              <CreditCard className="w-4 h-4" />
-                            </Button>
-                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -158,7 +147,7 @@ export default function SalesTransaction({ store }) {
         onSuccess={loadTransactions}
       />
 
-      <Dialog open={!!viewingTransaction} onOpenChange={() => setViewingTransaction(null)}>
+      <Dialog open={!!viewingTransaction && !proofLightbox} onOpenChange={() => setViewingTransaction(null)}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -278,15 +267,26 @@ export default function SalesTransaction({ store }) {
                             <CreditCard className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-amber-900 dark:text-amber-200">Pembayaran Tertunda</p>
-                            <p className="text-[10px] text-amber-600 font-medium">Pelanggan belum menyelesaikan pembayaran</p>
+                            <p className="text-sm font-bold text-amber-900 dark:text-amber-200">Menunggu Approval</p>
+                            <p className="text-[10px] text-amber-600 font-medium">Menunggu klarifikasi & approval di Bank Transaction</p>
                           </div>
                         </div>
                         <Button 
-                          onClick={() => window.open(viewingTransaction.payment_proof_url, '_blank')}
+                          onClick={() => {
+                            const payUrl = viewingTransaction.payment_link 
+                              || (viewingTransaction.payment_proof_url?.includes('mayar') ? viewingTransaction.payment_proof_url : null);
+                            if (payUrl) {
+                              window.open(payUrl, '_blank');
+                            } else {
+                              setProofLightbox(viewingTransaction.payment_proof_url);
+                            }
+                          }}
                           className="bg-amber-600 hover:bg-amber-700 text-white font-bold h-9 px-4 rounded-lg text-xs flex items-center gap-2"
                         >
-                          Lanjutkan Pembayaran <ArrowRight className="w-3.5 h-3.5" />
+                          {viewingTransaction.payment_link || viewingTransaction.payment_proof_url?.includes('mayar') 
+                            ? <>Lanjutkan Pembayaran <ArrowRight className="w-3.5 h-3.5" /></>
+                            : <>Lihat Bukti <ZoomIn className="w-3.5 h-3.5" /></>
+                          }
                         </Button>
                       </div>
                     </div>
@@ -301,7 +301,7 @@ export default function SalesTransaction({ store }) {
                         </div>
                         <div>
                           <p className={`text-sm font-bold ${viewingTransaction.payment_status === 'Paid' ? 'text-emerald-900 dark:text-emerald-100' : 'text-amber-900 dark:text-amber-100'}`}>
-                            {viewingTransaction.payment_status === 'Paid' ? 'Diverifikasi oleh Mayar' : 'Menunggu Pembayaran Pelanggan'}
+                            {viewingTransaction.payment_status === 'Paid' ? 'Diverifikasi oleh Mayar' : 'Menunggu Approval / Klarifikasi'}
                           </p>
                           <a href={viewingTransaction.payment_proof_url} target="_blank" rel="noreferrer" className={`text-xs hover:underline ${viewingTransaction.payment_status === 'Paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
                             {viewingTransaction.payment_status === 'Paid' ? 'Lihat Tautan Transaksi' : 'Buka Link Pembayaran'}
@@ -390,8 +390,12 @@ export default function SalesTransaction({ store }) {
     </div>
 
     {/* === Lightbox Modal untuk Bukti Transfer === */}
-    <Dialog open={!!proofLightbox} onOpenChange={() => setProofLightbox(null)}>
-      <DialogContent className="max-w-4xl p-0 bg-transparent border-none shadow-none [&>button]:hidden">
+    <Dialog open={!!proofLightbox} onOpenChange={(open) => {
+      if (!open) {
+        setProofLightbox(null);
+      }
+    }}>
+      <DialogContent hideClose hideFullscreen className="max-w-4xl p-0 bg-transparent border-none shadow-none">
         <div className="relative flex flex-col items-center">
           <button
             onClick={() => setProofLightbox(null)}

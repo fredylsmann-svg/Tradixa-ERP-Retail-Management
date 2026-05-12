@@ -106,17 +106,24 @@ export default function MarketingAutomation({ store }) {
   };
 
   const handleShowRulePreview = () => {
+    let waMessage = (ruleForm.wa_message || '').trim();
+    if (!waMessage) waMessage = `Halo ${store?.store_name || 'Admin'}, saya tertarik dengan promo ini!`;
+    const phone = formatWA(store?.phone);
+    const waUrl = phone 
+      ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(waMessage.replace(/{{name}}/g, 'Customer'))}` 
+      : '#';
+
     const html = getEmailTemplate({
       storeName: store?.store_name || 'Toko Anda',
       html: ruleForm.message_template || '<i>(Isi pesan belum diisi)</i>',
       templateType: ruleForm.template_type,
-      ctaUrl: '#',
+      ctaUrl: waUrl,
       promoImage: ruleForm.promo_image_url,
       fontFamily: store?.font_family || 'Inter',
       brandColor: store?.brand_color || '#2563eb',
       logoUrl: store?.logo_url,
       showLogo: store?.show_marketing_logo ?? true,
-      ctaText: 'Belanja Sekarang',
+      ctaText: ruleForm.cta_text || 'Belanja Sekarang',
       logoAlign: store?.marketing_logo_align || 'center',
       logoSize: store?.marketing_logo_size || 'medium',
       trackingPixel: '' 
@@ -149,7 +156,7 @@ export default function MarketingAutomation({ store }) {
       .on('postgres_changes', { 
         event: 'UPDATE', 
         schema: 'public', 
-        table: 'automation_rules',
+        table: 'marketing_automation_rules',
         filter: `store_id=eq.${store.id}` 
       }, () => loadData())
       .subscribe();

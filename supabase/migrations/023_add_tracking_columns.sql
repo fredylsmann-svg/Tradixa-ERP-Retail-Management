@@ -27,9 +27,9 @@ BEGIN
         END IF;
     ELSIF entity_type = 'automation' THEN
         IF stat_type = 'open' THEN
-            UPDATE automation_rules SET opened_count = COALESCE(opened_count, 0) + 1 WHERE id = target_id;
+            UPDATE marketing_automation_rules SET opened_count = COALESCE(opened_count, 0) + 1 WHERE id = target_id;
         ELSIF stat_type = 'click' THEN
-            UPDATE automation_rules SET clicked_count = COALESCE(clicked_count, 0) + 1 WHERE id = target_id;
+            UPDATE marketing_automation_rules SET clicked_count = COALESCE(clicked_count, 0) + 1 WHERE id = target_id;
         END IF;
     END IF;
 END;

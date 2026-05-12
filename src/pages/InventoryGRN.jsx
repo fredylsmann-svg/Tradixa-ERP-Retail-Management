@@ -582,8 +582,19 @@ export default function InventoryGRN({ store }) {
             }
           } else if (item.tracking_type === 'Serial' && item.serials?.length > 0) {
             // --- SERIAL MANAGEMENT INTEGRATION ---
+            
+            // 1. Check for duplicates within the current input
+            const serialNumbers = item.serials.map(s => s.serial_number?.trim()).filter(Boolean);
+            const uniqueSerials = new Set(serialNumbers);
+            if (uniqueSerials.size !== serialNumbers.length) {
+              throw new Error(`Terdapat duplikat serial number pada input untuk produk ${item.product_name || item.description}. Silakan periksa kembali.`);
+            }
+
             for (let s of item.serials) {
-              await api.entities.InventorySerial.create({
+              if (!s.serial_number?.trim()) continue; // Skip empty serials
+
+              try {
+                await api.entities.InventorySerial.create({
                 store_id: store.id,
                 product_id: productId,
                 serial_number: s.serial_number,
@@ -606,6 +617,12 @@ export default function InventoryGRN({ store }) {
                 notes: `SN: ${s.serial_number}`,
                 timestamp_wib: getWIBTimestamp()
               });
+              } catch (err) {
+                if (err.message?.includes('duplicate key')) {
+                  throw new Error(`Serial Number "${s.serial_number}" untuk produk ${item.product_name || item.description} sudah terdaftar di sistem Tradixa.`);
+                }
+                throw err;
+              }
             }
           } else {
             // Add StockMovement without batch/serial
@@ -679,6 +696,11 @@ export default function InventoryGRN({ store }) {
       setIsManualLocation(false);
     } catch (err) {
       console.error("Failed to submit Inventory GRN", err);
+      toast({
+        title: "Gagal Menyimpan GRN",
+        description: err.message || "Terjadi kesalahan internal saat menyimpan GRN.",
+        variant: "destructive"
+      });
     }
     setIsSaving(false);
   };
@@ -1115,14 +1137,12 @@ export default function InventoryGRN({ store }) {
             )}
           </div>
 
-          {/* Batch Entry Dialog */}
           <Dialog open={showBatchDialog} onOpenChange={setShowBatchDialog}>
-            <DialogContent className="max-w-3xl p-0 overflow-hidden rounded-[32px] bg-white border-none shadow-2xl" aria-describedby="batch-dialog-desc">
-              <DialogTitle className="sr-only">Batch Entry</DialogTitle>
+            <DialogContent className="max-w-3xl p-0 overflow-hidden rounded-[32px] bg-white border-none shadow-2xl flex flex-col max-h-[90vh]" aria-describedby="batch-dialog-desc">
               <p id="batch-dialog-desc" className="sr-only">Kelola nomor batch dan kadaluarsa produk</p>
               {currentBatchItemIdx !== null && items[currentBatchItemIdx] && (
                 <>
-                  <div className="bg-blue-600 p-8 text-white relative">
+                  <div className="bg-blue-600 p-8 text-white relative shrink-0">
                     <DialogHeader>
                       <DialogTitle className="text-xl font-bold flex items-center gap-3">
                         <Boxes className="w-6 h-6" />
@@ -1134,8 +1154,8 @@ export default function InventoryGRN({ store }) {
                     </DialogHeader>
                   </div>
 
-                  <div className="p-8 space-y-6">
-                    <div className="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden max-h-[40vh] overflow-y-auto">
+                  <div className="p-8 space-y-6 flex-1 overflow-y-auto flex flex-col">
+                    <div className="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden flex-1 overflow-y-auto">
                       <Table>
                         <TableHeader className="bg-white sticky top-0 z-10">
                           <TableRow>
@@ -1223,7 +1243,7 @@ export default function InventoryGRN({ store }) {
                       </Table>
                     </div>
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between shrink-0">
                       <div className="flex gap-4">
                         <div className="bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
                           <div className="flex items-center gap-1 mb-1">
@@ -1247,9 +1267,9 @@ export default function InventoryGRN({ store }) {
                       </Button>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-6 border-t">
+                    <div className="flex justify-end gap-3 pt-6 border-t shrink-0">
                       <Button
-                        className="h-12 px-8 rounded-2xl bg-slate-900 hover:bg-black font-black uppercase tracking-widest text-[10px]"
+                        className="h-12 px-8 rounded-2xl bg-slate-900 text-white hover:bg-black dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white font-black uppercase tracking-widest text-[10px] transition-colors"
                         onClick={() => setShowBatchDialog(false)}
                         disabled={items[currentBatchItemIdx].batches?.reduce((s, b) => s + Number(b.quantity), 0) !== items[currentBatchItemIdx].warehouse_qty}
                       >
@@ -1262,14 +1282,12 @@ export default function InventoryGRN({ store }) {
             </DialogContent>
           </Dialog>
 
-          {/* Serial Entry Dialog */}
           <Dialog open={showSerialDialog} onOpenChange={setShowSerialDialog}>
-            <DialogContent className="max-w-3xl p-0 overflow-hidden rounded-[32px] bg-white border-none shadow-2xl" aria-describedby="serial-dialog-desc">
-              <DialogTitle className="sr-only">Serial Entry</DialogTitle>
+            <DialogContent className="max-w-3xl p-0 overflow-hidden rounded-[32px] bg-white border-none shadow-2xl flex flex-col max-h-[90vh]" aria-describedby="serial-dialog-desc">
               <p id="serial-dialog-desc" className="sr-only">Kelola nomor seri produk (IMEI/SN)</p>
               {currentSerialItemIdx !== null && items[currentSerialItemIdx] && (
                 <>
-                  <div className="bg-purple-600 p-8 text-white relative">
+                  <div className="bg-purple-600 p-8 text-white relative shrink-0">
                     <DialogHeader>
                       <DialogTitle className="text-xl font-bold flex items-center gap-3">
                         <Barcode className="w-6 h-6" />
@@ -1281,8 +1299,8 @@ export default function InventoryGRN({ store }) {
                     </DialogHeader>
                   </div>
 
-                  <div className="p-8 space-y-6">
-                    <div className="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden max-h-[50vh] overflow-y-auto">
+                  <div className="p-8 space-y-6 flex-1 overflow-y-auto flex flex-col">
+                    <div className="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden flex-1 overflow-y-auto">
                       <Table>
                         <TableHeader className="bg-white sticky top-0 z-10">
                           <TableRow>
@@ -1317,7 +1335,7 @@ export default function InventoryGRN({ store }) {
                       </Table>
                     </div>
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between shrink-0">
                       <div className="flex gap-4">
                         <div className="bg-purple-50 px-4 py-2 rounded-xl border border-purple-100">
                           <p className="text-[9px] font-black text-purple-500 uppercase tracking-widest mb-1">Status Pindai</p>
@@ -1328,9 +1346,9 @@ export default function InventoryGRN({ store }) {
                       </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-6 border-t">
+                    <div className="flex justify-end gap-3 pt-6 border-t shrink-0">
                       <Button
-                        className="h-12 px-8 rounded-2xl bg-slate-900 hover:bg-black font-black uppercase tracking-widest text-[10px]"
+                        className="h-12 px-8 rounded-2xl bg-slate-900 text-white hover:bg-black dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white font-black uppercase tracking-widest text-[10px] transition-colors"
                         onClick={() => setShowSerialDialog(false)}
                         disabled={items[currentSerialItemIdx].serials?.filter(s => s.serial_number && s.serial_number.trim() !== '').length !== items[currentSerialItemIdx].warehouse_qty}
                       >
@@ -1390,7 +1408,7 @@ export default function InventoryGRN({ store }) {
         </div>
 
         <Dialog open={!!activeSignPad} onOpenChange={() => setActiveSignPad(null)}>
-          <DialogContent className="max-w-2xl p-0 overflow-hidden rounded-3xl">
+          <DialogContent className="max-w-2xl p-0 overflow-hidden rounded-3xl" aria-describedby="signpad-dialog-desc">
             <DialogHeader className="p-6 border-b bg-slate-50">
               <DialogTitle className="flex items-center gap-2 text-slate-900 font-black">
                 <SignatureIcon className="w-5 h-5 text-slate-900" /> Tanda Tangan Konfirmasi

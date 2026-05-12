@@ -192,7 +192,7 @@ export const getDocumentTemplate = ({
                 <tr style="border-bottom: 1px solid #f1f5f9;">
                   <td style="padding: 15px; font-size: 13px; color: #64748b; text-align: center;">${String(i + 1).padStart(2, '0')}</td>
                   <td style="padding: 15px; font-size: 14px; color: #1e293b; font-weight: 700;">${item.name || item.product_name}</td>
-                  <td style="padding: 15px; text-align: center; font-size: 14px; color: #1e293b; font-weight: 600;">${item.qty || item.quantity} ${item.unit || 'pcs'}</td>
+                  <td style="padding: 15px; text-align: center; font-size: 14px; color: #1e293b; font-weight: 600;">${item.proposed_qty || item.qty || item.quantity} ${item.unit || 'pcs'}</td>
                   <td style="padding: 15px; text-align: right; font-size: 13px; color: #64748b;">Rp ${Number(item.price || item.unit_price).toLocaleString()}</td>
                   <td style="padding: 15px; text-align: right; font-size: 14px; color: #0f172a; font-weight: 800;">Rp ${Number(item.total || item.subtotal).toLocaleString()}</td>
                 </tr>
@@ -357,7 +357,7 @@ export const getDocumentTemplate = ({
                       `).join('') 
                     : (item.expired_date ? `<span style="font-size: 9px; color: #475569; font-weight: 600;">${new Date(item.expired_date).toLocaleDateString('en-GB')}</span>` : '<span style="font-size: 10px; color: #94a3b8;">-</span>')}
                   </td>
-                  <td style="padding: 12px 15px; text-align: center; font-size: 14px; color: #0f172a; font-weight: 800;">${item.qty || item.quantity || item.warehouse_qty || 0}</td>
+                  <td style="padding: 12px 15px; text-align: center; font-size: 14px; color: #0f172a; font-weight: 800;">${item.proposed_qty || item.qty || item.quantity || item.warehouse_qty || 0}</td>
                   <td style="padding: 12px 15px; text-align: center; font-size: 14px; color: #ef4444; font-weight: 800;">${item.reject_qty || 0}</td>
                   <td style="padding: 12px 15px; text-align: center; font-size: 12px; color: #64748b;">${item.unit || 'pcs'}</td>
                   <td style="padding: 12px 15px; text-align: center;">
@@ -729,7 +729,7 @@ export const getDocumentTemplate = ({
                 ${(isDO || type === 'INVENTORY GRN') ? `
                   <td style="padding: 15px; text-align: center; font-size: 12px; color: #64748b; border-right: 1px solid #e2e8f0; font-weight: 700;">${item.sku || '-'}</td>
                 ` : ''}
-                <td style="padding: 15px; text-align: center; font-size: 13px; color: #1e293b; border-right: 1px solid #e2e8f0;">${item.qty || item.quantity || item.warehouse_qty || item.qty_ordered || 0}</td>
+                <td style="padding: 15px; text-align: center; font-size: 13px; color: #1e293b; border-right: 1px solid #e2e8f0;">${item.proposed_qty || item.qty || item.quantity || item.warehouse_qty || item.qty_ordered || 0}</td>
                 ${type === 'INVENTORY GRN' ? `
                   <td style="padding: 15px; text-align: center; font-size: 13px; color: #ef4444; border-right: 1px solid #e2e8f0; font-weight: 700;">${item.reject_qty || 0}</td>
                 ` : ''}
@@ -1089,7 +1089,7 @@ export const getDocumentTemplate = ({
                 ${(isDO || type === 'INVENTORY GRN') ? `
                   <td style="padding: 18px 15px; text-align: center; font-size: 14px; color: #64748b; border-bottom: 1px solid #f8fafc;">${item.sku || '-'}</td>
                 ` : ''}
-                  <td style="padding: 18px 15px; text-align: center; font-size: 15px; color: #334155; border-bottom: 1px solid #f8fafc; font-weight: 700;">${item.qty || item.quantity || item.warehouse_qty || item.received_qty}</td>
+                  <td style="padding: 18px 15px; text-align: center; font-size: 15px; color: #334155; border-bottom: 1px solid #f8fafc; font-weight: 700;">${item.proposed_qty || item.qty || item.quantity || item.warehouse_qty || item.received_qty}</td>
                 ${type === 'INVENTORY GRN' ? `
                   <td style="padding: 18px 15px; text-align: center; font-size: 15px; color: #ef4444; border-bottom: 1px solid #f8fafc; font-weight: 700;">${item.reject_qty || 0}</td>
                 ` : ''}
@@ -1174,6 +1174,17 @@ export const getDocumentTemplate = ({
               </div>
               <p style="margin: 5px 0 0 0; font-size: 12px; font-weight: 700; color: #1e293b;">( ........................... )</p>
             </div>
+
+            ${data.warehouse_manager_signature ? `
+            <div style="text-align: center; display: flex; flex-direction: column; align-items: center; width: 180px;">
+              <p style="margin: 0 0 5px 0; font-size: 11px; color: #94a3b8; font-weight: 800; text-transform: uppercase;">MANAGER GUDANG,</p>
+              <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: #1e293b;">${data.warehouse_manager_name || 'MANAGER'}</p>
+              <div style="height: 80px; display: flex; align-items: center; justify-content: center; margin: 5px 0;">
+                <img src="${data.warehouse_manager_signature}" style="max-height: 80px; object-fit: contain; mix-blend-mode: multiply;">
+              </div>
+              <p style="margin: 5px 0 0 0; font-size: 12px; font-weight: 700; color: #1e293b;">( ........................... )</p>
+            </div>
+            ` : ''}
 
             ${type === 'INVENTORY GRN' ? `
             <div style="text-align: center; display: flex; flex-direction: column; align-items: center; width: 180px;">

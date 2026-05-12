@@ -758,15 +758,16 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
       });
     }
 
-    if (paymentMethod !== 'Cash' && selectedBank && paidAmount > 0) {
+    if (paymentMethod !== 'Cash' && selectedBank) {
       const bankAccount = bankAccounts.find(b => b.id === selectedBank);
       if (bankAccount) {
+        const txAmount = paidAmount > 0 ? paidAmount : total;
         await api.entities.BankTransaction.create({
           store_id: storeId,
           bank_account_id: selectedBank,
           bank_name: bankAccount.bank_name,
           transaction_type: 'Credit',
-          amount: paidAmount,
+          amount: txAmount,
           description: `Penjualan ${invoiceNumber} - ${customerName}`,
           reference: invoiceNumber,
           balance_after: bankAccount.balance,

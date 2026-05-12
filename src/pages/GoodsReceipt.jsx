@@ -72,6 +72,7 @@ export default function GoodsReceipt({ store }) {
   const [driverSignerName, setDriverSignerName] = useState('');
   const [managerSignerName, setManagerSignerName] = useState('Gudang Manager');
   const [editDriverPhone, setEditDriverPhone] = useState('');
+  const [editManagerPhone, setEditManagerPhone] = useState('');
   const [selectedPO, setSelectedPO] = useState(null);
   const [receivedItems, setReceivedItems] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -197,11 +198,11 @@ export default function GoodsReceipt({ store }) {
       setReceivedItems(po.items.map(item => ({
         ...item,
         sku: item.sku || '',
-        qty_ordered: item.quantity,
-        received_qty: item.quantity,
+        qty_ordered: item.proposed_qty || item.quantity,
+        received_qty: item.proposed_qty || item.quantity,
         reject_qty: 0,
         backorder_qty: 0,
-        accepted_qty: item.quantity,
+        accepted_qty: item.proposed_qty || item.quantity,
         qc_status: 'Passed',
         warehouse_bin: '',
         condition: 'Baik'
@@ -347,6 +348,18 @@ export default function GoodsReceipt({ store }) {
 
   const handleVerifyReceipt = async () => {
     if (!viewingReceipt || viewingReceipt.status === 'Posted') return;
+
+    if (settings.warehouseApprovalMode === 'Dual') {
+      if (!viewingReceipt.manager_phone) {
+        toast({
+          title: "Nomor HP Manager Kosong",
+          description: "Nomor HP Manager wajib diisi dan disimpan sebelum verifikasi dalam mode Dual Signature.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     setIsSaving(true);
 
     try {
@@ -456,6 +469,7 @@ export default function GoodsReceipt({ store }) {
   const openViewingReceipt = (r) => {
     setViewingReceipt(r);
     setEditDriverPhone(r.driver_phone || '');
+    setEditManagerPhone(r.manager_phone || '');
   };
 
   const handleSaveDriverPhone = async () => {
@@ -468,6 +482,16 @@ export default function GoodsReceipt({ store }) {
     } catch (e) { console.error(e); }
   };
 
+  const handleSaveManagerPhone = async () => {
+    if (!viewingReceipt) return;
+    try {
+      await api.entities.GoodsReceipt.update(viewingReceipt.id, { manager_phone: editManagerPhone });
+      setViewingReceipt(prev => ({ ...prev, manager_phone: editManagerPhone }));
+      toast({ title: 'Nomor HP Manager Disimpan', description: `Nomor ${editManagerPhone} berhasil disimpan.` });
+      loadData();
+    } catch (e) { console.error(e); }
+  };
+
   const handleRefreshDetail = async () => {
     if (!viewingReceipt) return;
     setIsSaving(true);
@@ -476,6 +500,7 @@ export default function GoodsReceipt({ store }) {
       if (refreshed) {
         setViewingReceipt(refreshed);
         setEditDriverPhone(refreshed.driver_phone || '');
+        setEditManagerPhone(refreshed.manager_phone || '');
         loadData();
         toast({ title: 'Data Sinkron', description: 'Informasi GRN berhasil diperbarui dari server.' });
       }
@@ -507,6 +532,24 @@ export default function GoodsReceipt({ store }) {
     const message = `Halo Bapak/Ibu Driver dari ${grn.supplier_name},\n\nBerikut adalah GOODS RECEIPT NOTES (GRN No: ${grn.gr_number}) dari kami.\n\nMohon untuk mengecek rincian barang dan memberikan tanda tangan secara digital pada link berikut:\n\n${publicUrl} \n\nTerima kasih.`;
 
     let phone = grn.driver_phone.replace(/\D/g, '');
+    if (phone.startsWith('0')) phone = '62' + phone.substring(1);
+
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const handleWhatsAppManager = (grn) => {
+    if (!grn.manager_phone) {
+      toast({
+        title: "Nomor HP Manager Kosong",
+        description: "Silakan isi nomor HP Manager pada kolom 'No. HP Manager' di atas, lalu klik 'Simpan' sebelum menggunakan fitur WhatsApp.",
+        variant: "destructive"
+      });
+      return;
+    }
+    const publicUrl = `${window.location.origin}/public/grn-manager/${grn.id}/sign`;
+    const message = `Halo Bapak/Ibu Manager Gudang,\n\nBerikut adalah GOODS RECEIPT NOTES (GRN No: ${grn.gr_number}) dari pengiriman ${grn.supplier_name}.\n\nMohon untuk mengecek rincian penerimaan barang dan memberikan persetujuan (approval) secara digital pada link berikut:\n\n${publicUrl} \n\nTerima kasih.`;
+
+    let phone = grn.manager_phone.replace(/\D/g, '');
     if (phone.startsWith('0')) phone = '62' + phone.substring(1);
 
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
@@ -1110,6 +1153,28 @@ export default function GoodsReceipt({ store }) {
                         </Button>
                       </div>
                     </div>
+
+                    {settings.warehouseApprovalMode === 'Dual' && (
+                      <div className="col-span-2 mt-2">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase mb-1.5">No. HP Manager <span className="text-slate-300 font-normal normal-case">(Wajib untuk Dual Signature)</span></p>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            value={editManagerPhone}
+                            onChange={(e) => setEditManagerPhone(e.target.value)}
+                            placeholder="08xxx atau +62xxx"
+                            className="h-9 text-sm border-slate-200 bg-slate-50 flex-1"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="shrink-0 h-9 text-xs font-bold border-blue-200 text-blue-700 hover:bg-blue-50"
+                            onClick={handleSaveManagerPhone}
+                          >
+                            Simpan
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                     <div className="col-span-2 text-sm text-slate-500 italic">"{viewingReceipt?.notes || 'Tidak ada catatan'}"</div>
                   </div>
                 </CardContent>
@@ -1301,13 +1366,22 @@ export default function GoodsReceipt({ store }) {
 
                   {/* Manager Sign (Conditional) */}
                   {settings.warehouseApprovalMode === 'Dual' && !viewingReceipt?.warehouse_manager_signature && (
-                    <Button
-                      className="bg-blue-700 hover:bg-blue-800 h-12 px-6 rounded-2xl font-black text-[10px] uppercase tracking-widest text-white"
-                      onClick={() => setShowManagerSignaturePad(true)}
-                    >
-                      <ShieldCheck className="w-4 h-4 mr-2" />
-                      TTD Manager
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        className="h-12 px-6 rounded-2xl font-black text-[10px] uppercase tracking-widest border-blue-200 text-blue-700 hover:bg-blue-50"
+                        onClick={() => handleWhatsAppManager(viewingReceipt)}
+                      >
+                        <ShieldCheck className="w-4 h-4 mr-2" /> WhatsApp Manager
+                      </Button>
+                      <Button
+                        className="bg-blue-700 hover:bg-blue-800 h-12 px-6 rounded-2xl font-black text-[10px] uppercase tracking-widest text-white"
+                        onClick={() => setShowManagerSignaturePad(true)}
+                      >
+                        <Signature className="w-4 h-4 mr-2" />
+                        TTD Manager Internal
+                      </Button>
+                    </>
                   )}
 
                   {/* Final Verification */}

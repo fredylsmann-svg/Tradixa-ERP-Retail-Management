@@ -446,20 +446,20 @@ export default function CompanySettings({ store }) {
                 onValueChange={(val) => updateSetting('negotiationMode', val)}
                 className="space-y-3"
               >
-                <div className={`flex items-start space-x-3 p-4 border rounded-xl cursor-pointer transition-all ${settings.negotiationMode === 'Item' || !settings.negotiationMode ? 'border-blue-500 bg-blue-50/50 shadow-sm dark:border-blue-600 dark:bg-blue-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800 dark:border-slate-700'}`} onClick={() => updateSetting('negotiationMode', 'Item')}>
+                <Label htmlFor="cs-neg-item" className={`flex items-start space-x-3 p-4 border rounded-xl cursor-pointer transition-all ${settings.negotiationMode === 'Item' || !settings.negotiationMode ? 'border-blue-500 bg-blue-50/50 shadow-sm dark:border-blue-600 dark:bg-blue-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800 dark:border-slate-700'}`}>
                   <RadioGroupItem value="Item" id="cs-neg-item" className="mt-1" />
                   <div>
-                    <Label htmlFor="cs-neg-item" className="font-bold cursor-pointer">Mode A: Per Item Counter Offer</Label>
+                    <div className="font-bold">Mode A: Per Item Counter Offer</div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Supplier bisa menawar harga satuan untuk setiap produk.</p>
                   </div>
-                </div>
-                <div className={`flex items-start space-x-3 p-4 border rounded-xl cursor-pointer transition-all ${settings.negotiationMode === 'Total' ? 'border-blue-500 bg-blue-50/50 shadow-sm dark:border-blue-600 dark:bg-blue-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800 dark:border-slate-700'}`} onClick={() => updateSetting('negotiationMode', 'Total')}>
+                </Label>
+                <Label htmlFor="cs-neg-total" className={`flex items-start space-x-3 p-4 border rounded-xl cursor-pointer transition-all ${settings.negotiationMode === 'Total' ? 'border-blue-500 bg-blue-50/50 shadow-sm dark:border-blue-600 dark:bg-blue-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800 dark:border-slate-700'}`}>
                   <RadioGroupItem value="Total" id="cs-neg-total" className="mt-1" />
                   <div>
-                    <Label htmlFor="cs-neg-total" className="font-bold cursor-pointer">Mode B: Grand Total Counter Offer</Label>
+                    <div className="font-bold">Mode B: Grand Total Counter Offer</div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Supplier hanya menawar total harga akhir dokumen.</p>
                   </div>
-                </div>
+                </Label>
               </RadioGroup>
             </div>
 
@@ -476,20 +476,20 @@ export default function CompanySettings({ store }) {
                 onValueChange={(val) => updateSetting('warehouseApprovalMode', val)}
                 className="space-y-3"
               >
-                <div className={`flex items-start space-x-3 p-4 border rounded-xl cursor-pointer transition-all ${settings.warehouseApprovalMode === 'Single' || !settings.warehouseApprovalMode ? 'border-blue-500 bg-blue-50/50 shadow-sm dark:border-blue-600 dark:bg-blue-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800 dark:border-slate-700'}`} onClick={() => updateSetting('warehouseApprovalMode', 'Single')}>
+                <Label htmlFor="cs-app-single" className={`flex items-start space-x-3 p-4 border rounded-xl cursor-pointer transition-all ${settings.warehouseApprovalMode === 'Single' || !settings.warehouseApprovalMode ? 'border-blue-500 bg-blue-50/50 shadow-sm dark:border-blue-600 dark:bg-blue-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800 dark:border-slate-700'}`}>
                   <RadioGroupItem value="Single" id="cs-app-single" className="mt-1" />
                   <div>
-                    <Label htmlFor="cs-app-single" className="font-bold cursor-pointer">Single Signature (Standar)</Label>
+                    <div className="font-bold">Single Signature (Standar)</div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Hanya perlu tanda tangan Admin Gudang untuk posting stok.</p>
                   </div>
-                </div>
-                <div className={`flex items-start space-x-3 p-4 border rounded-xl cursor-pointer transition-all ${settings.warehouseApprovalMode === 'Dual' ? 'border-blue-500 bg-blue-50/50 shadow-sm dark:border-blue-600 dark:bg-blue-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800 dark:border-slate-700'}`} onClick={() => updateSetting('warehouseApprovalMode', 'Dual')}>
+                </Label>
+                <Label htmlFor="cs-app-dual" className={`flex items-start space-x-3 p-4 border rounded-xl cursor-pointer transition-all ${settings.warehouseApprovalMode === 'Dual' ? 'border-blue-500 bg-blue-50/50 shadow-sm dark:border-blue-600 dark:bg-blue-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800 dark:border-slate-700'}`}>
                   <RadioGroupItem value="Dual" id="cs-app-dual" className="mt-1" />
                   <div>
-                    <Label htmlFor="cs-app-dual" className="font-bold cursor-pointer">Dual Signature (Enterprise)</Label>
+                    <div className="font-bold">Dual Signature (Enterprise)</div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Memerlukan tanda tangan Admin dan Manajer Gudang.</p>
                   </div>
-                </div>
+                </Label>
               </RadioGroup>
             </div>
           </CardContent>

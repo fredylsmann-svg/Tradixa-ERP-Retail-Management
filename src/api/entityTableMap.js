@@ -37,7 +37,7 @@ export const ENTITY_TABLE_MAP = {
   CommunicationLog:  'communication_logs',
   FollowUpReminder:  'follow_up_reminders',
   MarketingCampaign: 'marketing_campaigns',
-  AutomationRule:    'automation_rules',
+  AutomationRule:    'marketing_automation_rules',
 
   // === SALES ===
   SalesTransaction:  'sales_transactions',

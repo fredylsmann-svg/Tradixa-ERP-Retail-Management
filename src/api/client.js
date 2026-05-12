@@ -121,6 +121,18 @@ function createEntityProxy(entityName) {
         created_date: record.created_date || now.toISOString().split('T')[0],
         updated_date: now.toISOString().split('T')[0],
       };
+
+      // Auto-inject store_id if missing (required for RLS store-scoping)
+      // Skip entities whose tables don't have a store_id column
+      const skipStoreId = ['Store', 'User', 'JournalLine', 'StockOpnameItem', 'LoyaltyTransaction'];
+      if (!payload.store_id && !skipStoreId.includes(entityName)) {
+        const currentUser = authModule._currentUser;
+        if (currentUser?.current_store_id) {
+          payload.store_id = currentUser.current_store_id;
+        } else if (currentUser?.store_id) {
+          payload.store_id = currentUser.store_id;
+        }
+      }
       const { data, error } = await supabase.from(table).insert(payload).select().single();
       if (error) {
         console.error(`[Tradixa] ${entityName}.create error:`, error.message);

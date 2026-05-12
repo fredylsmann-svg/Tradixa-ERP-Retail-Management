@@ -87,6 +87,8 @@ export default function PurchaseRequisition({ store }) {
   };
 
   const loadCurrentUser = async () => {
+    // Always fetch fresh user data (invalidate cache) to get latest authorities
+    api.auth._currentUser = null;
     const user = await api.auth.me();
     setCurrentUser(user);
   };
@@ -324,6 +326,14 @@ export default function PurchaseRequisition({ store }) {
     // Owner can always approve everything (Absolute Bypass)
     if (currentUser.role === 'owner') return { allowed: true };
 
+    // Check dynamic authorities based on current approval level (Enterprise DoA)
+    const currentLevel = (viewingPr?.approval_history?.length || 0) + 1;
+    const requiredAuthority = currentLevel === 1 ? 'APPROVE_PR_L1' : 'APPROVE_PR_L2';
+
+    // Strictly check for the exact level authority. Legacy 'APPROVE_PR' tag is no longer supported.
+    const hasAuthority = currentUser.authorities?.includes(requiredAuthority);
+    if (!hasAuthority) return { allowed: false, reason: 'no_authority' };
+
     // Segregation of Duties: Prevent the same user from approving multiple levels
     const currentUserId = currentUser?.id;
     const approverName = currentUser?.full_name || currentUser?.email;
@@ -335,15 +345,6 @@ export default function PurchaseRequisition({ store }) {
         return { allowed: false, reason: 'already_approved' };
       }
     }
-
-
-    // Check dynamic authorities based on current approval level (Enterprise DoA)
-    const currentLevel = (viewingPr?.approval_history?.length || 0) + 1;
-    const requiredAuthority = currentLevel === 1 ? 'APPROVE_PR_L1' : 'APPROVE_PR_L2';
-
-    // We also fallback to 'APPROVE_PR' to maintain compatibility if anyone has the old tag
-    const hasAuthority = currentUser.authorities?.includes(requiredAuthority) || currentUser.authorities?.includes('APPROVE_PR') || currentUser.role === 'admin';
-    if (!hasAuthority) return { allowed: false, reason: 'no_authority' };
 
     // Check Nominal Limit (0 = Unlimited)
     if (currentUser.approval_limit > 0 && viewingPr && viewingPr.total_amount > currentUser.approval_limit) {
@@ -801,7 +802,7 @@ export default function PurchaseRequisition({ store }) {
 
       {/* Detail Dialog */}
       <Dialog open={!!viewingPr} onOpenChange={() => setViewingPr(null)}>
-        <DialogContent hideFullscreen={true} className="max-w-7xl md:h-[90vh] h-[95vh] p-0 md:overflow-hidden flex flex-col overflow-y-auto">
+        <DialogContent hideFullscreen={true} className="max-w-7xl md:h-[90vh] h-[95vh] p-0 md:overflow-hidden flex flex-col overflow-y-auto" aria-describedby={undefined}>
           {viewingPr && (
             <div className="flex flex-col h-full md:overflow-hidden">
               {/* Header */}
@@ -906,7 +907,7 @@ export default function PurchaseRequisition({ store }) {
                 {/* Right Panel: Approval Sidebar */}
                 <div className="w-full md:w-[380px] bg-white p-8 space-y-8 overflow-y-auto border-t md:border-t-0 md:border-l shadow-[-4px_0_12px_rgba(0,0,0,0.02)]">
                   {/* Approval Form */}
-                  {(viewingPr.status === 'Diajukan' || viewingPr.status === 'Menunggu Level 2') && getApprovalStatus().reason !== 'no_authority' && (
+                  {(viewingPr.status === 'Diajukan' || viewingPr.status === 'Menunggu Level 2') && (getApprovalStatus().allowed || getApprovalStatus().reason === 'already_approved' || getApprovalStatus().reason === 'exceeds_limit') && (
                     <div className="bg-blue-600 p-6 rounded-2xl border border-slate-800 space-y-6 shadow-xl">
                       <h3 className="text-white font-bold flex items-center gap-2 tracking-tight text-base">
                         Atur Persetujuan PR - Level {(viewingPr.approval_history?.length || 0) + 1}
@@ -987,7 +988,7 @@ export default function PurchaseRequisition({ store }) {
 
       {/* Item Master Dialog */}
       <Dialog open={showItemMaster} onOpenChange={setShowItemMaster}>
-        <DialogContent hideFullscreen={true} className="max-w-6xl h-[85vh] flex flex-col p-0 overflow-hidden">
+        <DialogContent hideFullscreen={true} className="max-w-6xl h-[85vh] flex flex-col p-0 overflow-hidden" aria-describedby={undefined}>
           <DialogHeader className="p-6 border-b flex-shrink-0">
             <DialogTitle>Buat PR Berdasarkan Item Master</DialogTitle>
           </DialogHeader>
@@ -1043,7 +1044,7 @@ export default function PurchaseRequisition({ store }) {
 
             {selectedItems.length > 0 && (
               <div className="h-64 flex-shrink-0 border-t pt-4 overflow-y-auto space-y-4">
-                <p className="text-sm font-bold text-slate-800 flex items-center justify-between mb-2">Detail Kuantitas & Harga (Estimasi) <Badge className="bg-blue-600 text-white">{selectedItems.length} Item</Badge></p>
+                <div className="text-sm font-bold text-slate-800 flex items-center justify-between mb-2">Detail Kuantitas & Harga (Estimasi) <Badge className="bg-blue-600 text-white">{selectedItems.length} Item</Badge></div>
                 <div className="grid grid-cols-1 gap-3">
                   {selectedItems.map(item => (
                     <div key={item.id} className="p-3 bg-white rounded-xl border border-slate-200 flex flex-col gap-3 shadow-sm relative overflow-hidden">

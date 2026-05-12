@@ -19,7 +19,7 @@ export async function executeAutomation(storeId, trigger, contextData = {}) {
     // 1. Ambil data toko untuk nama pengirim dan WhatsApp
     const store = await api.entities.Store.get(storeId);
     const storeName = store?.store_name || 'Tradixa Store';
-    const storePhone = store?.store_phone || '';
+    const storePhone = store?.phone || '';
     const ownerName = store?.owner_name || 'Admin';
 
     // 2. Ambil semua aturan aktif untuk trigger ini

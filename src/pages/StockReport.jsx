@@ -6,11 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Package, TrendingDown, DollarSign, AlertTriangle, Search, Download, FileDown, Loader2, Boxes, Info, ShieldCheck, Cpu } from 'lucide-react';
+import { Package, TrendingDown, DollarSign, AlertTriangle, Search, Download, FileDown, Loader2, Boxes, Info, ShieldCheck, Cpu, Eye, Receipt } from 'lucide-react';
 import moment from 'moment';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import PageHeader from '@/components/layout/PageHeader';
 import { BarChart3 } from 'lucide-react';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
@@ -51,6 +52,9 @@ export default function StockReport({ store }) {
   const [isBatchLoading, setIsBatchLoading] = useState(false);
   const [serials, setSerials] = useState([]);
   const [isSerialLoading, setIsSerialLoading] = useState(false);
+  const [salesTransactions, setSalesTransactions] = useState([]);
+  const [inventoryGrns, setInventoryGrns] = useState([]);
+  const [viewingTransaction, setViewingTransaction] = useState(null);
 
   useEffect(() => {
     if (store?.id) loadData();
@@ -76,6 +80,18 @@ export default function StockReport({ store }) {
     try {
       const data = await api.entities.InventorySerial.filter({ store_id: store.id });
       setSerials(data || []);
+      
+      const soldIds = (data || []).map(s => s.sales_transaction_id).filter(Boolean);
+      if (soldIds.length > 0) {
+        const stData = await api.entities.SalesTransaction.filter({ store_id: store.id });
+        setSalesTransactions(stData || []);
+      }
+
+      const igrnIds = (data || []).map(s => s.inventory_grn_id).filter(Boolean);
+      if (igrnIds.length > 0) {
+        const igrnData = await api.entities.InventoryGRN.filter({ store_id: store.id });
+        setInventoryGrns(igrnData || []);
+      }
     } catch (e) {
       console.warn('[Tradixa] InventorySerial table may not exist yet:', e.message);
       setSerials([]);
@@ -516,7 +532,7 @@ export default function StockReport({ store }) {
                     <TableHead>Serial / IMEI</TableHead>
                     <TableHead>Produk</TableHead>
                     <TableHead className="text-center">Status</TableHead>
-                    <TableHead>Referensi GRN</TableHead>
+                    <TableHead>Inventory GRN</TableHead>
                     <TableHead>Tanggal Masuk</TableHead>
                     <TableHead className="text-center pr-8">Terjual Ke</TableHead>
                   </TableRow>
@@ -546,6 +562,9 @@ export default function StockReport({ store }) {
                       .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
                       .map((s, idx) => {
                         const prod = products.find(p => p.id === s.product_id);
+                        const transaction = salesTransactions.find(t => t.id === s.sales_transaction_id);
+                        const customerName = transaction ? (transaction.customer_name || 'Walk-in Customer') : null;
+
                         return (
                           <TableRow key={s.id} className="hover:bg-slate-50/50">
                             <TableCell className="text-center text-slate-400 font-bold pl-8">{idx + 1}</TableCell>
@@ -565,9 +584,26 @@ export default function StockReport({ store }) {
                                 <Badge className="bg-amber-500 text-white border-none font-black text-[9px] uppercase tracking-tighter">{s.status?.toUpperCase()}</Badge>
                               )}
                             </TableCell>
-                            <TableCell className="text-xs text-slate-500 font-medium">{s.inventory_grn_id ? s.inventory_grn_id.substring(0, 8) + '...' : '-'}</TableCell>
+                            <TableCell className="text-xs text-slate-500 font-medium">
+                              {inventoryGrns.find(g => g.id === s.inventory_grn_id)?.igrn_number || (s.inventory_grn_id ? s.inventory_grn_id.substring(0, 8) + '...' : '-')}
+                            </TableCell>
                             <TableCell className="text-xs text-slate-500 font-medium">{s.created_date ? moment(s.created_date).format('DD MMM YYYY') : '-'}</TableCell>
-                            <TableCell className="text-center text-xs text-slate-400 pr-8">{s.sales_transaction_id ? s.sales_transaction_id.substring(0, 8) + '...' : <span className="text-slate-300">—</span>}</TableCell>
+                            <TableCell className="text-right text-xs pr-8">
+                              {s.sales_transaction_id ? (
+                                <div className="flex items-center justify-end gap-2">
+                                  <span className="font-bold text-slate-700">{customerName || (s.sales_transaction_id.substring(0, 8) + '...')}</span>
+                                  <button 
+                                    onClick={() => setViewingTransaction(transaction)}
+                                    className="w-7 h-7 flex items-center justify-center bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors shrink-0"
+                                    title="Lihat Detail Transaksi"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-slate-300">—</span>
+                              )}
+                            </TableCell>
                           </TableRow>
                         );
                       })
@@ -623,6 +659,64 @@ export default function StockReport({ store }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Transaction View Dialog */}
+      <Dialog open={!!viewingTransaction} onOpenChange={(open) => !open && setViewingTransaction(null)}>
+        <DialogContent className="max-w-md p-0 overflow-hidden rounded-[24px]">
+          <div className="bg-slate-900 p-6 text-white relative">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3 text-lg font-bold">
+                <Receipt className="w-5 h-5 text-blue-400" />
+                Detail Penjualan
+              </DialogTitle>
+              <p className="text-slate-400 text-sm mt-1">Invoice: {viewingTransaction?.invoice_number || '-'}</p>
+            </DialogHeader>
+          </div>
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl">
+              <div>
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Customer</p>
+                <p className="font-bold text-slate-800">{viewingTransaction?.customer_name || 'Walk-in Customer'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Tanggal</p>
+                <p className="font-bold text-slate-800">{viewingTransaction?.timestamp_wib || moment(viewingTransaction?.created_at).format('DD MMM YYYY, HH:mm')}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Pembayaran</p>
+                <Badge className="bg-emerald-100 text-emerald-700 border-none font-bold">{viewingTransaction?.payment_method}</Badge>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Total</p>
+                <p className="font-bold text-slate-800">Rp {formatCurrency(viewingTransaction?.total || 0)}</p>
+              </div>
+            </div>
+
+            {viewingTransaction?.items && viewingTransaction.items.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-2">Item Dibeli</p>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                  {viewingTransaction.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-sm border-b border-slate-100 pb-2">
+                      <div>
+                        <p className="font-bold text-slate-700">{item.name || item.product_name}</p>
+                        <p className="text-xs text-slate-500">{item.quantity} {item.unit || 'PCS'} @ Rp {formatCurrency(item.price || item.sell_price)}</p>
+                      </div>
+                      <p className="font-bold text-slate-900">Rp {formatCurrency(item.subtotal || (item.quantity * (item.price || item.sell_price)))}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <div className="pt-4 flex justify-end">
+              <Button onClick={() => setViewingTransaction(null)} className="rounded-xl px-6 font-bold">
+                Tutup
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

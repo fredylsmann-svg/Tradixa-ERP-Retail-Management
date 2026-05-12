@@ -43,7 +43,8 @@ export default function CustomerProfile({ store }) {
     title: '',
     description: '',
     due_date: moment().format('YYYY-MM-DD'),
-    priority: 'Medium'
+    priority: 'Medium',
+    remind_days_before: 0
   });
 
   useEffect(() => {
@@ -102,7 +103,7 @@ export default function CustomerProfile({ store }) {
       ...reminderForm
     });
 
-    setReminderForm({ title: '', description: '', due_date: moment().format('YYYY-MM-DD'), priority: 'Medium' });
+    setReminderForm({ title: '', description: '', due_date: moment().format('YYYY-MM-DD'), priority: 'Medium', remind_days_before: 0 });
     setShowReminderDialog(false);
     setIsSaving(false);
     loadData();
@@ -553,7 +554,7 @@ export default function CustomerProfile({ store }) {
       </Tabs>
 
       <Dialog open={showCommDialog} onOpenChange={setShowCommDialog}>
-        <DialogContent className="w-[95vw] max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="text-lg">Add Communication Log</DialogTitle>
           </DialogHeader>
@@ -607,7 +608,7 @@ export default function CustomerProfile({ store }) {
       </Dialog>
 
       <Dialog open={!!viewingDiscount} onOpenChange={() => setViewingDiscount(null)}>
-        <DialogContent className="w-[95vw] max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BadgePercent className="w-5 h-5 text-rose-500" />
@@ -677,7 +678,7 @@ export default function CustomerProfile({ store }) {
       </Dialog>
 
       <Dialog open={showReminderDialog} onOpenChange={setShowReminderDialog}>
-        <DialogContent className="w-[95vw] max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="text-lg">Add Follow-up Reminder</DialogTitle>
           </DialogHeader>
@@ -712,6 +713,20 @@ export default function CustomerProfile({ store }) {
                   className="mt-1 text-sm"
                   required
                 />
+              </div>
+              <div>
+                <Label>Ingatkan Saya</Label>
+                <Select value={String(reminderForm.remind_days_before)} onValueChange={(v) => setReminderForm({...reminderForm, remind_days_before: parseInt(v)})}>
+                  <SelectTrigger className="mt-1 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Pada Hari H</SelectItem>
+                    <SelectItem value="1">H-1 (1 Hari Sebelum)</SelectItem>
+                    <SelectItem value="2">H-2 (2 Hari Sebelum)</SelectItem>
+                    <SelectItem value="7">H-7 (1 Minggu Sebelum)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>Priority</Label>
@@ -752,8 +767,8 @@ export default function CustomerProfile({ store }) {
               <p><strong>Alamat:</strong> {customer?.address || '-'}</p>
             </div>
             <div className="text-right">
-              <p className="text-lg">Total Belanja: <strong>Rp {formatCurrency(transactions.reduce((acc, curr) => acc + curr.total, 0))}</strong></p>
-              <p className="text-lg text-red-600">Total Piutang (Receivable): <strong>Rp {formatCurrency(transactions.filter(t => t.payment_status !== 'Paid').reduce((acc, curr) => acc + curr.total, 0))}</strong></p>
+              <p className="text-lg">Total Belanja: <strong>Rp {formatCurrency(totalSpent)}</strong></p>
+              <p className="text-lg text-red-600">Total Piutang (Receivable): <strong>Rp {formatCurrency(totalReceivables)}</strong></p>
               <p>Loyalty: <strong>{loyaltyInfo?.current_tier || 'Bronze'}</strong> ({loyaltyInfo?.total_points || 0} pts)</p>
             </div>
           </div>

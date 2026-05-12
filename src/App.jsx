@@ -20,6 +20,7 @@ import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
 // Lazy-loaded public pages (heavy components that don't need eager loading)
 const PublicPOSign = lazy(() => import('./pages/PublicPOSign'));
 const PublicGRNSign = lazy(() => import('./pages/PublicGRNSign'));
+const PublicGRNManagerSign = lazy(() => import('./pages/PublicGRNManagerSign'));
 const PublicReturnReview = lazy(() => import('./pages/PublicReturnReview'));
 const PublicInvoice = lazy(() => import('./pages/PublicInvoice'));
 const ProcurementWorkflow = lazy(() => import('./pages/ProcurementWorkflow'));
@@ -104,6 +105,9 @@ function App() {
             
             {/* Public GRN Signature Route */}
             <Route path="/public/grn/:id/sign" element={<PublicGRNSign />} />
+            
+            {/* Public GRN Manager Signature Route */}
+            <Route path="/public/grn-manager/:id/sign" element={<PublicGRNManagerSign />} />
             
             {/* Public Return Review Route */}
             <Route path="/public/return/:id/review" element={<PublicReturnReview />} />

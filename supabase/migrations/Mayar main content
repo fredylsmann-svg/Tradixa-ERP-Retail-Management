@@ -1,0 +1,239 @@
+[Skip to main content](https://docs.mayar.id/api-reference/transaction/accountbalance#content-area)
+[Mayar Documentation home page](https://docs.mayar.id/)
+- [Support](mailto:info@mayar.id)
+- [Dashboard](https://web.mayar.id/)
+- [Dashboard](https://web.mayar.id/)
+[Support](mailto:info@mayar.id)
+[Dashboard](https://web.mayar.id/)
+[Dashboard](https://web.mayar.id/)
+[Guides](https://docs.mayar.id/)
+[API Reference](https://docs.mayar.id/api-reference/introduction)
+- [Community](https://t.me/mcngroup)
+- [Blog](https://blog.mayar.id/)
+[Community](https://t.me/mcngroup)
+[Blog](https://blog.mayar.id/)
+
+##### API documentation
+- [Introduction](https://docs.mayar.id/api-reference/introduction)
+- [Status Code](https://docs.mayar.id/api-reference/statuscode)
+- [API Rate Limit](https://docs.mayar.id/api-reference/rate-limit)
+[Introduction](https://docs.mayar.id/api-reference/introduction)
+[Status Code](https://docs.mayar.id/api-reference/statuscode)
+[API Rate Limit](https://docs.mayar.id/api-reference/rate-limit)
+
+##### Product
+- [GETGet Product Page](https://docs.mayar.id/api-reference/product/productpage)
+- [GETGet Product Page with Type Filter](https://docs.mayar.id/api-reference/product/productpagewithfilter)
+- [GETSearch Product](https://docs.mayar.id/api-reference/product/search)
+- [GETGet Detail Product](https://docs.mayar.id/api-reference/product/detail)
+- [GETClose Product](https://docs.mayar.id/api-reference/product/close)
+- [GETRe-open Product](https://docs.mayar.id/api-reference/product/reopen)
+[GETGet Product Page](https://docs.mayar.id/api-reference/product/productpage)
+[GETGet Product Page with Type Filter](https://docs.mayar.id/api-reference/product/productpagewithfilter)
+[GETSearch Product](https://docs.mayar.id/api-reference/product/search)
+[GETGet Detail Product](https://docs.mayar.id/api-reference/product/detail)
+[GETClose Product](https://docs.mayar.id/api-reference/product/close)
+[GETRe-open Product](https://docs.mayar.id/api-reference/product/reopen)
+
+##### Invoice
+- [POSTCreate Invoice](https://docs.mayar.id/api-reference/invoice/create)
+- [POSTEdit Invoice](https://docs.mayar.id/api-reference/invoice/edit)
+- [GETGet List Invoice](https://docs.mayar.id/api-reference/invoice)
+- [GETGet Sort / Filter Invoice](https://docs.mayar.id/api-reference/invoice/filter)
+- [GETGet Detail / Invoice Status](https://docs.mayar.id/api-reference/invoice/detail)
+- [GETClose Invoice](https://docs.mayar.id/api-reference/invoice/close)
+- [GETRe-open Invoice](https://docs.mayar.id/api-reference/invoice/reopen)
+[POSTCreate Invoice](https://docs.mayar.id/api-reference/invoice/create)
+[POSTEdit Invoice](https://docs.mayar.id/api-reference/invoice/edit)
+[GETGet List Invoice](https://docs.mayar.id/api-reference/invoice)
+[GETGet Sort / Filter Invoice](https://docs.mayar.id/api-reference/invoice/filter)
+[GETGet Detail / Invoice Status](https://docs.mayar.id/api-reference/invoice/detail)
+[GETClose Invoice](https://docs.mayar.id/api-reference/invoice/close)
+[GETRe-open Invoice](https://docs.mayar.id/api-reference/invoice/reopen)
+
+##### Request Payment
+- [POSTCreate Single Payment Request](https://docs.mayar.id/api-reference/reqpayment/create)
+- [POSTEdit Single Payment Request](https://docs.mayar.id/api-reference/reqpayment/edit)
+- [GETGet List Single Payment Request](https://docs.mayar.id/api-reference/reqpayment)
+- [GETGet Sort / Filter Single Payment Request Page](https://docs.mayar.id/api-reference/reqpayment/filter)
+- [GETGet Detail Single Payment Request](https://docs.mayar.id/api-reference/reqpayment/detail)
+- [GETClose Single Payment Request](https://docs.mayar.id/api-reference/reqpayment/close)
+- [GETRe-open Single Payment Request](https://docs.mayar.id/api-reference/reqpayment/reopen)
+[POSTCreate Single Payment Request](https://docs.mayar.id/api-reference/reqpayment/create)
+[POSTEdit Single Payment Request](https://docs.mayar.id/api-reference/reqpayment/edit)
+[GETGet List Single Payment Request](https://docs.mayar.id/api-reference/reqpayment)
+[GETGet Sort / Filter Single Payment Request Page](https://docs.mayar.id/api-reference/reqpayment/filter)
+[GETGet Detail Single Payment Request](https://docs.mayar.id/api-reference/reqpayment/detail)
+[GETClose Single Payment Request](https://docs.mayar.id/api-reference/reqpayment/close)
+[GETRe-open Single Payment Request](https://docs.mayar.id/api-reference/reqpayment/reopen)
+
+##### Installment
+- [POSTPOST Create Installment](https://docs.mayar.id/api-reference/installment/create)
+
+- [GETGet Installment Detail](https://docs.mayar.id/api-reference/installment/detail)
+[POSTPOST Create Installment](https://docs.mayar.id/api-reference/installment/create)
+[GETGet Installment Detail](https://docs.mayar.id/api-reference/installment/detail)
+
+##### Discount & Coupon
+- [POSTCreate Discount with Coupon](https://docs.mayar.id/api-reference/discount/create)
+- [POSTValidate Coupon](https://docs.mayar.id/api-reference/discount/validate)
+- [GETGet Coupon Detail](https://docs.mayar.id/api-reference/discount/detail)
+[POSTCreate Discount with Coupon](https://docs.mayar.id/api-reference/discount/create)
+[POSTValidate Coupon](https://docs.mayar.id/api-reference/discount/validate)
+[GETGet Coupon Detail](https://docs.mayar.id/api-reference/discount/detail)
+
+##### Customer
+- [GETGet Customer](https://docs.mayar.id/api-reference/customer/getdetail)
+- [POSTCreate Customer](https://docs.mayar.id/api-reference/customer/create)
+- [POSTUpdate Customer Email](https://docs.mayar.id/api-reference/customer/update)
+- [POSTCreate Magic Link](https://docs.mayar.id/api-reference/customer/createmagiclink)
+[GETGet Customer](https://docs.mayar.id/api-reference/customer/getdetail)
+[POSTCreate Customer](https://docs.mayar.id/api-reference/customer/create)
+[POSTUpdate Customer Email](https://docs.mayar.id/api-reference/customer/update)
+[POSTCreate Magic Link](https://docs.mayar.id/api-reference/customer/createmagiclink)
+
+##### Transaction
+- [GETGet Account Balance](https://docs.mayar.id/api-reference/transaction/accountbalance)
+- [GETGet Paid Transactions](https://docs.mayar.id/api-reference/transaction/paidtransaction)
+- [GETGet Unpaid Transaction](https://docs.mayar.id/api-reference/transaction/unpaidtransaction)
+- [POSTCreate Dynamic QRCode](https://docs.mayar.id/api-reference/transaction/createdynamicqrcode)
+[GETGet Account Balance](https://docs.mayar.id/api-reference/transaction/accountbalance)
+[GETGet Paid Transactions](https://docs.mayar.id/api-reference/transaction/paidtransaction)
+[GETGet Unpaid Transaction](https://docs.mayar.id/api-reference/transaction/unpaidtransaction)
+[POSTCreate Dynamic QRCode](https://docs.mayar.id/api-reference/transaction/createdynamicqrcode)
+
+##### Webhook
+- [GETGet History](https://docs.mayar.id/api-reference/webhook/history)
+- [POSTRegister URL Hook](https://docs.mayar.id/api-reference/webhook/registerurlhook)
+- [POSTTest URL Hook](https://docs.mayar.id/api-reference/webhook/testurlhook)
+- [POSTRetry History](https://docs.mayar.id/api-reference/webhook/retryhistory)
+[GETGet History](https://docs.mayar.id/api-reference/webhook/history)
+[POSTRegister URL Hook](https://docs.mayar.id/api-reference/webhook/registerurlhook)
+[POSTTest URL Hook](https://docs.mayar.id/api-reference/webhook/testurlhook)
+[POSTRetry History](https://docs.mayar.id/api-reference/webhook/retryhistory)
+
+##### Software License Code
+- [POSTVerify License](https://docs.mayar.id/api-reference/licensecode/verifylicense)
+[POSTVerify License](https://docs.mayar.id/api-reference/licensecode/verifylicense)
+
+##### Membership (SaaS)
+- [POSTVerify License SaaS Subscription](https://docs.mayar.id/api-reference/saas/verify)
+- [POSTActivate License](https://docs.mayar.id/api-reference/saas/activate)
+- [POSTDeactivate License](https://docs.mayar.id/api-reference/saas/deactivate)
+[POSTVerify License SaaS Subscription](https://docs.mayar.id/api-reference/saas/verify)
+[POSTActivate License](https://docs.mayar.id/api-reference/saas/activate)
+[POSTDeactivate License](https://docs.mayar.id/api-reference/saas/deactivate)
+
+##### Membership (Credit)
+- [GETGet Customer Balance](https://docs.mayar.id/api-reference/usagebasedmembership/customerbalance)
+- [GETGet Paginate Customer Credit History](https://docs.mayar.id/api-reference/usagebasedmembership/paginatecustomercredithistory)
+- [POSTSpend Customer Credit](https://docs.mayar.id/api-reference/usagebasedmembership/spendcustomercredit)
+- [POSTAdd Customer Credit](https://docs.mayar.id/api-reference/usagebasedmembership/addcustomercredit)
+- [POSTRegist New Membership Customer](https://docs.mayar.id/api-reference/usagebasedmembership/registnewmembershipcustomer)
+[GETGet Customer Balance](https://docs.mayar.id/api-reference/usagebasedmembership/customerbalance)
+[GETGet Paginate Customer Credit History](https://docs.mayar.id/api-reference/usagebasedmembership/paginatecustomercredithistory)
+[POSTSpend Customer Credit](https://docs.mayar.id/api-reference/usagebasedmembership/spendcustomercredit)
+
+[POSTAdd Customer Credit](https://docs.mayar.id/api-reference/usagebasedmembership/addcustomercredit)
+[POSTRegist New Membership Customer](https://docs.mayar.id/api-reference/usagebasedmembership/registnewmembershipcustomer)
+
+##### Credit Based Product
+- [GETGet Customer Balance](https://docs.mayar.id/api-reference/creditbasedproduct/customerbalance)
+- [GETGet Paginate Customer Credit History](https://docs.mayar.id/api-reference/creditbasedproduct/paginatecustomercredithistory)
+- [POSTSpend Customer Credit](https://docs.mayar.id/api-reference/creditbasedproduct/spendcustomercredit)
+- [POSTAdd Customer Credit](https://docs.mayar.id/api-reference/creditbasedproduct/addcustomercredit)
+- [POSTRegist New Customer](https://docs.mayar.id/api-reference/creditbasedproduct/registernewcustomer)
+- [POSTGenerate Immutable Checkout Link](https://docs.mayar.id/api-reference/creditbasedproduct/generateimmutablecheckoutlink)
+[GETGet Customer Balance](https://docs.mayar.id/api-reference/creditbasedproduct/customerbalance)
+[GETGet Paginate Customer Credit History](https://docs.mayar.id/api-reference/creditbasedproduct/paginatecustomercredithistory)
+[POSTSpend Customer Credit](https://docs.mayar.id/api-reference/creditbasedproduct/spendcustomercredit)
+[POSTAdd Customer Credit](https://docs.mayar.id/api-reference/creditbasedproduct/addcustomercredit)
+[POSTRegist New Customer](https://docs.mayar.id/api-reference/creditbasedproduct/registernewcustomer)
+[POSTGenerate Immutable Checkout Link](https://docs.mayar.id/api-reference/creditbasedproduct/generateimmutablecheckoutlink)
+
+```
+curl --request GET 'https://api.mayar.id/hl/v1/balance' \ --header 'Authorization: Bearer Paste-Your-API-Key-Here'
+```
+
+
+```
+curl --request GET 'https://api.mayar.id/hl/v1/balance' \ --header 'Authorization: Bearer Paste-Your-API-Key-Here'
+```
+
+
+```
+{ "statusCode": 200, "messages": "success", "data": { "balanceActive": 0, "balancePending": 0, "balance": 0 } }
+```
+
+
+```
+{ "statusCode": 200, "messages": "success", "data": { "balanceActive": 0, "balancePending": 0, "balance": 0 } }
+```
+
+# Get Account Balance
+
+Endpoint where you can get your account balance
+
+## Documentation Index
+
+Fetch the complete documentation index at: [https://docs.mayar.id/llms.txt](https://docs.mayar.id/llms.txt)
+Use this file to discover all available pages before exploring further.
+
+```
+curl --request GET 'https://api.mayar.id/hl/v1/balance' \ --header 'Authorization: Bearer Paste-Your-API-Key-Here'
+```
+
+
+```
+curl --request GET 'https://api.mayar.id/hl/v1/balance' \ --header 'Authorization: Bearer Paste-Your-API-Key-Here'
+```
+
+
+```
+{ "statusCode": 200, "messages": "success", "data": { "balanceActive": 0, "balancePending": 0, "balance": 0 } }
+```
+
+
+```
+{ "statusCode": 200, "messages": "success", "data": { "balanceActive": 0, "balancePending": 0, "balance": 0 } }
+```
+
+
+```
+https://api.mayar.id/hl/v1/balance
+```
+
+
+```
+https://api.mayar.id/hl/v1/balance
+```
+
+### [​](https://docs.mayar.id/api-reference/transaction/accountbalance#authorization)Authorization
+
+[​](https://docs.mayar.id/api-reference/transaction/accountbalance#authorization)
+[​](https://docs.mayar.id/api-reference/transaction/accountbalance#param-authorization)
+
+```
+Authorization | Bearer Paste-Your-API-Key-Here
+```
+
+## [​](https://docs.mayar.id/api-reference/transaction/accountbalance#response)Response
+
+[​](https://docs.mayar.id/api-reference/transaction/accountbalance#response)
+
+### [​](https://docs.mayar.id/api-reference/transaction/accountbalance#main-structure-root)Main Structure (Root)
+[​](https://docs.mayar.id/api-reference/transaction/accountbalance#main-structure-root)
+[​](https://docs.mayar.id/api-reference/transaction/accountbalance#param-status-code)
+[​](https://docs.mayar.id/api-reference/transaction/accountbalance#param-messages)
+[​](https://docs.mayar.id/api-reference/transaction/accountbalance#param-data)
+
+### [​](https://docs.mayar.id/api-reference/transaction/accountbalance#data-structure-array-of-object)data Structure (Array Of Object)
+[​](https://docs.mayar.id/api-reference/transaction/accountbalance#data-structure-array-of-object)
+[​](https://docs.mayar.id/api-reference/transaction/accountbalance#param-balance-active)
+[​](https://docs.mayar.id/api-reference/transaction/accountbalance#param-balance-pending)
+[​](https://docs.mayar.id/api-reference/transaction/accountbalance#param-balance)
+[Create Magic Link](https://docs.mayar.id/api-reference/customer/createmagiclink)
+[Get Paid Transactions](https://docs.mayar.id/api-reference/transaction/paidtransaction)
+[x](https://x.com/mayar_id_)
+[instagram](https://www.instagram.com/mayar_id)
+[Powered byThis documentation is built and hosted on Mintlify, a developer documentation platform](https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=mayar)

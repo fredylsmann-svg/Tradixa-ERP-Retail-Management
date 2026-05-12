@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getDocumentTemplate } from '@/utils/documentTemplates';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
-export default function PrintInvoice({ invoice, store, onClose, forceThermal = false }) {
+export default function PrintInvoice({ invoice, store, onClose, forceThermal = false, type = 'INVOICE' }) {
   const [printLayout, setPrintLayout] = useState(forceThermal ? 'Thermal' : (store?.invoice_layout_style || 'Modern'));
 
   const handlePrint = () => {
@@ -22,7 +22,7 @@ export default function PrintInvoice({ invoice, store, onClose, forceThermal = f
 
   // Generate HTML dari template engine
   const invoiceHtml = getDocumentTemplate({
-    type: 'INVOICE',
+    type: type,
     storeName: store?.store_name,
     logoUrl: store?.logo_url,
     brandColor: store?.brand_color || '#2563eb',
@@ -40,8 +40,12 @@ export default function PrintInvoice({ invoice, store, onClose, forceThermal = f
       discount: invoice?.discount || 0,
       total: invoice?.total,
       payment_method: invoice?.payment_method,
-      status: invoice?.payment_status,
-      due_date: invoice?.due_date || '-'
+      status: invoice?.payment_status || invoice?.status,
+      due_date: invoice?.due_date || '-',
+      bill_amount: invoice?.amount,
+      settled_amount: invoice?.paid_amount,
+      remaining_amount: invoice?.remaining_amount,
+      supplier_name: invoice?.supplier_name
     }
   });
 

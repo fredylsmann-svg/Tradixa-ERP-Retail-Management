@@ -385,9 +385,13 @@ export default function Payables({ store }) {
     });
 
     // 1b. Update Supplier Balance
-    if (excessAmount > 0 || depositUsed > 0) {
+    if ((excessAmount > 0 || depositUsed > 0) && paymentDialog.supplier_id) {
       const newAdvanceBalance = currentAdvanceBalance + excessAmount - depositUsed;
-      await api.entities.Supplier.update(paymentDialog.supplier_id, { advance_balance: newAdvanceBalance });
+      try {
+        await api.entities.Supplier.update(paymentDialog.supplier_id, { advance_balance: newAdvanceBalance });
+      } catch (err) {
+        console.error("Failed to update supplier balance (might be missing or invalid UUID)", err);
+      }
     }
 
     const timestamp = getWIBTimestamp();

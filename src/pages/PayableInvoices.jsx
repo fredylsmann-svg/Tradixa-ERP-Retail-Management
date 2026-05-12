@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Search, Eye, Printer, FileInput } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import PrintInvoice from '@/components/invoice/PrintInvoice';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
@@ -19,6 +20,7 @@ export default function PayableInvoices({ store }) {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewingInvoice, setViewingInvoice] = useState(null);
+  const [printingInvoice, setPrintingInvoice] = useState(null);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [selectedProofUrl, setSelectedProofUrl] = useState(null);
   const { selectedDate } = useGlobalDate();
@@ -61,7 +63,7 @@ export default function PayableInvoices({ store }) {
   };
 
   const handlePrint = () => {
-    window.print();
+    setPrintingInvoice(viewingInvoice);
   };
 
   const handleShareWhatsApp = (invoice) => {
@@ -443,6 +445,10 @@ export default function PayableInvoices({ store }) {
           )}
         </DialogContent>
       </Dialog>
+
+      {printingInvoice && (
+        <PrintInvoice invoice={printingInvoice} store={store} type="INVOICE AP" onClose={() => setPrintingInvoice(null)} />
+      )}
     </div>
   );
 }
