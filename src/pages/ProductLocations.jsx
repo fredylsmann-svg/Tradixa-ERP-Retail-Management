@@ -139,16 +139,16 @@ export default function ProductLocations({ store }) {
         subtitle="Kelola titik lokasi gudang/toko dan rak penyimpanan internal"
         icon={MapPin}
         actions={
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={() => { setEditingLocation(null); setFormData({ name: '', description: '', type: 'store', address: '', postal_code: '', coordinates: '', reference: '' }); setShowForm(true); }} className="bg-emerald-600 hover:bg-emerald-700 h-11 px-6 font-semibold rounded-xl text-white">
+          <div className="flex flex-wrap lg:flex-nowrap gap-2 w-full sm:w-auto justify-end">
+            <Button onClick={() => { setEditingLocation(null); setFormData({ name: '', description: '', type: 'store', address: '', postal_code: '', coordinates: '', reference: '' }); setShowForm(true); }} className="bg-emerald-600 hover:bg-emerald-700 h-11 px-4 md:px-6 font-semibold rounded-xl text-white whitespace-nowrap w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Tambah Gudang/Toko
             </Button>
-            <Button onClick={() => { setEditingLocation(null); setFormData({ name: '', description: '', type: 'rack', address: '', postal_code: '', coordinates: '', reference: '' }); setShowForm(true); }} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold rounded-xl text-white">
+            <Button onClick={() => { setEditingLocation(null); setFormData({ name: '', description: '', type: 'rack', address: '', postal_code: '', coordinates: '', reference: '' }); setShowForm(true); }} className="bg-blue-600 hover:bg-blue-700 h-11 px-4 md:px-6 font-semibold rounded-xl text-white whitespace-nowrap w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Tambah Rak
             </Button>
-            <Button onClick={() => { setEditingLocation(null); setFormData({ name: '', description: '', type: 'sales', address: '', postal_code: '', coordinates: '', reference: '' }); setShowForm(true); }} className="bg-orange-500 hover:bg-orange-600 h-11 px-6 font-semibold rounded-xl text-white">
+            <Button onClick={() => { setEditingLocation(null); setFormData({ name: '', description: '', type: 'sales', address: '', postal_code: '', coordinates: '', reference: '' }); setShowForm(true); }} className="bg-orange-500 hover:bg-orange-600 h-11 px-4 md:px-6 font-semibold rounded-xl text-white whitespace-nowrap w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Tambah Lokasi Penjualan
             </Button>
