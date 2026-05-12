@@ -340,6 +340,22 @@ export default function ProfileAccount({ store }) {
             const plan = PLAN_TIERS[planId] || PLAN_TIERS.free;
             const planIcons = { free: Shield, pro: Zap, enterprise: Crown };
             const PlanIcon = planIcons[planId] || Shield;
+
+            // Calculate subscription details
+            const startedAt = store?.plan_started_at ? new Date(store.plan_started_at) : null;
+            const expiresAt = store?.plan_expires_at ? new Date(store.plan_expires_at) : null;
+            const now = new Date();
+            const remainingDays = expiresAt ? Math.max(0, Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24))) : null;
+            const totalDays = (startedAt && expiresAt) ? Math.ceil((expiresAt - startedAt) / (1000 * 60 * 60 * 24)) : null;
+            const progressPercent = (totalDays && remainingDays !== null) ? Math.max(0, Math.min(100, ((totalDays - remainingDays) / totalDays) * 100)) : 0;
+            
+            // Status determination
+            const isGracePeriod = expiresAt && now > expiresAt && now <= new Date(expiresAt.getTime() + 2 * 24 * 60 * 60 * 1000);
+            const isExpiringSoon = remainingDays !== null && remainingDays <= 7 && remainingDays > 0;
+            const isActive = planId !== 'free' && expiresAt && now <= expiresAt;
+
+            const formatDate = (d) => d ? d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
+
             return (
               <Card className="border-slate-200 rounded-3xl shadow-sm overflow-hidden">
                 <div className={`bg-gradient-to-r ${plan.gradient} p-5`}>
@@ -351,24 +367,87 @@ export default function ProfileAccount({ store }) {
                       <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest">Paket Langganan</p>
                       <h3 className="text-xl font-black text-white">{plan.name} Plan</h3>
                     </div>
+                    {isActive && (
+                      <Badge className="ml-auto bg-white/20 text-white border-none font-bold text-[10px]">AKTIF</Badge>
+                    )}
+                    {isGracePeriod && (
+                      <Badge className="ml-auto bg-red-500/80 text-white border-none font-bold text-[10px] animate-pulse">GRACE PERIOD</Badge>
+                    )}
                   </div>
                 </div>
                 <CardContent className="p-5 space-y-4">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-black text-slate-900">{plan.priceLabel}</span>
+                    <span className="text-2xl font-black text-slate-900 dark:text-white">{plan.priceLabel}</span>
                     {plan.price > 0 && <span className="text-sm text-slate-400">/bulan</span>}
                   </div>
+
+                  {/* Subscription Date Details */}
+                  {planId !== 'free' && (startedAt || expiresAt) && (
+                    <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📅 Mulai</p>
+                          <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDate(startedAt)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📅 Berakhir</p>
+                          <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDate(expiresAt)}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Remaining Days */}
+                      {remainingDays !== null && (
+                        <div>
+                          <div className="flex justify-between items-center mb-1.5">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">⏳ Sisa Waktu</span>
+                            <span className={`text-xs font-black ${
+                              isGracePeriod ? 'text-red-600' :
+                              isExpiringSoon ? 'text-amber-600' : 'text-emerald-600'
+                            }`}>
+                              {isGracePeriod ? 'Expired! Perpanjang dalam 2 hari' :
+                               remainingDays === 0 ? 'Berakhir hari ini' :
+                               `${remainingDays} hari lagi`}
+                            </span>
+                          </div>
+                          <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-1000 ${
+                                isGracePeriod ? 'bg-red-500' :
+                                isExpiringSoon ? 'bg-amber-500' :
+                                progressPercent < 50 ? 'bg-emerald-500' : 'bg-blue-500'
+                              }`}
+                              style={{ width: `${Math.min(100, progressPercent)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Grace Period Warning */}
+                      {isGracePeriod && (
+                        <div className="flex items-center gap-2 p-2.5 bg-red-50 dark:bg-red-900/30 rounded-xl border border-red-200 dark:border-red-800">
+                          <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                          <p className="text-[11px] font-bold text-red-700 dark:text-red-400">
+                            Masa tenggang 2 hari. Jika tidak diperpanjang, akun akan kembali ke Free Plan.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Features */}
                   <div className="space-y-2">
                     {plan.features.slice(0, 4).map((f, i) => (
                       <div key={i} className="flex items-center gap-2">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                        <span className="text-xs text-slate-600">{f}</span>
+                        <span className="text-xs text-slate-600 dark:text-slate-400">{f}</span>
                       </div>
                     ))}
                     {plan.features.length > 4 && (
                       <p className="text-[11px] text-blue-600 font-bold pl-5">+ {plan.features.length - 4} fitur lainnya</p>
                     )}
                   </div>
+
+                  {/* Action Buttons */}
                   {planId === 'free' ? (
                     <Button 
                       onClick={() => navigate('/PricingPage')}
@@ -376,6 +455,14 @@ export default function ProfileAccount({ store }) {
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
                       Upgrade ke Pro
+                    </Button>
+                  ) : (isExpiringSoon || isGracePeriod) ? (
+                    <Button 
+                      onClick={() => navigate('/PricingPage')}
+                      className="w-full h-10 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:opacity-90 shadow-md transition-all hover:scale-[1.02] animate-pulse"
+                    >
+                      <Zap className="w-4 h-4 mr-2" />
+                      Perpanjang Sekarang
                     </Button>
                   ) : planId === 'pro' ? (
                     <Button 

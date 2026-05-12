@@ -8,11 +8,13 @@ const corsHeaders = {
 }
 
 // SaaS plan prices — must match planConfig.js
-const SAAS_PRICES = {
-  1000: 'pro',      // Pro monthly
-  10000: 'pro',     // Pro yearly
-  1500: 'enterprise',  // Enterprise monthly
-  15000: 'enterprise', // Enterprise yearly
+const SAAS_PRICES: Record<number, { plan: string; days: number }> = {
+  1000: { plan: 'pro', days: 30 },         // Pro monthly (sandbox)
+  10000: { plan: 'pro', days: 365 },       // Pro yearly (sandbox)
+  1500: { plan: 'enterprise', days: 30 },  // Enterprise monthly (sandbox)
+  15000: { plan: 'enterprise', days: 365 },// Enterprise yearly (sandbox)
+  149000: { plan: 'pro', days: 30 },       // Pro monthly (production)
+  1490000: { plan: 'pro', days: 365 },     // Pro yearly (production)
 }
 
 serve(async (req: any) => {
@@ -48,7 +50,8 @@ serve(async (req: any) => {
     // Identify SaaS payments by description or amount matching
     const paymentDescription = String(payload.data?.productDescription || payload.data?.description || '').toLowerCase()
     const isSaaSPayment = paymentDescription.includes('saas upgrade') || (SAAS_PRICES[amount] && paymentDescription.includes('tradixa'))
-    const matchedPlan = SAAS_PRICES[amount]
+    const matched = SAAS_PRICES[amount]
+    const matchedPlan = matched?.plan
 
     if (isSaaSPayment && matchedPlan && customerEmail && (dataStatus === 'SUCCESS' || dataStatus === 'PAID' || dataStatus === 'COMPLETED' || dataStatus === 'SETTLEMENT')) {
       // Find the user by email to get their store_id
@@ -61,10 +64,19 @@ serve(async (req: any) => {
       const targetStoreId = user?.current_store_id || user?.store_id;
 
       if (targetStoreId) {
-        // Upgrade the store plan!
+        // Calculate subscription dates
+        const durationDays = matched?.days || 30
+        const now = new Date()
+        const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000)
+
+        // Upgrade the store plan with dates!
         const { error: updateError } = await supabase
           .from('stores')
-          .update({ plan: matchedPlan })
+          .update({ 
+            plan: matchedPlan,
+            plan_started_at: now.toISOString(),
+            plan_expires_at: expiresAt.toISOString()
+          })
           .eq('id', targetStoreId)
 
         if (updateError) {
@@ -78,7 +90,9 @@ serve(async (req: any) => {
           status: 'active',
           payment_method: 'mayar',
           amount: amount,
-          notes: `productId:${productId}|email:${customerEmail}`,
+          started_at: now.toISOString(),
+          expires_at: expiresAt.toISOString(),
+          notes: `productId:${productId}|email:${customerEmail}|days:${durationDays}`,
         })
 
         return new Response(JSON.stringify({ 
