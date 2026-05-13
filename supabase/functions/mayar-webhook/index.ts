@@ -74,6 +74,7 @@ serve(async (req: any) => {
           .from('stores')
           .update({ 
             plan: matchedPlan,
+            has_used_trial: false,
             plan_started_at: now.toISOString(),
             plan_expires_at: expiresAt.toISOString()
           })
