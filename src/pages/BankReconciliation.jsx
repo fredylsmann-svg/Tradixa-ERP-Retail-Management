@@ -101,8 +101,9 @@ export default function BankReconciliation({ store }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    const isTrial = store?.plan === 'pro' && store?.has_used_trial;
-    const isPremium = ((store?.plan === 'pro' && !store?.has_used_trial) || store?.plan === 'enterprise') || user?.email === 'dev@tradixa.com';
+    const isPaidPro = store?.plan === 'pro' && store?.plan_expires_at && new Date(store.plan_expires_at) > new Date();
+    const isTrial = store?.plan === 'pro' && store?.has_used_trial && !isPaidPro;
+    const isPremium = isPaidPro || store?.plan === 'enterprise' || user?.email === 'dev@tradixa.com';
     const checkOcrPermission = () => {
       if (!isPremium) {
         toast.error(

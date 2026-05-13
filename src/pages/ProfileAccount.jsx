@@ -28,7 +28,8 @@ import {
   Crown,
   Zap,
   Sparkles,
-  Lock
+  Lock,
+  MessageCircle
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { PLAN_TIERS } from '@/planConfig';
@@ -577,6 +578,21 @@ export default function ProfileAccount({ store }) {
               </div>
             </CardContent>
           </Card>
+
+          <Button 
+            asChild
+            className="w-full h-14 rounded-3xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md transition-all hover:scale-[1.01] group"
+          >
+            <a 
+              href="https://wa.me/6281383882120?text=Halo%20Tradixa%2C%20saya%20butuh%20bantuan%20terkait%20akun%20saya." 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-3"
+            >
+              <MessageCircle className="w-5 h-5" />
+              Hubungi Support (WhatsApp)
+            </a>
+          </Button>
 
           <Button 
             variant="outline" 

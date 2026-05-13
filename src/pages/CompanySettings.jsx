@@ -55,7 +55,8 @@ export default function CompanySettings({ store }) {
   const [testResult, setTestResult] = useState(null); // 'success' | 'error' | null
 
   // Trial / Free plan detection for API key lock
-  const isTrial = store?.plan === 'pro' && store?.has_used_trial;
+  const isPaidPro = store?.plan === 'pro' && store?.plan_expires_at && new Date(store.plan_expires_at) > new Date();
+  const isTrial = store?.plan === 'pro' && store?.has_used_trial && !isPaidPro;
   const isFree = !store?.plan || store?.plan === 'free';
   const isApiLocked = isTrial || isFree;
   const [logoFile, setLogoFile] = useState(null);

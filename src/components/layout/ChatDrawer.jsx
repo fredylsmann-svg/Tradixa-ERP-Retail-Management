@@ -5,11 +5,16 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, Send, ArrowLeft, Circle, CheckCheck, MessageSquare, Smile, Info } from 'lucide-react';
+import { Search, Send, ArrowLeft, Circle, CheckCheck, MessageSquare, Smile, Info, Lock, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useSettings } from '@/contexts/SettingsContext';
 
 export default function ChatDrawer({ isOpen, onOpenChange, store }) {
+  const navigate = useNavigate();
+  // Plan gating
+  const isPaidPro = store?.plan === 'pro' && store?.plan_expires_at && new Date(store.plan_expires_at) > new Date();
+  const isChatLocked = !isPaidPro && store?.plan !== 'enterprise';
   const [contacts, setContacts] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedContact, setSelectedContact] = useState(null);
@@ -289,7 +294,24 @@ export default function ChatDrawer({ isOpen, onOpenChange, store }) {
           </div>
         </SheetHeader>
 
-        {!selectedContact ? (
+        {isChatLocked ? (
+          /* ---- Locked Overlay ---- */
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/50">
+            <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-6">
+              <Lock className="w-10 h-10 text-slate-400" />
+            </div>
+            <h3 className="text-lg font-black text-slate-900 mb-2">Fitur Chat Internal</h3>
+            <p className="text-sm text-slate-500 mb-6 max-w-xs">
+              Chat Internal hanya tersedia untuk paket <span className="font-bold text-blue-600">Pro</span>. Upgrade untuk berkomunikasi dengan tim Anda secara real-time.
+            </p>
+            <button
+              onClick={() => { onOpenChange(false); navigate('/PricingPage'); }}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-all hover:scale-[1.02]"
+            >
+              <Sparkles className="w-4 h-4" /> Upgrade ke Pro
+            </button>
+          </div>
+        ) : !selectedContact ? (
           /* ---- Contact List ---- */
           <div className="flex-1 flex flex-col min-h-0 bg-slate-50/50 dark:bg-slate-950">
             <div className="p-4 bg-white dark:bg-slate-900 border-b dark:border-slate-800">

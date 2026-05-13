@@ -115,7 +115,7 @@ const featureGroups = [
       { name: 'Design Studio', free: false, pro: true, enterprise: true },
       { name: 'Audit Log', free: false, pro: true, enterprise: true },
       { name: 'Export (CSV, PDF, Print)', free: false, pro: true, enterprise: true },
-      { name: 'AI Assistant', free: true, pro: true, enterprise: true },
+      { name: 'AI Assistant', free: false, pro: true, enterprise: true },
     ]
   },
 ];

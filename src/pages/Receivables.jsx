@@ -63,7 +63,8 @@ export default function Receivables({ store }) {
   const [depositAmount, setDepositAmount] = useState(0);
 
   // Trial detection for OCR gating
-  const isTrial = store?.plan === 'pro' && store?.has_used_trial;
+  const isPaidPro = store?.plan === 'pro' && store?.plan_expires_at && new Date(store.plan_expires_at) > new Date();
+  const isTrial = store?.plan === 'pro' && store?.has_used_trial && !isPaidPro;
   const isFree = !store?.plan || store?.plan === 'free';
   const isOcrLocked = isTrial || isFree;
 

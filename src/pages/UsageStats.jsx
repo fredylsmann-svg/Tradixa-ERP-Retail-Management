@@ -48,7 +48,7 @@ function UsageCard({ icon: Icon, title, current, limit, color = 'blue', descript
       ${isLocked 
         ? 'bg-slate-50/80 border-slate-200 opacity-60' 
         : isReached 
-          ? 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200 shadow-lg shadow-red-100/50' 
+          ? 'bg-gradient-to-br from-white to-slate-50/80 border-slate-200 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.04),0_10px_15px_-3px_rgba(0,0,0,0.06),0_20px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_12px_-2px_rgba(0,0,0,0.06),0_16px_24px_-4px_rgba(0,0,0,0.08),0_24px_32px_-6px_rgba(0,0,0,0.04)] ring-1 ring-slate-100' 
           : `bg-gradient-to-br from-white to-slate-50/80 border-slate-200/80 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.04),0_10px_15px_-3px_rgba(0,0,0,0.06),0_20px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_12px_-2px_rgba(0,0,0,0.06),0_16px_24px_-4px_rgba(0,0,0,0.08),0_24px_32px_-6px_rgba(0,0,0,0.04)] ${c.ring} ring-1`}`}
     >
       {/* Subtle gradient overlay */}

@@ -19,7 +19,7 @@ export const PLAN_TIERS = {
       'StockIn', 'StockOut', 'SalesTransaction',
       'SalesInvoices', 'CustomerMaster',
       'ProfileAccount', 'CompanySettings', 'StoreSetup',
-      'SystemSettings', 'TradixaAssistant', 'PricingPage',
+      'SystemSettings', 'PricingPage',
       'UserManagement', 'UsageStats'
     ],
     limits: {
@@ -46,11 +46,10 @@ export const PLAN_TIERS = {
       'Stock In / Stock Out',
       'Sales Transaction',
       'Sales Invoices',
-      'AI Assistant',
       'User Management (1 User)'
     ],
     notIncluded: [
-      'Procurement', 'Reports Lengkap', 'Keuangan',
+      'AI Assistant', 'Procurement', 'Reports Lengkap', 'Keuangan',
       'Diskon & Loyalty', 'Export Data',
       'Financial Agent', 'Design Studio'
     ]
