@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
 import { api } from '@/api/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,20 +27,21 @@ const formatWA = (num) => {
   if (!num) return '';
   // Hilangkan semua karakter non-digit
   let clean = num.replace(/\D/g, '');
-  
+
   // Jika diawali '0', ganti dengan '62' (Indonesia)
   if (clean.startsWith('0')) {
     clean = '62' + clean.substring(1);
-  } 
+  }
   // Jika diawali '8' (misal 812...), tambahkan '62'
   else if (clean.startsWith('8')) {
     clean = '62' + clean;
   }
-  
+
   return clean;
 };
 
 export default function MarketingAutomation({ store }) {
+  const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState([]);
   const [automationRules, setAutomationRules] = useState([]);
   const [segments, setSegments] = useState([]);
@@ -50,7 +52,7 @@ export default function MarketingAutomation({ store }) {
     campaign_name: '',
     campaign_type: 'Email',
     trigger_type: 'Manual',
-    segment_id: '', 
+    segment_id: '',
     target_customer_ids: [],
     is_all_customers: false,
     subject: '',
@@ -78,13 +80,13 @@ export default function MarketingAutomation({ store }) {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewData, setPreviewData] = useState(null);
   const [selectedTargetId, setSelectedTargetId] = useState('');
-  
+
   const handleShowPreview = () => {
     let waMessage = (campaignForm.wa_message || '').trim();
     if (!waMessage) waMessage = `Halo ${store?.store_name || 'Admin'}, saya tertarik dengan promo ini!`;
     const phone = formatWA(store?.phone);
-    const waUrl = phone 
-      ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(waMessage.replace(/{{name}}/g, 'Customer'))}` 
+    const waUrl = phone
+      ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(waMessage.replace(/{{name}}/g, 'Customer'))}`
       : '#';
 
     const html = getEmailTemplate({
@@ -109,8 +111,8 @@ export default function MarketingAutomation({ store }) {
     let waMessage = (ruleForm.wa_message || '').trim();
     if (!waMessage) waMessage = `Halo ${store?.store_name || 'Admin'}, saya tertarik dengan promo ini!`;
     const phone = formatWA(store?.phone);
-    const waUrl = phone 
-      ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(waMessage.replace(/{{name}}/g, 'Customer'))}` 
+    const waUrl = phone
+      ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(waMessage.replace(/{{name}}/g, 'Customer'))}`
       : '#';
 
     const html = getEmailTemplate({
@@ -126,7 +128,7 @@ export default function MarketingAutomation({ store }) {
       ctaText: ruleForm.cta_text || 'Belanja Sekarang',
       logoAlign: store?.marketing_logo_align || 'center',
       logoSize: store?.marketing_logo_size || 'medium',
-      trackingPixel: '' 
+      trackingPixel: ''
     });
     setPreviewData(html);
     setShowPreviewModal(true);
@@ -147,17 +149,17 @@ export default function MarketingAutomation({ store }) {
     // Setup Realtime Listener for sync
     const channel = supabase
       .channel('marketing-sync')
-      .on('postgres_changes', { 
-        event: 'UPDATE', 
-        schema: 'public', 
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
         table: 'marketing_campaigns',
-        filter: `store_id=eq.${store.id}` 
+        filter: `store_id=eq.${store.id}`
       }, () => loadData())
-      .on('postgres_changes', { 
-        event: 'UPDATE', 
-        schema: 'public', 
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
         table: 'marketing_automation_rules',
-        filter: `store_id=eq.${store.id}` 
+        filter: `store_id=eq.${store.id}`
       }, () => loadData())
       .subscribe();
 
@@ -242,7 +244,7 @@ export default function MarketingAutomation({ store }) {
 
   const handleCampaignSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Manual Validation
     if (!campaignForm.campaign_name) return toast.error('Nama kampanye wajib diisi!');
     if (!campaignForm.message_content) return toast.error('Konten pesan wajib diisi!');
@@ -315,6 +317,50 @@ export default function MarketingAutomation({ store }) {
   const handleExecuteCampaign = async (campaign) => {
     if (campaign.status === 'Sent') return;
 
+    // --- CREDIT LIMIT CHECK (hitung langsung dari data campaign) ---
+    const storePlan = store?.plan || 'free';
+    const isTrial = storePlan === 'pro' && store?.has_used_trial;
+    const isPaidPro = storePlan === 'pro' && !store?.has_used_trial;
+
+    if (storePlan === 'free') {
+      toast.error('Fitur Email Marketing hanya tersedia di paket Pro. Upgrade untuk menggunakan fitur ini.', { duration: 5000 });
+      return;
+    }
+
+    // Hitung total email terkirim langsung dari tabel (source of truth)
+    const allCampaigns = await api.entities.MarketingCampaign.filter({ store_id: store?.id });
+    const totalEmailsSent = allCampaigns.reduce((sum, c) => sum + (c.sent_count || 0), 0);
+
+    let EMAIL_LIMIT;
+    let currentUsage;
+
+    if (isTrial) {
+      EMAIL_LIMIT = 5;
+      currentUsage = totalEmailsSent;
+    } else if (isPaidPro) {
+      EMAIL_LIMIT = 250;
+      // Hitung hanya campaign bulan ini
+      const now = new Date();
+      const thisMonthCampaigns = allCampaigns.filter(c => {
+        if (!c.created_date) return false;
+        const d = new Date(c.created_date);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      });
+      currentUsage = thisMonthCampaigns.reduce((sum, c) => sum + (c.sent_count || 0), 0);
+    } else {
+      toast.error('Fitur Email Marketing hanya tersedia di paket Pro. Upgrade untuk menggunakan fitur ini.', { duration: 5000 });
+      return;
+    }
+
+    if (currentUsage >= EMAIL_LIMIT) {
+      const msg = isTrial 
+        ? `Kuota Trial Habis! Anda telah mengirim ${currentUsage} dari maksimal ${EMAIL_LIMIT} email. Upgrade plan untuk melanjutkan.`
+        : `Kuota email bulan ini habis (${currentUsage}/${EMAIL_LIMIT}). Kuota akan direset di awal bulan depan.`;
+      toast.error(msg, { duration: 5000 });
+      return;
+    }
+    // -------------------------
+
     try {
       toast.loading('Sedang mengirim kampanye...', { id: 'sending-campaign' });
 
@@ -336,6 +382,15 @@ export default function MarketingAutomation({ store }) {
         return;
       }
 
+      // --- BATCH LIMIT CHECK ---
+      if ((currentUsage + targets.length) > EMAIL_LIMIT) {
+        const remaining = Math.max(0, EMAIL_LIMIT - currentUsage);
+        toast.dismiss('sending-campaign');
+        toast.error(`Kuota tidak mencukupi. Sisa: ${remaining} email. Target: ${targets.length} email.`);
+        return;
+      }
+      // -------------------------
+
       let successCount = 0;
       let failCount = 0;
 
@@ -352,19 +407,19 @@ export default function MarketingAutomation({ store }) {
             }
             // Replace placeholder {{name}} if present
             waMessage = waMessage.replace(/{{name}}/g, target.name || 'Admin');
-            
+
             const phone = formatWA(store?.phone);
-            const waUrl = phone 
-              ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(waMessage)}` 
+            const waUrl = phone
+              ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(waMessage)}`
               : '#';
 
             // Build Email HTML (Back to tracking mode since user managed JWT)
             const baseUrl = (import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
             const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-            
+
             // Tracking Pixel
             const trackingPixel = `<img src="${baseUrl}/functions/v1/track-open?id=${campaign.id}&cid=${target.id}&type=campaign&apikey=${anonKey}" width="1" height="1" style="display:none !important;" />`;
-            
+
             // Fix: Re-enable tracking redirect
             const trackedCtaUrl = `${baseUrl}/functions/v1/track-click?id=${campaign.id}&cid=${target.id}&type=campaign&url=${encodeURIComponent(waUrl)}&apikey=${anonKey}`;
 
@@ -419,7 +474,7 @@ export default function MarketingAutomation({ store }) {
               campaign_name: campaign.campaign_name,
               channel: 'Email',
               notes: `Menerima email kampanye: ${campaign.campaign_name}`,
-              metadata: { 
+              metadata: {
                 campaign_id: campaign.id,
                 subject: campaign.subject || campaign.campaign_name
               },
@@ -441,7 +496,7 @@ export default function MarketingAutomation({ store }) {
               campaign_name: campaign.campaign_name,
               channel: 'WhatsApp',
               notes: `Menerima pesan WA kampanye: ${campaign.campaign_name}`,
-              metadata: { 
+              metadata: {
                 campaign_id: campaign.id
               },
               date: new Date().toISOString()
@@ -461,6 +516,8 @@ export default function MarketingAutomation({ store }) {
         sent_count: (campaign.sent_count || 0) + successCount,
         status: successCount > 0 ? 'Sent' : 'Failed'
       });
+
+      // Tidak perlu increment usage_stats lagi — campaign sent_count adalah source of truth
 
       toast.dismiss('sending-campaign');
       toast.success(`Kampanye berhasil dikirim ke ${successCount} pelanggan!`);
@@ -588,21 +645,21 @@ export default function MarketingAutomation({ store }) {
                 <TrendingUp className="w-6 h-6 text-amber-600" />
               </div>
               <div>
-                  <div className="flex items-center gap-1">
-                    <p className="text-sm text-slate-500">Avg. Open Rate</p>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button type="button" className="outline-none p-1 hover:bg-slate-100 rounded-full transition-colors">
-                          <Info className="w-3 h-3 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent side="top" className="w-48 p-2 bg-slate-900 text-white border-none rounded-lg shadow-xl z-50 animate-in fade-in zoom-in duration-200">
-                        <p className="text-[10px] font-bold leading-relaxed">
-                          Kalkulasi: (Total Dibuka / Total Terkirim) * 100
-                        </p>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                <div className="flex items-center gap-1">
+                  <p className="text-sm text-slate-500">Avg. Open Rate</p>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button type="button" className="outline-none p-1 hover:bg-slate-100 rounded-full transition-colors">
+                        <Info className="w-3 h-3 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent side="top" className="w-48 p-2 bg-slate-900 text-white border-none rounded-lg shadow-xl z-50 animate-in fade-in zoom-in duration-200">
+                      <p className="text-[10px] font-bold leading-relaxed">
+                        Kalkulasi: (Total Dibuka / Total Terkirim) * 100
+                      </p>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <p className="text-2xl font-bold text-slate-800">
                   <AnimatedNumber value={avgOpenRate} suffix="%" decimals={1} />
                 </p>
@@ -845,7 +902,7 @@ export default function MarketingAutomation({ store }) {
                       {(campaignForm.promo_image_url || '').split(',').map(u => u.trim()).filter(Boolean).map((url, idx) => (
                         <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border">
                           <img src={url} className="w-full h-full object-cover" />
-                          <button 
+                          <button
                             type="button"
                             onClick={() => {
                               const urls = campaignForm.promo_image_url.split(',').filter((_, i) => i !== idx);
@@ -867,7 +924,7 @@ export default function MarketingAutomation({ store }) {
                     </div>
                     <div className="mt-4">
                       <Label className="text-[10px] font-bold uppercase tracking-wider text-blue-600 mb-1.5 block">Teks Tombol (CTA) *</Label>
-                      <Input 
+                      <Input
                         placeholder="Contoh: BELANJA SEKARANG"
                         value={campaignForm.cta_text}
                         onChange={(e) => setCampaignForm({ ...campaignForm, cta_text: e.target.value })}
@@ -953,7 +1010,7 @@ export default function MarketingAutomation({ store }) {
                   {!campaignForm.is_all_customers && (
                     <div className="animate-in fade-in slide-in-from-top-1 duration-300 space-y-3">
                       <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Pilih Beberapa Customer</Label>
-                      
+
                       <div className="flex gap-2">
                         <Select
                           value={selectedTargetId}
@@ -978,13 +1035,13 @@ export default function MarketingAutomation({ store }) {
                             }
                           </SelectContent>
                         </Select>
-                        <Button 
+                        <Button
                           type="button"
                           className="h-11 w-11 bg-blue-600 text-white rounded-xl"
                           onClick={() => {
                             if (selectedTargetId && !campaignForm.target_customer_ids.includes(selectedTargetId)) {
                               setCampaignForm({
-                                ...campaignForm, 
+                                ...campaignForm,
                                 target_customer_ids: [...campaignForm.target_customer_ids, selectedTargetId]
                               });
                               setSelectedTargetId('');
@@ -1002,12 +1059,12 @@ export default function MarketingAutomation({ store }) {
                             return (
                               <Badge key={id} variant="secondary" className="pl-2 pr-1 py-1 gap-1 flex items-center bg-blue-50 text-blue-700 border-blue-100">
                                 <span className="text-xs font-bold">{customer?.name}</span>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
                                   className="h-4 w-4 p-0 hover:bg-blue-200 rounded-full"
                                   onClick={() => setCampaignForm({
-                                    ...campaignForm, 
+                                    ...campaignForm,
                                     target_customer_ids: campaignForm.target_customer_ids.filter(cid => cid !== id)
                                   })}
                                 >
@@ -1131,10 +1188,10 @@ export default function MarketingAutomation({ store }) {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-xs font-bold uppercase tracking-wider text-slate-400">Pilih Desain Template</Label>
-                <Button 
+                <Button
                   type="button"
-                  variant="outline" 
-                  size="sm" 
+                  variant="outline"
+                  size="sm"
                   className="h-7 text-[10px] font-bold border-emerald-200 text-emerald-600 hover:bg-emerald-50 rounded-full"
                   onClick={handleShowRulePreview}
                 >
@@ -1163,7 +1220,7 @@ export default function MarketingAutomation({ store }) {
                   {(ruleForm.promo_image_url || '').split(',').map(u => u.trim()).filter(Boolean).map((url, idx) => (
                     <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border bg-white">
                       <img src={url} className="w-full h-full object-cover" />
-                      <button 
+                      <button
                         type="button"
                         onClick={() => {
                           const urls = ruleForm.promo_image_url.split(',').filter((_, i) => i !== idx);
@@ -1195,10 +1252,10 @@ export default function MarketingAutomation({ store }) {
                   accept="image/*"
                   onChange={(e) => handlePromoUpload(e, 'rule')}
                 />
-                
+
                 <div className="mt-4 pt-4 border-t border-purple-100">
                   <Label className="text-[10px] font-bold uppercase tracking-wider text-purple-600 mb-1.5 block">Teks Tombol (CTA) *</Label>
-                  <Input 
+                  <Input
                     placeholder="Contoh: KLAIM DISKON"
                     value={ruleForm.cta_text}
                     onChange={(e) => setRuleForm({ ...ruleForm, cta_text: e.target.value })}
@@ -1216,27 +1273,27 @@ export default function MarketingAutomation({ store }) {
                   ))}
                 </div>
               )}
-                <Textarea
-                  value={ruleForm.message_template}
-                  onChange={(e) => setRuleForm({ ...ruleForm, message_template: e.target.value })}
-                  rows={5}
-                  required
-                  className="mt-1.5"
-                />
-              </div>
+              <Textarea
+                value={ruleForm.message_template}
+                onChange={(e) => setRuleForm({ ...ruleForm, message_template: e.target.value })}
+                rows={5}
+                required
+                className="mt-1.5"
+              />
+            </div>
 
-              <div className="p-4 bg-emerald-50/30 rounded-xl border border-dashed border-emerald-200">
-                <Label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2 block">Pesan WhatsApp Otomatis (Redirect)</Label>
-                <Textarea
-                  placeholder="Contoh: Halo {{name}}, terima kasih atas ucapan selamat ulang tahunnya! Saya tertarik dengan promo..."
-                  value={ruleForm.wa_message}
-                  onChange={(e) => setRuleForm({ ...ruleForm, wa_message: e.target.value })}
-                  className="min-h-[80px] bg-white border-emerald-100 text-xs"
-                />
-                <p className="text-[10px] text-emerald-600 mt-1">
-                  💡 Gunakan <b>&#123;&#123;name&#125;&#125;</b> untuk personalisasi.
-                </p>
-              </div>
+            <div className="p-4 bg-emerald-50/30 rounded-xl border border-dashed border-emerald-200">
+              <Label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2 block">Pesan WhatsApp Otomatis (Redirect)</Label>
+              <Textarea
+                placeholder="Contoh: Halo {{name}}, terima kasih atas ucapan selamat ulang tahunnya! Saya tertarik dengan promo..."
+                value={ruleForm.wa_message}
+                onChange={(e) => setRuleForm({ ...ruleForm, wa_message: e.target.value })}
+                className="min-h-[80px] bg-white border-emerald-100 text-xs"
+              />
+              <p className="text-[10px] text-emerald-600 mt-1">
+                💡 Gunakan <b>&#123;&#123;name&#125;&#125;</b> untuk personalisasi.
+              </p>
+            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowRuleForm(false)}>Batal</Button>
               <Button type="submit">Simpan Aturan</Button>

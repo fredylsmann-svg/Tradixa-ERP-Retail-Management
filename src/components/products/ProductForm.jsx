@@ -8,11 +8,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Upload, Scan, Loader2, X, PackageOpen, LayoutGrid, Info, Plus, Boxes, Calendar, Clock, ArrowDownUp } from 'lucide-react';
 import BarcodeScanner from '@/components/barcode/BarcodeScanner';
 import { NumberInput } from '@/components/ui/number-input';
+import imageCompression from 'browser-image-compression';
+import { getEffectiveLimits } from '@/planConfig';
+import { supabase } from '@/lib/supabase';
+import { toast as sonnerToast } from 'sonner';
 
 const CATEGORIES = ['Elektronik', 'Makanan', 'Minuman', 'Pakaian', 'Kesehatan', 'Kecantikan', 'Rumah Tangga', 'Alat Tulis', 'Rokok', 'Sembako', 'Lainnya'];
 const UNITS = ['Pcs', 'Batang', 'Bungkus', 'Sachet', 'Dus', 'Pack', 'Bal', 'Karton', 'Kg', 'Liter'];
 
-export default function ProductForm({ open, onClose, product, storeId, onSuccess, existingProducts = [] }) {
+export default function ProductForm({ open, onClose, product, store, storeId, onSuccess, existingProducts = [] }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [imageFile, setImageFile] = useState(null);
@@ -84,13 +88,29 @@ export default function ProductForm({ open, onClose, product, storeId, onSuccess
     setLocations(data);
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result);
-      reader.readAsDataURL(file);
+      try {
+        const options = {
+          maxSizeMB: 0.2, // ~200KB
+          maxWidthOrHeight: 800,
+          useWebWorker: true,
+        };
+        const compressedFile = await imageCompression(file, options);
+        setImageFile(compressedFile);
+        
+        const reader = new FileReader();
+        reader.onloadend = () => setImagePreview(reader.result);
+        reader.readAsDataURL(compressedFile);
+      } catch (error) {
+        console.error('Error compressing image:', error);
+        // Fallback to original
+        setImageFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => setImagePreview(reader.result);
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -120,6 +140,21 @@ export default function ProductForm({ open, onClose, product, storeId, onSuccess
     setIsLoading(true);
     let imageUrl = product?.image_url || '';
     if (imageFile) {
+      // --- PHOTO LIMIT CHECK ---
+      const limits = getEffectiveLimits(store);
+      if (limits.maxProductPhotos !== Infinity) {
+        const { count: photoCount } = await supabase
+          .from('products')
+          .select('id', { count: 'exact', head: true })
+          .eq('store_id', storeId)
+          .not('image_url', 'is', null);
+        if ((photoCount || 0) >= limits.maxProductPhotos) {
+          sonnerToast.error(`Kuota foto produk habis (${photoCount}/${limits.maxProductPhotos}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
+          setIsLoading(false);
+          return;
+        }
+      }
+      // --------------------------
       const _uploadRes = await api.storage.upload(imageFile, 'product');
       imageUrl = _uploadRes.url;
     }

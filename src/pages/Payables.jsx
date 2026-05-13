@@ -18,6 +18,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import Tesseract from 'tesseract.js';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast as sonnerToast } from 'sonner';
 import ExportToolbar from '@/components/layout/ExportToolbar';
 import moment from 'moment';
 import 'moment/locale/id';
@@ -58,6 +59,11 @@ export default function Payables({ store }) {
   const [lastUploadedFile, setLastUploadedFile] = useState(null);
   const [useDeposit, setUseDeposit] = useState(false);
   const [depositAmount, setDepositAmount] = useState(0);
+
+  // Trial detection for OCR gating
+  const isTrial = store?.plan === 'pro' && store?.has_used_trial;
+  const isFree = !store?.plan || store?.plan === 'free';
+  const isOcrLocked = isTrial || isFree;
 
   useEffect(() => {
     if (store?.id) loadData();
@@ -847,7 +853,19 @@ export default function Payables({ store }) {
                          <AlertTriangle className="w-4 h-4" />
                          <p className="text-xs font-bold">{ocrMessage}</p>
                        </div>
-                       <Button size="sm" onClick={runGoogleCloudVision} className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-lg text-xs h-8">
+                       <Button size="sm" onClick={() => {
+                           if (isOcrLocked) {
+                             sonnerToast.error(
+                               <div className="flex flex-col gap-1">
+                                 <span className="font-bold text-sm">{isTrial ? 'Fitur Trial Terbatas' : 'Upgrade ke Pro'}</span>
+                                 <span className="text-xs">Smart AI OCR hanya tersedia untuk paket Pro berbayar. Upgrade untuk menggunakan fitur ini.</span>
+                               </div>,
+                               { duration: 5000 }
+                             );
+                             return;
+                           }
+                           runGoogleCloudVision();
+                         }} className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-lg text-xs h-8">
                          <Sparkles className="w-3 h-3 mr-2" /> Gunakan Cloud Vision AI (Premium)
                        </Button>
                     </div>

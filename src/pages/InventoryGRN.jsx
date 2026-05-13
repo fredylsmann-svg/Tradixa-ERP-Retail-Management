@@ -46,6 +46,7 @@ import moment from 'moment';
 import 'moment/locale/id';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
+import { getEffectiveLimits } from '@/planConfig';
 
 // Info Tooltip component
 const InfoTip = ({ text }) => {
@@ -351,6 +352,19 @@ export default function InventoryGRN({ store }) {
 
   const handleSubmit = async () => {
     if (!selectedGrn || isSaving) return;
+
+    // --- PROCUREMENT LIMIT CHECK ---
+    const limits = getEffectiveLimits(store);
+    if (limits.maxInventoryGRN !== Infinity && history.length >= limits.maxInventoryGRN) {
+      toast({
+        title: "Batas Inventory GRN Tercapai",
+        description: `Batas Inventory GRN tercapai (${limits.maxInventoryGRN} data). Upgrade ke Pro Plan untuk akses tanpa batas.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    // --------------------------------
+
     if (!signatures.shipped || !signatures.received || !signatures.approved) {
       toast({
         title: "Tanda Tangan Diperlukan",

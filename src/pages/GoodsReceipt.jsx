@@ -24,6 +24,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { useSettings } from '@/contexts/SettingsContext';
 import { getDocumentTemplate } from '@/utils/documentTemplates';
+import { getEffectiveLimits } from '@/planConfig';
 
 // Info Tooltip for GRN fields
 const InfoTip = ({ text }) => {
@@ -259,6 +260,19 @@ export default function GoodsReceipt({ store }) {
 
   const handleSubmit = () => {
     if (!selectedPO) return;
+
+    // --- PROCUREMENT LIMIT CHECK ---
+    const limits = getEffectiveLimits(store);
+    if (limits.maxGRN !== Infinity && receipts.length >= limits.maxGRN) {
+      toast({
+        title: "Batas GRN Tercapai",
+        description: `Batas GRN tercapai (${limits.maxGRN} data). Upgrade ke Pro Plan untuk membuat GRN tanpa batas.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    // --------------------------------
+
     setShowConfirmSubmit(true);
   };
 

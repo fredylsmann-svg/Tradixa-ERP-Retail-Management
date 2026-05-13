@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Store, Upload, Phone, Mail, FileText, Loader2, Save, Building2, User, Settings, Info, CreditCard, Key, ShieldCheck, CheckCircle2, ExternalLink, Zap, ArrowRight } from 'lucide-react';
+import { Store, Upload, Phone, Mail, FileText, Loader2, Save, Building2, User, Settings, Info, CreditCard, Key, ShieldCheck, CheckCircle2, ExternalLink, Zap, ArrowRight, Lock } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import PageHeader from '@/components/layout/PageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -53,6 +53,11 @@ export default function CompanySettings({ store }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState(null); // 'success' | 'error' | null
+
+  // Trial / Free plan detection for API key lock
+  const isTrial = store?.plan === 'pro' && store?.has_used_trial;
+  const isFree = !store?.plan || store?.plan === 'free';
+  const isApiLocked = isTrial || isFree;
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(store?.logo_url || null);
   const [formData, setFormData] = useState({
@@ -313,7 +318,27 @@ export default function CompanySettings({ store }) {
               Atur API Key untuk menerima pembayaran otomatis (QRIS, VA) langsung ke rekening toko Anda.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6 pt-6">
+          <CardContent className="space-y-6 pt-6 relative">
+            {/* Lock Overlay for trial/free */}
+            {isApiLocked && (
+              <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-[2px] rounded-b-xl flex flex-col items-center justify-center gap-4 p-8">
+                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                  <Lock className="w-8 h-8 text-slate-400" />
+                </div>
+                <div className="text-center space-y-2">
+                  <h4 className="text-lg font-black text-slate-800">Fitur Khusus Pro Plan</h4>
+                  <p className="text-sm text-slate-500 max-w-sm">
+                    Integrasi Payment Gateway (QRIS, VA) hanya tersedia untuk paket Pro berbayar. Upgrade untuk mengaktifkan fitur ini.
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => window.location.href = '/PricingPage'}
+                  className="h-11 px-8 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold hover:opacity-90 shadow-lg transition-all hover:scale-105"
+                >
+                  Upgrade ke Pro
+                </Button>
+              </div>
+            )}
             {/* Step-by-step Setup Guide */}
             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3">
               <p className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
@@ -360,8 +385,9 @@ export default function CompanySettings({ store }) {
                 type="password"
                 value={formData.mayar_api_key}
                 onChange={(e) => { setFormData({ ...formData, mayar_api_key: e.target.value }); setTestResult(null); }}
-                className="mt-1.5 font-mono text-sm tracking-widest focus:tracking-normal"
+                className={`mt-1.5 font-mono text-sm tracking-widest focus:tracking-normal ${isApiLocked ? 'opacity-50 pointer-events-none' : ''}`}
                 placeholder="Paste API Key dari Dashboard Mayar"
+                disabled={isApiLocked}
               />
             </div>
 
@@ -376,7 +402,7 @@ export default function CompanySettings({ store }) {
                   testResult === 'error' ? 'border-red-300 text-red-700 bg-red-50' :
                   'border-blue-200 text-blue-700 hover:bg-blue-50'
                 }`}
-                disabled={!formData.mayar_api_key || isTesting}
+                disabled={!formData.mayar_api_key || isTesting || isApiLocked}
                 onClick={async () => {
                   setIsTesting(true);
                   setTestResult(null);

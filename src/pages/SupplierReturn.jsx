@@ -16,6 +16,7 @@ import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
 import { useToast } from '@/components/ui/use-toast';
 import PageHeader from '@/components/layout/PageHeader';
+import { getEffectiveLimits } from '@/planConfig';
 
 export default function SupplierReturn({ store }) {
   const [suppliers, setSuppliers] = useState([]);
@@ -151,6 +152,19 @@ export default function SupplierReturn({ store }) {
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!formData.supplier_id || formData.items.length === 0) return;
+
+    // --- PROCUREMENT LIMIT CHECK ---
+    const limits = getEffectiveLimits(store);
+    if (limits.maxSupplierReturn !== Infinity && returns.length >= limits.maxSupplierReturn) {
+      toast({
+        title: "Batas Retur Tercapai",
+        description: `Batas Retur Supplier tercapai (${limits.maxSupplierReturn} data). Upgrade ke Pro Plan untuk akses tanpa batas.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    // --------------------------------
+
     setIsSaving(true);
 
     try {

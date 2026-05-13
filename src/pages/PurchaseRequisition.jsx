@@ -21,6 +21,8 @@ import 'moment/locale/id';
 import { useToast } from '@/components/ui/use-toast';
 import PageHeader from '@/components/layout/PageHeader';
 import { useTaxRate } from '@/hooks/useTaxRate';
+import { getEffectiveLimits } from '@/planConfig';
+import { toast as sonnerToast } from 'sonner';
 
 const COMMON_UNITS = ['pcs', 'box', 'kg', 'gram', 'meter', 'liter', 'roll', 'paket', 'sak', 'bal', 'lusin'];
 
@@ -159,6 +161,15 @@ export default function PurchaseRequisition({ store }) {
 
   const handleSubmit = async (status) => {
     if (!formData.department || formData.items.length === 0) return;
+
+    // --- PROCUREMENT LIMIT CHECK ---
+    const limits = getEffectiveLimits(store);
+    if (limits.maxPR !== Infinity && prs.length >= limits.maxPR) {
+      sonnerToast.error(`Batas PR tercapai (${limits.maxPR} PR). Upgrade ke Pro Plan untuk membuat PR tanpa batas.`, { duration: 5000 });
+      return;
+    }
+    // --------------------------------
+
     setIsSaving(true);
 
     const prNumber = `PR-${moment().format('YYYYMMDD')}-${Math.random().toString(36).substring(7).toUpperCase()}`;
@@ -208,6 +219,15 @@ export default function PurchaseRequisition({ store }) {
 
   const handleCreateFromMaster = async () => {
     if (selectedItems.length === 0) return;
+
+    // --- PROCUREMENT LIMIT CHECK ---
+    const limits = getEffectiveLimits(store);
+    if (limits.maxPR !== Infinity && prs.length >= limits.maxPR) {
+      sonnerToast.error(`Batas PR tercapai (${limits.maxPR} PR). Upgrade ke Pro Plan untuk membuat PR tanpa batas.`, { duration: 5000 });
+      return;
+    }
+    // --------------------------------
+
     setIsSaving(true);
     try {
       const prNumber = `PR-${moment().format('YYYYMMDD')}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;

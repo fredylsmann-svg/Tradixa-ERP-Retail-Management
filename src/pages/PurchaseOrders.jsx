@@ -25,6 +25,8 @@ import moment from 'moment';
 import 'moment/locale/id';
 import PageHeader from '@/components/layout/PageHeader';
 import { useTaxRate } from '@/hooks/useTaxRate';
+import { getEffectiveLimits } from '@/planConfig';
+import { toast as sonnerToast } from 'sonner';
 
 export default function PurchaseOrders({ store }) {
   const { toast } = useToast();
@@ -209,6 +211,15 @@ export default function PurchaseOrders({ store }) {
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (formData.items.length === 0 || !formData.supplier_id) return;
+
+    // --- PROCUREMENT LIMIT CHECK ---
+    const limits = getEffectiveLimits(store);
+    if (limits.maxPO !== Infinity && orders.length >= limits.maxPO) {
+      sonnerToast.error(`Batas PO tercapai (${limits.maxPO} PO). Upgrade ke Pro Plan untuk membuat PO tanpa batas.`, { duration: 5000 });
+      return;
+    }
+    // --------------------------------
+
     setIsSaving(true);
 
     const supplier = suppliers.find(v => v.id === formData.supplier_id);
@@ -268,6 +279,15 @@ export default function PurchaseOrders({ store }) {
 
   const handleCreatePoFromPr = async () => {
     if (!selectedPr || !poFromPrData.supplier_id) return;
+
+    // --- PROCUREMENT LIMIT CHECK ---
+    const limits = getEffectiveLimits(store);
+    if (limits.maxPO !== Infinity && orders.length >= limits.maxPO) {
+      sonnerToast.error(`Batas PO tercapai (${limits.maxPO} PO). Upgrade ke Pro Plan untuk membuat PO tanpa batas.`, { duration: 5000 });
+      return;
+    }
+    // --------------------------------
+
     setIsSaving(true);
 
     const supplier = suppliers.find(v => v.id === poFromPrData.supplier_id);

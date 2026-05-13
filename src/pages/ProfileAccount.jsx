@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { 
   User, 
   Mail, 
@@ -26,10 +27,12 @@ import {
   Upload,
   Crown,
   Zap,
-  Sparkles
+  Sparkles,
+  Lock
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { PLAN_TIERS } from '@/planConfig';
+import { toast as sonnerToast } from 'sonner';
 
 export default function ProfileAccount({ store }) {
   const navigate = useNavigate();
@@ -39,8 +42,49 @@ export default function ProfileAccount({ store }) {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [billingCycle, setBillingCycle] = useState('yearly');
+  const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef(null);
   const { toast } = useToast();
+
+  // Trial detection
+  const isTrial = store?.plan === 'pro' && store?.has_used_trial;
+
+  // Checkout handler (same as PricingPage)
+  const handleUpgradeCheckout = async () => {
+    const plan = PLAN_TIERS.pro;
+    if (!plan || !store?.id) return;
+    setIsProcessing(true);
+    try {
+      const response = await api.client.functions.invoke('mayar-saas-checkout', {
+        body: {
+          store_id: store.id,
+          plan_id: plan.id,
+          billingCycle: billingCycle,
+          customer_name: user?.full_name || store.owner_name,
+          customer_email: user?.email || store.owner_email || store.email,
+          redirect_url: window.location.href
+        }
+      });
+      if (response.error) throw response.error;
+      const data = response.data;
+      if (data?.success && data?.link) {
+        let finalLink = data.link;
+        if (finalLink.includes('ferdiarmond.myr.id')) {
+          finalLink = finalLink.replace('ferdiarmond.myr.id', 'paytradixasystems.myr.id');
+        }
+        window.location.href = finalLink;
+      } else {
+        throw new Error(data?.error || 'Gagal membuat link pembayaran');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      sonnerToast.error(error.message || 'Terjadi kesalahan saat memproses pembayaran');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   useEffect(() => {
     loadUser();
@@ -464,6 +508,23 @@ export default function ProfileAccount({ store }) {
                       <Zap className="w-4 h-4 mr-2" />
                       Perpanjang Sekarang
                     </Button>
+                  ) : planId === 'pro' && isTrial ? (
+                    <>
+                      <Button 
+                        disabled
+                        className="w-full h-10 rounded-xl font-bold text-sm bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center gap-2"
+                      >
+                        <Clock className="w-4 h-4" />
+                        Paket Trial Pro
+                      </Button>
+                      <Button 
+                        onClick={() => setShowUpgradeDialog(true)}
+                        className={`w-full h-10 rounded-xl font-bold text-sm bg-gradient-to-r ${PLAN_TIERS.pro.gradient} text-white hover:opacity-90 shadow-md transition-all hover:scale-[1.02]`}
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Upgrade ke Pro
+                      </Button>
+                    </>
                   ) : planId === 'pro' ? (
                     <Button 
                       disabled
@@ -544,6 +605,82 @@ export default function ProfileAccount({ store }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Upgrade Checkout Dialog */}
+      <Dialog open={showUpgradeDialog} onOpenChange={(open) => !open && setShowUpgradeDialog(false)}>
+        <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden border-0 shadow-2xl">
+          <DialogTitle className="sr-only">Pilih siklus penagihan</DialogTitle>
+          <DialogDescription className="sr-only">Pilih antara penagihan tahunan atau bulanan</DialogDescription>
+          <div className="bg-slate-50">
+            <div className="p-6 text-center space-y-2 border-b border-slate-200 bg-white pt-8">
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Upgrade ke Pro Plan</h2>
+              <p className="text-sm text-slate-500 max-w-sm mx-auto">
+                Pilih siklus penagihan untuk Pro Plan. Akses semua fitur tanpa batas.
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {/* Yearly Option */}
+              <div 
+                onClick={() => setBillingCycle('yearly')}
+                className={`relative p-5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${billingCycle === 'yearly' ? 'border-emerald-500 bg-emerald-50/30 shadow-md ring-4 ring-emerald-500/10' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${billingCycle === 'yearly' ? 'border-emerald-500' : 'border-slate-300'}`}>
+                      {billingCycle === 'yearly' && <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />}
+                    </div>
+                    <span className="font-bold text-slate-900">Tahunan</span>
+                    <span className="text-slate-500 text-sm">— {PLAN_TIERS.pro.yearlyPriceLabel} × 12 bulan</span>
+                  </div>
+                  <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 font-bold border-0 px-2 py-0.5 text-[10px]">
+                    HEMAT 17%
+                  </Badge>
+                </div>
+                {billingCycle === 'yearly' && (
+                  <div className="mt-4 pl-8 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center gap-2 text-xs font-medium text-emerald-700">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Diskon spesial (gratis 2 bulan)
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-medium text-emerald-700">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Prioritas Customer Support
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Monthly Option */}
+              <div 
+                onClick={() => setBillingCycle('monthly')}
+                className={`relative p-5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${billingCycle === 'monthly' ? 'border-blue-500 bg-blue-50/30 shadow-md ring-4 ring-blue-500/10' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${billingCycle === 'monthly' ? 'border-blue-500' : 'border-slate-300'}`}>
+                    {billingCycle === 'monthly' && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
+                  </div>
+                  <span className="font-bold text-slate-900">Bulanan</span>
+                  <span className="text-slate-500 text-sm">— {PLAN_TIERS.pro.priceLabel} / bulan</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 bg-white border-t border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-slate-400" />
+                <span className="text-xs font-medium text-slate-500">Pembayaran aman oleh Mayar</span>
+              </div>
+              <Button 
+                onClick={handleUpgradeCheckout}
+                disabled={isProcessing}
+                className="h-11 px-8 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 text-sm transition-all hover:scale-105 shadow-lg flex items-center gap-2"
+              >
+                {isProcessing && <div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-white animate-spin"></div>}
+                {isProcessing ? 'Memproses...' : 'Lanjutkan ke Checkout'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

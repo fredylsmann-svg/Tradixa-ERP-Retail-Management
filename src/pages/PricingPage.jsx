@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   CheckCircle2, X, Crown, Zap, Shield, Sparkles, Lock, ChevronDown,
   Package, ShoppingCart, Truck, DollarSign, Users, BarChart3,
-  Award, Megaphone, Landmark, Palette, History, MessageCircle
+  Award, Megaphone, Landmark, Palette, History, MessageCircle, Clock
 } from 'lucide-react';
 import { PLAN_TIERS } from '@/planConfig';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -13,6 +13,22 @@ import { api } from '@/api/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 const featureGroups = [
+  {
+    title: 'Usage & Limits',
+    icon: BarChart3,
+    features: [
+      { name: 'Produk', free: '100', pro: '10.000', enterprise: 'Unlimited' },
+      { name: 'Customer', free: '100', pro: 'Unlimited', enterprise: 'Unlimited' },
+      { name: 'Upload Foto/Media Produk', free: '20', pro: 'Hingga 2.000/bulan', enterprise: 'Unlimited' },
+      { name: 'Max Ukuran Foto', free: '2 MB', pro: '2 MB', enterprise: '10 MB' },
+      { name: 'Email Marketing', free: false, pro: '250/bulan', enterprise: 'Unlimited' },
+      { name: 'Purchase Requisition', free: false, pro: 'Unlimited', enterprise: 'Unlimited' },
+      { name: 'Purchase Order', free: false, pro: 'Unlimited', enterprise: 'Unlimited' },
+      { name: 'GRN', free: false, pro: 'Unlimited', enterprise: 'Unlimited' },
+      { name: 'Inventory GRN', free: false, pro: 'Unlimited', enterprise: 'Unlimited' },
+      { name: 'Supplier Return', free: false, pro: 'Unlimited', enterprise: 'Unlimited' },
+    ]
+  },
   {
     title: 'Inventory',
     icon: Package,
@@ -67,7 +83,7 @@ const featureGroups = [
     title: 'CRM & Marketing',
     icon: Megaphone,
     features: [
-      { name: 'Customer Master', free: true, pro: true, enterprise: true },
+      { name: 'Customer Master', free: '100 customer', pro: 'Unlimited', enterprise: 'Unlimited' },
       { name: 'Customer Segmentation', free: false, pro: true, enterprise: true },
       { name: 'Marketing Automation', free: false, pro: true, enterprise: true },
       { name: 'Discount Management', free: false, pro: true, enterprise: true },
@@ -131,6 +147,7 @@ function FaqItem({ question, answer }) {
 export default function PricingPage({ store }) {
   const { user } = useAuth();
   const currentPlan = store?.plan || 'free';
+  const isTrial = currentPlan === 'pro' && store?.has_used_trial;
   const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState(null);
   const [billingCycle, setBillingCycle] = useState('yearly'); // 'yearly' | 'monthly'
   const [isProcessing, setIsProcessing] = useState(false);
@@ -251,7 +268,19 @@ export default function PricingPage({ store }) {
                 </div>
 
                 {/* CTA */}
-                {isCurrent ? (
+                {isCurrent && isTrial && plan.id === 'pro' ? (
+                  <div className="space-y-3">
+                    <Button disabled className="w-full h-11 rounded-xl font-bold text-sm bg-amber-50 text-amber-600 border border-amber-200">
+                      <Clock className="w-4 h-4 mr-2" /> Paket Trial Pro
+                    </Button>
+                    <Button 
+                      onClick={() => setSelectedPlanForCheckout(plan)}
+                      className="w-full h-11 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:opacity-90 shadow-lg transition-all hover:scale-[1.02]"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" /> Upgrade ke Pro
+                    </Button>
+                  </div>
+                ) : isCurrent ? (
                   <Button disabled className="w-full h-11 rounded-xl font-bold text-sm bg-slate-100 text-slate-500">
                     Paket Aktif Anda
                   </Button>
@@ -341,8 +370,10 @@ export default function PricingPage({ store }) {
             {[
               { q: 'Apakah bisa downgrade?', a: 'Ya, Anda bisa downgrade kapan saja. Data Anda tetap aman, hanya akses ke modul premium yang dibatasi.' },
               { q: 'Bagaimana cara pembayaran?', a: 'Pembayaran melalui transfer bank, e-wallet, atau kartu kredit. Invoice otomatis dikirim ke email.' },
-              { q: 'Apakah ada trial?', a: 'Ya, setiap upgrade mendapat trial 14 hari gratis. Cancel kapan saja tanpa biaya.' },
+              { q: 'Apakah ada trial?', a: 'Ya, setiap akun baru mendapat kesempatan free trial Pro selama 14 hari (sekali seumur hidup). Selama trial, beberapa fitur memiliki batasan penggunaan.' },
+              { q: 'Berapa kuota email marketing?', a: 'Free Trial mendapat 5 email. Pro Plan berbayar mendapat 250 email per bulan yang akan direset otomatis setiap awal siklus billing.' },
               { q: 'Apakah data aman?', a: 'Data dienkripsi dengan standar AES-256 dan disimpan di server cloud yang aman.' },
+              { q: 'Apa batasan saat trial?', a: 'Selama trial: max 5 PR, 5 PO, 5 GRN, 5 Supplier Return, 5 email, 20 upload foto, 100 produk, dan 100 customer. Upgrade untuk akses penuh tanpa batas.' },
             ].map((faq, i) => (
               <FaqItem key={i} question={faq.q} answer={faq.a} />
             ))}

@@ -22,6 +22,41 @@ export async function executeAutomation(storeId, trigger, contextData = {}) {
     const storePhone = store?.phone || '';
     const ownerName = store?.owner_name || 'Admin';
 
+    // --- EMAIL LIMIT CHECK (hitung langsung dari data campaign) ---
+    const storePlan = store?.plan || 'free';
+    const isTrial = storePlan === 'pro' && store?.has_used_trial;
+    const isPaidPro = storePlan === 'pro' && !store?.has_used_trial;
+
+    if (storePlan === 'free') {
+      console.log(`[Tradixa Automation] Free plan — email automation disabled.`);
+      return;
+    }
+
+    // Hitung total email terkirim dari tabel campaign (source of truth)
+    const allCampaigns = await api.entities.MarketingCampaign.filter({ store_id: storeId });
+    const totalEmailsSent = allCampaigns.reduce((sum, c) => sum + (c.sent_count || 0), 0);
+
+    if (isTrial && totalEmailsSent >= 5) {
+      console.log(`[Tradixa Automation] Trial email limit reached (${totalEmailsSent}/5). Skipping automation.`);
+      return;
+    }
+
+    if (isPaidPro) {
+      const now = new Date();
+      const thisMonthEmails = allCampaigns
+        .filter(c => {
+          if (!c.created_date) return false;
+          const d = new Date(c.created_date);
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        })
+        .reduce((sum, c) => sum + (c.sent_count || 0), 0);
+      if (thisMonthEmails >= 250) {
+        console.log(`[Tradixa Automation] Monthly email limit reached (${thisMonthEmails}/250). Skipping automation.`);
+        return;
+      }
+    }
+    // -------------------------
+
     // 2. Ambil semua aturan aktif untuk trigger ini
     const activeRules = await api.entities.AutomationRule.filter({
       store_id: storeId,

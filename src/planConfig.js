@@ -20,23 +20,32 @@ export const PLAN_TIERS = {
       'SalesInvoices', 'CustomerMaster',
       'ProfileAccount', 'CompanySettings', 'StoreSetup',
       'SystemSettings', 'TradixaAssistant', 'PricingPage',
-      'UserManagement'
+      'UserManagement', 'UsageStats'
     ],
     limits: {
       maxProducts: 100,
-      maxUsers: 1, // owner only, no user management (wait, they said user management ada 1)
-      maxPhotosPerModule: 5,
+      maxCustomers: 100,
+      maxUsers: 1,
+      maxPhotosPerProduct: 1,
       maxPhotoSizeMB: 2,
+      maxProductPhotos: 20,
+      emailCredits: 0,
+      emailCreditsPerMonth: 0,
+      maxPR: 0,
+      maxPO: 0,
+      maxGRN: 0,
+      maxInventoryGRN: 0,
+      maxSupplierReturn: 0,
       exportEnabled: false,
       userManagement: true,
     },
     features: [
       'Product Master (max 100 produk)',
+      'Customer Master (max 100 customer)',
       'Location Settings',
       'Stock In / Stock Out',
       'Sales Transaction',
       'Sales Invoices',
-      'Customer Master',
       'AI Assistant',
       'User Management (1 User)'
     ],
@@ -63,11 +72,33 @@ export const PLAN_TIERS = {
     modules: ['*'],
     limits: {
       maxProducts: 10000,
-      maxUsers: 10, // 10 staff + owner
-      maxPhotosPerModule: 10,
-      maxPhotoSizeMB: 5,
+      maxCustomers: Infinity,
+      maxUsers: 10,
+      maxPhotosPerProduct: 1,
+      maxPhotoSizeMB: 2,
+      maxProductPhotos: 2000,
+      emailCredits: Infinity,
+      emailCreditsPerMonth: 250,
+      maxPR: Infinity,
+      maxPO: Infinity,
+      maxGRN: Infinity,
+      maxInventoryGRN: Infinity,
+      maxSupplierReturn: Infinity,
       exportEnabled: true,
       userManagement: true,
+    },
+    // Batasan khusus saat Pro Trial (14 hari)
+    trialLimits: {
+      maxProducts: 100,
+      maxCustomers: 100,
+      emailCredits: 5,
+      maxProductPhotos: 20,
+      maxUsers: 1,
+      maxPR: 5,
+      maxPO: 5,
+      maxGRN: 5,
+      maxInventoryGRN: 5,
+      maxSupplierReturn: 5,
     },
     features: [
       'Semua fitur Free Plan',
@@ -81,6 +112,7 @@ export const PLAN_TIERS = {
       'HRIS & User Management (max 10 user)',
       'Export Data (CSV, PDF, Print)',
       'Workflow System',
+      'Email Marketing (250/bulan)',
     ],
     notIncluded: []
   },
@@ -89,7 +121,7 @@ export const PLAN_TIERS = {
     id: 'enterprise',
     name: 'Enterprise',
     label: 'Enterprise',
-    price: 0, // Mark as 0/custom
+    price: 0,
     yearlyPrice: 0,
     priceLabel: 'Custom',
     yearlyPriceLabel: 'Custom',
@@ -97,12 +129,21 @@ export const PLAN_TIERS = {
     badge: 'bg-amber-100 text-amber-700 border border-amber-200 shadow-sm',
     gradient: 'from-[#FACC15] via-[#F59E0B] to-[#D97706]',
     description: 'Untuk bisnis besar dengan kebutuhan multi-cabang dan agent',
-    modules: ['*'], // all modules
+    modules: ['*'],
     limits: {
       maxProducts: Infinity,
+      maxCustomers: Infinity,
       maxUsers: Infinity,
-      maxPhotosPerModule: Infinity,
+      maxPhotosPerProduct: 1,
       maxPhotoSizeMB: 10,
+      maxProductPhotos: Infinity,
+      emailCredits: Infinity,
+      emailCreditsPerMonth: Infinity,
+      maxPR: Infinity,
+      maxPO: Infinity,
+      maxGRN: Infinity,
+      maxInventoryGRN: Infinity,
+      maxSupplierReturn: Infinity,
       exportEnabled: true,
       userManagement: true,
     },
@@ -133,7 +174,6 @@ export const DEV_EMAILS = [
  * Check if a module/page is accessible on a given plan
  */
 export function isModuleAccessible(planId, pageName, userEmail = null) {
-  // Dev/admin emails always have full access
   if (userEmail && DEV_EMAILS.includes(userEmail.toLowerCase())) return true;
   const plan = PLAN_TIERS[planId] || PLAN_TIERS.free;
   if (plan.modules[0] === '*') return true;
@@ -158,4 +198,29 @@ export function getRequiredPlan(pageName) {
  */
 export function getPlanLimits(planId) {
   return (PLAN_TIERS[planId] || PLAN_TIERS.free).limits;
+}
+
+/**
+ * Get effective limits based on store's current state (trial vs paid)
+ * - Pro Trial: uses trialLimits (100 produk, 100 customer, 5 email, 5 PO, dll)
+ * - Pro Paid: uses full pro limits (10.000 produk, 250 email/bulan, unlimited procurement)
+ * - Free: uses free limits
+ */
+export function getEffectiveLimits(store) {
+  if (!store) return PLAN_TIERS.free.limits;
+  
+  const plan = store.plan || 'free';
+  const planConfig = PLAN_TIERS[plan] || PLAN_TIERS.free;
+  
+  // Jika Pro Trial (has_used_trial = true berarti sedang/sudah trial)
+  const isTrial = plan === 'pro' && store.has_used_trial;
+  
+  if (isTrial && planConfig.trialLimits) {
+    return {
+      ...planConfig.limits,
+      ...planConfig.trialLimits,
+    };
+  }
+  
+  return planConfig.limits;
 }

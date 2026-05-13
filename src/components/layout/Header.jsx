@@ -5,7 +5,7 @@ import { createPageUrl } from '@/utils';
 import { api } from '@/api/client';
 import { supabase } from '@/lib/supabase';
 import { useSettings } from '@/contexts/SettingsContext';
-import { Store, MapPin, RefreshCw, User, Settings, LogOut, Menu, MessageSquare, Sun, Moon, Monitor } from 'lucide-react';
+import { Store, MapPin, RefreshCw, User, Settings, LogOut, Menu, MessageSquare, Sun, Moon, Monitor, BarChart3 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -59,7 +59,7 @@ export default function Header({ store, isSidebarOpen, setIsSidebarOpen, isMobil
             }
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     };
 
     fetchUnread();
@@ -67,16 +67,16 @@ export default function Header({ store, isSidebarOpen, setIsSidebarOpen, isMobil
     // 2. Realtime Subscription (for "1 second" response)
     const channel = supabase
       .channel(`chat_notifications_${user.id}`)
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
         table: 'internal_messages',
-        filter: `receiver_id=eq.${user.id}` 
+        filter: `receiver_id=eq.${user.id}`
       }, async (payload) => {
         const newMsg = payload.new;
         if (newMsg.store_id === store.id) {
           console.log('[Chat Realtime] New message arrived:', newMsg);
-          
+
           // Increment badge immediately
           setTotalUnreadChat(prev => prev + 1);
 
@@ -105,7 +105,7 @@ export default function Header({ store, isSidebarOpen, setIsSidebarOpen, isMobil
             </div>,
             { duration: 4000 }
           );
-          
+
           // Update ref
           lastProcessedTimeRef.current = new Date(newMsg.created_at).getTime();
         }
@@ -325,6 +325,9 @@ export default function Header({ store, isSidebarOpen, setIsSidebarOpen, isMobil
               <div className="space-y-1">
                 <Link to={createPageUrl('ProfileAccount')} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors font-medium">
                   <User className="w-4 h-4" /> Profil & Akun
+                </Link>
+                <Link to={createPageUrl('UsageStats')} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors font-medium">
+                  <BarChart3 className="w-4 h-4" /> Penggunaan
                 </Link>
                 <Link to={createPageUrl('CompanySettings')} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors">
                   <Settings className="w-4 h-4" /> Pengaturan Akun

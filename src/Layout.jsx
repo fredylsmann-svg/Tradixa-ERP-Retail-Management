@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '@/api/client';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
+import TrialNotificationBanner from '@/components/layout/TrialNotificationBanner';
 import StoreSetup from '@/pages/StoreSetup';
 import UpgradeGate from '@/components/layout/UpgradeGate';
 import RBACBlockedPage from '@/components/RBACBlockedPage';
@@ -163,6 +164,9 @@ export default function Layout({ children, currentPageName }) {
           />
         </div>
         <main className="flex-1 p-4 md:p-6 bg-slate-50 dark:bg-slate-950 mt-16 print:p-0 print:bg-white flex flex-col">
+          <div className="-mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-6 print:hidden">
+            <TrialNotificationBanner store={store} />
+          </div>
           <div className="flex-1">
             {(() => {
               // 1. Plan-based gating (free/pro/enterprise)

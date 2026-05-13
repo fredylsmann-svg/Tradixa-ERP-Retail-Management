@@ -69,6 +69,7 @@ const SupplierReturn = lazy(() => import('./pages/SupplierReturn'));
 const WorkflowSystem = lazy(() => import('./pages/WorkflowSystem'));
 const PublicPOSign = lazy(() => import('./pages/PublicPOSign'));
 const SystemSettings = lazy(() => import('./pages/SystemSettings'));
+const UsageStats = lazy(() => import('./pages/UsageStats'));
 
 
 export const PAGES = {
@@ -139,6 +140,7 @@ export const PAGES = {
     "ProcurementWorkflow": ProcurementWorkflow,
     "PricingPage": PricingPage,
     "SystemSettings": SystemSettings,
+    "UsageStats": UsageStats,
 }
 
 export const pagesConfig = {
