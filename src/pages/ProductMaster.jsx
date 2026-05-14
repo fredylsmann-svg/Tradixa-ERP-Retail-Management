@@ -6,15 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Search, Eye, Pencil, Trash2, Package, Boxes } from 'lucide-react';
+import { Plus, Search, Eye, Pencil, Trash2, Package, Boxes, Printer } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 import ProductForm from '@/components/products/ProductForm';
+import BarcodePrintModal from '@/components/products/BarcodePrintModal';
 import { formatNumber } from '@/components/utils/currencyFormatter';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
 import PageHeader from '@/components/layout/PageHeader';
-import { getPlanLimits } from '@/planConfig';
+import { getEffectiveLimits } from '@/planConfig';
 import { useToast } from '@/components/ui/use-toast';
 
 export default function ProductMaster({ store }) {
@@ -25,6 +27,8 @@ export default function ProductMaster({ store }) {
   const [editingProduct, setEditingProduct] = useState(null);
   const [viewingProduct, setViewingProduct] = useState(null);
   const [deleteProduct, setDeleteProduct] = useState(null);
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [printProducts, setPrintProducts] = useState([]); // Products to pass to modal
   const { selectedDate, formattedDate } = useGlobalDate();
   const { toast } = useToast();
 
@@ -74,6 +78,20 @@ export default function ProductMaster({ store }) {
     return <Badge className={styles[status] || 'bg-slate-100'}>{status}</Badge>;
   };
 
+  const toggleSelectAll = () => {
+    if (selectedProductIds.length === filteredProducts.length) {
+      setSelectedProductIds([]);
+    } else {
+      setSelectedProductIds(filteredProducts.map(p => p.id));
+    }
+  };
+
+  const toggleSelectProduct = (id) => {
+    setSelectedProductIds(prev => 
+      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+    );
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -90,10 +108,20 @@ export default function ProductMaster({ store }) {
               storeLogoUrl={store?.logo_url}
               contentId="print-products-detailed"
             />
+            {selectedProductIds.length > 0 && (
+              <Button 
+                variant="outline" 
+                onClick={() => setPrintProducts(products.filter(p => selectedProductIds.includes(p.id)))}
+                className="bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 h-11"
+              >
+                <Printer className="w-4 h-4 mr-2" />
+                Cetak {selectedProductIds.length} Barcode
+              </Button>
+            )}
             <Button
               onClick={() => {
-                const limits = getPlanLimits(store?.plan || 'free');
-                if (products.length >= limits.maxProducts) {
+                const limits = getEffectiveLimits(store);
+                if (limits.maxProducts !== Infinity && products.length >= limits.maxProducts) {
                   toast({
                     title: "Batas Produk Tercapai",
                     description: `Paket ${store?.plan || 'Free'} maksimal ${limits.maxProducts} produk. Silakan upgrade paket Anda.`,
@@ -131,6 +159,12 @@ export default function ProductMaster({ store }) {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50 dark:bg-slate-800/50">
+                  <TableHead className="w-10">
+                    <Checkbox 
+                      checked={filteredProducts.length > 0 && selectedProductIds.length === filteredProducts.length}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead className="w-12">No</TableHead>
                   <TableHead className="w-16">Foto</TableHead>
                   <TableHead>SKU</TableHead>
@@ -149,12 +183,12 @@ export default function ProductMaster({ store }) {
                 {isLoading ? (
                   Array(5).fill(0).map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell colSpan={10}><Skeleton className="h-12 w-full" /></TableCell>
+                      <TableCell colSpan={11}><Skeleton className="h-12 w-full" /></TableCell>
                     </TableRow>
                   ))
                 ) : filteredProducts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-12 text-slate-500 dark:text-slate-400">
+                    <TableCell colSpan={11} className="text-center py-12 text-slate-500 dark:text-slate-400">
                       <Boxes className="w-12 h-12 mx-auto mb-3 text-slate-300" />
                       Tidak ada produk ditemukan
                     </TableCell>
@@ -162,6 +196,12 @@ export default function ProductMaster({ store }) {
                 ) : (
                   filteredProducts.map((product, idx) => (
                     <TableRow key={product.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                      <TableCell>
+                        <Checkbox 
+                          checked={selectedProductIds.includes(product.id)}
+                          onCheckedChange={() => toggleSelectProduct(product.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{idx + 1}</TableCell>
                       <TableCell>
                         {product.image_url ? (
@@ -202,6 +242,9 @@ export default function ProductMaster({ store }) {
                       <TableCell className="text-xs text-slate-500 dark:text-slate-400">{product.timestamp_wib || product.created_at?.split('T')[0] || '-'}</TableCell>
                       <TableCell>
                         <div className="flex items-center justify-center gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => setPrintProducts([product])} title="Cetak Barcode">
+                            <Printer className="w-4 h-4 text-blue-500" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => setViewingProduct(product)}>
                             <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                           </Button>
@@ -230,6 +273,14 @@ export default function ProductMaster({ store }) {
         store={store}
         storeId={store?.id}
         onSuccess={loadProducts}
+      />
+
+      {/* Barcode Print Modal */}
+      <BarcodePrintModal 
+        open={printProducts.length > 0} 
+        onClose={() => setPrintProducts([])} 
+        products={printProducts} 
+        store={store} 
       />
 
       {/* View Dialog */}

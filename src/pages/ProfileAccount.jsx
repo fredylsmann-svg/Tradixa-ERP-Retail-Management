@@ -42,6 +42,7 @@ export default function ProfileAccount({ store }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [outboundUsage, setOutboundUsage] = useState(0);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [billingCycle, setBillingCycle] = useState('yearly');
@@ -100,6 +101,14 @@ export default function ProfileAccount({ store }) {
         position: userData.position || (store?.owner_user_id === userData.id ? 'Owner / Director' : 'Staff Member'),
         phone: userData.phone || store?.phone || '08123456789'
       });
+
+      if (store?.id) {
+        const { count } = await supabase
+          .from('outbound_deliveries')
+          .select('*', { count: 'exact', head: true })
+          .eq('store_id', store.id);
+        setOutboundUsage(count || 0);
+      }
     } catch (error) {
       console.error('Failed to load user:', error);
     }
@@ -546,6 +555,38 @@ export default function ProfileAccount({ store }) {
               </Card>
             );
           })()}
+
+          {/* Usage Stats for Free Plan */}
+          {(!store?.plan || store?.plan === 'free') && (
+            <Card className="border-slate-200 rounded-3xl shadow-sm bg-white">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-slate-800">Batas Penggunaan (Free Plan)</h3>
+                  <Badge className="bg-slate-100 text-slate-600 border-none">{outboundUsage} / 5</Badge>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between text-[11px] font-bold mb-1.5">
+                      <span className="text-slate-500 uppercase">Outbound Delivery</span>
+                      <span className={outboundUsage >= 5 ? 'text-red-500' : 'text-slate-700'}>{outboundUsage} dari 5 Data</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all ${outboundUsage >= 5 ? 'bg-red-500' : 'bg-blue-500'}`}
+                        style={{ width: `${Math.min(100, (outboundUsage / 5) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                {outboundUsage >= 5 && (
+                  <div className="mt-4 p-3 bg-red-50 rounded-xl border border-red-100 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-red-700 font-medium">Batas data maksimal tercapai. Anda tidak dapat membuat data pengiriman baru. Silakan upgrade ke Pro Plan.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="border-slate-200 rounded-3xl shadow-sm bg-gradient-to-b from-white to-slate-50/50">
             <CardContent className="p-8">

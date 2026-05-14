@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import {
   Settings, List, Wallet, ArrowRightLeft, LayoutDashboard,
   DollarSign, Users, ChevronRight, PlayCircle, CheckCircle2,
-  Info, ArrowRight, Workflow, Banknote
+  Info, ArrowRight, Workflow, Banknote, RefreshCcw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -103,7 +103,7 @@ export default function FinancialAgentWorkflow() {
       <Card className="border-slate-200 overflow-hidden">
         <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-4">
           <h3 className="text-white font-black text-sm tracking-tight flex items-center gap-2">
-            <PlayCircle className="w-4 h-4 text-indigo-400" /> Agent Lifecycle · BRILINK Payment Point
+            <RefreshCcw className="w-4 h-4 text-emerald-400" /> Agent Lifecycle - BRILINK Payment Point
           </h3>
           <p className="text-slate-400 text-[11px] mt-0.5">Alur kerja agen keuangan dari registrasi hingga pelaporan performa</p>
         </div>
@@ -137,10 +137,10 @@ export default function FinancialAgentWorkflow() {
       </Card>
 
       {/* HOW IT WORKS - BRILINK CONCEPT */}
-      <Card className="bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-100">
+      <Card className="bg-white border-slate-200 shadow-sm">
         <CardContent className="p-6">
-          <h3 className="font-black text-slate-900 mb-4 flex items-center gap-2">
-            <Banknote className="w-5 h-5 text-indigo-600" /> Bagaimana Sistem Agent Bekerja?
+          <h3 className="font-black text-black mb-4 flex items-center gap-2">
+            <Banknote className="w-5 h-5 text-blue-600" /> Bagaimana Sistem Agent Bekerja?
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white rounded-xl p-4 border border-indigo-100">

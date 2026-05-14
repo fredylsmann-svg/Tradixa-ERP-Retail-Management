@@ -116,11 +116,12 @@ function createEntityProxy(entityName) {
 
     async create(record) {
       const now = new Date();
-      const payload = {
-        ...record,
-        created_date: record.created_date || now.toISOString().split('T')[0],
-        updated_date: now.toISOString().split('T')[0],
-      };
+      const payload = { ...record };
+      const skipDateEntities = ['WarehouseTransfer', 'PickList'];
+      if (!skipDateEntities.includes(entityName)) {
+        payload.created_date = record.created_date || now.toISOString().split('T')[0];
+        payload.updated_date = now.toISOString().split('T')[0];
+      }
 
       // Auto-inject store_id if missing (required for RLS store-scoping)
       // Skip entities whose tables don't have a store_id column
@@ -154,10 +155,11 @@ function createEntityProxy(entityName) {
 
     async update(id, updates) {
       // OPTIMIZED: No longer fetching old_data before update (saves 1 full select('*') per update)
-      const payload = {
-        ...updates,
-        updated_date: new Date().toISOString().split('T')[0],
-      };
+      const payload = { ...updates };
+      const skipDateEntities = ['WarehouseTransfer', 'PickList'];
+      if (!skipDateEntities.includes(entityName)) {
+        payload.updated_date = new Date().toISOString().split('T')[0];
+      }
       const { data, error } = await supabase.from(table).update(payload).eq('id', id).select().single();
       if (error) {
         console.error(`[Tradixa] ${entityName}.update error:`, error.message);

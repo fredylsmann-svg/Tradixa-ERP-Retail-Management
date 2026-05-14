@@ -130,6 +130,7 @@ export default function UsageStats({ store }) {
     supplierReturn: 0,
     stockIn: 0,
     stockOut: 0,
+    outboundDeliveries: 0,
   });
   const [loading, setLoading] = useState(true);
   
@@ -162,6 +163,7 @@ export default function UsageStats({ store }) {
           stockInRes,
           stockOutRes,
           bankRecRes,
+          outboundRes,
         ] = await Promise.all([
           supabase.from('marketing_campaigns').select('sent_count', { count: 'exact' }).eq('store_id', store.id).in('status', ['Sent', 'Running']),
           supabase.from('marketing_automation_rules').select('total_executions', { count: 'exact' }).eq('store_id', store.id),
@@ -179,6 +181,7 @@ export default function UsageStats({ store }) {
           supabase.from('stock_movements').select('id', { count: 'exact', head: true }).eq('store_id', store.id).eq('movement_type', 'in'),
           supabase.from('stock_movements').select('id', { count: 'exact', head: true }).eq('store_id', store.id).eq('movement_type', 'out'),
           supabase.from('bank_statement_history').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
+          supabase.from('outbound_deliveries').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
         ]);
 
         // Hitung total email terkirim (hanya dari campaign sent_count — source of truth)
@@ -231,6 +234,7 @@ export default function UsageStats({ store }) {
           stockIn: stockInRes.count || 0,
           stockOut: stockOutRes.count || 0,
           reconciliationUploads: bankRecRes.count || 0,
+          outboundDeliveries: outboundRes.count || 0,
         });
       } catch (err) {
         console.error('Gagal mengambil data penggunaan:', err);
@@ -280,7 +284,6 @@ export default function UsageStats({ store }) {
             className="bg-white text-slate-900 hover:bg-slate-100 font-black h-14 px-8 rounded-2xl shadow-xl hover:scale-105 transition-all group"
           >
             {isTrial ? 'Upgrade ke Full Version' : 'Kelola Langganan'}
-            <Zap className="ml-2 w-5 h-5 fill-amber-500 text-amber-500 group-hover:scale-125 transition-transform" />
           </Button>
         </div>
       </div>
@@ -388,6 +391,20 @@ export default function UsageStats({ store }) {
                 icon={RotateCcw} title="Supplier Return" color="amber"
                 current={stats.supplierReturn} limit={limits.maxSupplierReturn}
                 description="Jumlah retur supplier"
+              />
+            </div>
+          </div>
+
+          {/* Logistics & Delivery */}
+          <div>
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2 mt-4">
+              <Truck className="w-4 h-4" /> Logistics & Delivery
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <UsageCard 
+                icon={Truck} title="Outbound Delivery" color="blue"
+                current={stats.outboundDeliveries} limit={limits.maxOutboundDeliveries}
+                description="Jumlah pengiriman kurir"
               />
             </div>
           </div>

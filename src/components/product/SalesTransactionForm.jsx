@@ -23,6 +23,7 @@ import PrintInvoice from '../invoice/PrintInvoice';
 import { allocateBatches, deductBatches } from '@/utils/fefoEngine';
 import { supabase } from '@/lib/supabase';
 import { useTaxRate } from '@/hooks/useTaxRate';
+import { getEffectiveLimits } from '@/planConfig';
 
 export default function SalesTransactionForm({ open, onClose, store, onSuccess }) {
   const { toast } = useToast();
@@ -68,6 +69,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
   const [showSerialModal, setShowSerialModal] = useState(false);
   const [serialAssignments, setSerialAssignments] = useState({});
   const [serialTrackedItemsInCart, setSerialTrackedItemsInCart] = useState([]);
+  const [deliveryCount, setDeliveryCount] = useState(0);
   const containerRef = React.useRef(null);
 
   useEffect(() => {
@@ -78,8 +80,17 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
       loadDiscounts();
       loadEmployees();
       loadSalesLocations();
+      loadDeliveryCount();
     }
   }, [open, storeId]);
+
+  const loadDeliveryCount = async () => {
+    const { count } = await supabase
+      .from('outbound_deliveries')
+      .select('*', { count: 'exact', head: true })
+      .eq('store_id', storeId);
+    setDeliveryCount(count || 0);
+  };
 
   const loadProducts = async () => {
     const data = await api.entities.Product.filter({ store_id: storeId });
@@ -1450,6 +1461,15 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                         id="needs-delivery"
                         checked={needsDelivery}
                         onCheckedChange={(checked) => {
+                          const limits = getEffectiveLimits(store);
+                          if (checked && limits.maxOutboundDeliveries !== Infinity && deliveryCount >= limits.maxOutboundDeliveries) {
+                            toast({
+                              title: "Batas Penggunaan Tercapai",
+                              description: `Anda sudah mencapai maksimal ${limits.maxOutboundDeliveries} data pengiriman. Silakan upgrade paket ke Pro Plan.`,
+                              variant: "destructive"
+                            });
+                            return;
+                          }
                           setNeedsDelivery(checked);
                           if (checked && selectedCustomer === 'walk-in') {
                             toast({

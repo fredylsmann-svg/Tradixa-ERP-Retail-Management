@@ -1,15 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export default function PageHeader({ 
-  title, 
-  subtitle, 
-  icon: Icon, 
+export default function PageHeader({
+  title,
+  subtitle,
+  icon: Icon,
   children,
-  actions 
+  actions
 }) {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 mb-6"

@@ -13,7 +13,7 @@ import {
   ArrowRightLeft, List, DollarSign, Settings, UserCircle, GitBranch, Network,
   Workflow, ChevronDown, Menu, X, MessageCircle, Award, Layers, Mail, Zap, Megaphone, Banknote, PieChart, Contact, Landmark,
   BookOpen, ReceiptText, LineChart, BarChart, Activity, Warehouse, ClipboardCheck, MapPin, Palette, Boxes, BarChart3, HandCoins, History,
-  Lock, CreditCard as CreditCardIcon, Calculator, FileSignature
+  Lock, CreditCard as CreditCardIcon, Calculator, FileSignature, PackageCheck
 } from 'lucide-react';
 
 const getFilteredMenuGroups = (isOwner) => {
@@ -41,9 +41,7 @@ const getFilteredMenuGroups = (isOwner) => {
         { name: 'Stock Out', icon: Upload, page: 'StockOut' },
         { name: 'Inventory Ledger', icon: Activity, page: 'InventoryLedger' },
         { name: 'Inventory Reports', icon: FileText, page: 'InventoryReports' },
-        { name: 'Low Stock Alert', icon: AlertTriangle, page: 'LowStockAlert' },
-        { name: 'Stock Opname', icon: ClipboardCheck, page: 'StockOpname' },
-        { name: 'Outbound Delivery', icon: Truck, page: 'OutboundDelivery' }
+        { name: 'Low Stock Alert', icon: AlertTriangle, page: 'LowStockAlert' }
       ]
     },
     {
@@ -51,8 +49,10 @@ const getFilteredMenuGroups = (isOwner) => {
       items: [
         { name: 'WMS Workflow', icon: Workflow, page: 'WMSWorkflow' },
         { name: 'Warehouse Dashboard', icon: LayoutDashboard, page: 'WarehouseDashboard' },
+        { name: 'Pick List', icon: ClipboardList, page: 'PickList' },
+        { name: 'Outbound Delivery', icon: Truck, page: 'OutboundDelivery' },
         { name: 'Transfer Gudang', icon: ArrowRightLeft, page: 'WarehouseTransfer' },
-        { name: 'Pick List', icon: ClipboardList, page: 'PickList' }
+        { name: 'Stock Opname', icon: PackageCheck, page: 'StockOpname' }
       ]
     },
     {

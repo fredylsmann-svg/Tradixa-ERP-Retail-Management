@@ -12,6 +12,7 @@ import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
 import PageHeader from '@/components/layout/PageHeader';
+import { getEffectiveLimits } from '@/planConfig';
 
 export default function SalesTransaction({ store }) {
   const [allTransactions, setAllTransactions] = useState([]);
@@ -51,8 +52,8 @@ export default function SalesTransaction({ store }) {
     return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
   }).length;
 
-  const isFree = !store?.plan || store?.plan === 'free';
-  const isLimitReached = isFree && currentMonthSales >= 100;
+  const limits = getEffectiveLimits(store);
+  const isLimitReached = limits.maxSalesPerMonth !== Infinity && currentMonthSales >= limits.maxSalesPerMonth;
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
 
@@ -94,7 +95,7 @@ export default function SalesTransaction({ store }) {
           <div className="flex-1">
             <p className="text-sm font-bold text-amber-900">Limit Transaksi Tercapai</p>
             <p className="text-xs text-amber-700 mt-0.5">
-              Anda telah mencapai batas 100 transaksi bulan ini untuk paket Free. 
+              Anda telah mencapai batas {limits.maxSalesPerMonth} transaksi bulan ini untuk paket Anda. 
               Upgrade ke <span className="font-bold">Pro</span> untuk transaksi tanpa batas dan fitur premium lainnya.
             </p>
           </div>

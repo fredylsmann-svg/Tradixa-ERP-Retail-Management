@@ -32,6 +32,10 @@ const MODULE_GROUPS = [
     modules: ['Product Master', 'Location Settings', 'Stock In', 'Stock Out', 'Inventory Ledger', 'Inventory Reports', 'Low Stock Alert', 'Stock Opname', 'Outbound Delivery']
   },
   {
+    category: 'WAREHOUSE (WMS)',
+    modules: ['WMS Workflow', 'Warehouse Dashboard', 'Transfer Gudang', 'Pick List']
+  },
+  {
     category: 'PROCUREMENT',
     modules: ['Procurement Workflow', 'Suppliers', 'Purchase Requisition', 'Purchase Orders', 'Goods Receipt', 'Inventory GRN', 'Supplier Return']
   },
@@ -79,6 +83,7 @@ const POSITION_MODS = {
   'Warehouse': [
     'Dashboard',
     ...MODULE_GROUPS.find(g => g.category === 'INVENTORY').modules,
+    ...MODULE_GROUPS.find(g => g.category === 'WAREHOUSE (WMS)').modules,
     'Tradixa Assistant'
   ],
   'Finance': [

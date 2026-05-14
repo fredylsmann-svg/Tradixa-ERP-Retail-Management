@@ -146,7 +146,7 @@ export default function WMSWorkflow() {
       {/* HERO HEADER */}
       <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm px-6 py-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
+          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
             <Workflow className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -154,18 +154,18 @@ export default function WMSWorkflow() {
             <p className="text-sm text-slate-500 dark:text-slate-400">Standard Operating Procedure — Warehouse Management System</p>
           </div>
         </div>
-        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-[10px] uppercase tracking-widest hidden md:inline-flex">
+        <Badge className="bg-blue-50 text-blue-700 border-blue-200 font-bold text-[10px] uppercase tracking-widest hidden md:inline-flex">
           Enterprise WMS
         </Badge>
       </div>
 
       {/* FLOWCHART */}
       <Card className="border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div className="bg-gradient-to-r from-emerald-700 to-teal-800 px-6 py-4">
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-4">
           <h3 className="text-white font-black text-sm tracking-tight flex items-center gap-2">
-            <RefreshCw className="w-4 h-4 text-emerald-300" /> WMS Lifecycle — Alur Operasi Gudang End-to-End
+            <RefreshCw className="w-4 h-4 text-emerald-400" /> WMS Lifecycle — Alur Operasi Gudang End-to-End
           </h3>
-          <p className="text-emerald-200/70 text-[11px] mt-0.5">Dari konfigurasi lokasi, penerimaan barang, picking, pengiriman, hingga transfer antar gudang</p>
+          <p className="text-slate-400 text-[11px] mt-0.5">Dari konfigurasi lokasi, penerimaan barang, picking, pengiriman, hingga transfer antar gudang</p>
         </div>
         <CardContent className="p-10">
           <div className="relative overflow-x-auto lg:overflow-visible pb-4 md:pb-0">

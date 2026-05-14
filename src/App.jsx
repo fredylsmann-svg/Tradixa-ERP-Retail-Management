@@ -23,6 +23,7 @@ const PublicGRNSign = lazy(() => import('./pages/PublicGRNSign'));
 const PublicGRNManagerSign = lazy(() => import('./pages/PublicGRNManagerSign'));
 const PublicReturnReview = lazy(() => import('./pages/PublicReturnReview'));
 const PublicInvoice = lazy(() => import('./pages/PublicInvoice'));
+const PublicCourierPortal = lazy(() => import('./pages/PublicCourierPortal'));
 const ProcurementWorkflow = lazy(() => import('./pages/ProcurementWorkflow'));
 
 
@@ -114,6 +115,9 @@ function App() {
             
             {/* Public Invoice Route */}
             <Route path="/public/invoice/:type/:id" element={<PublicInvoice />} />
+
+            {/* Public Courier Portal Route */}
+            <Route path="/public/delivery/:id/courier" element={<PublicCourierPortal />} />
 
             {/* Email Tracking Route */}
             <Route path="/track/:type/:id" element={<PublicTracker />} />

@@ -7,14 +7,16 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Truck, MapPin, Navigation, Clock, CheckCircle2, XCircle, Route, Plus, Info, HelpCircle } from 'lucide-react';
+import { Search, Truck, MapPin, Navigation, Clock, CheckCircle2, XCircle, Route, Plus, Info, HelpCircle, Eye, Phone, MessageSquare, MessageCircle, Calendar, Camera, History } from 'lucide-react';
 import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, Autocomplete } from '@react-google-maps/api';
 import { api } from '@/api/client';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import PageHeader from '@/components/layout/PageHeader';
 import ExportToolbar from '@/components/layout/ExportToolbar';
+import { cn } from '@/lib/utils';
 import moment from 'moment';
+import { getEffectiveLimits } from '@/planConfig';
 
 const libraries = ['places'];
 const mapContainerStyle = { width: '100%', height: '400px', borderRadius: '12px' };
@@ -32,8 +34,10 @@ export default function OutboundDelivery({ store }) {
     customer_id: 'manual',
     shipping_address: '',
     driver_name: '',
+    driver_phone: '',
     tracking_number: ''
   });
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [directionsResponse, setDirectionsResponse] = useState(null);
   const [distance, setDistance] = useState('');
   const [duration, setDuration] = useState('');
@@ -58,6 +62,15 @@ export default function OutboundDelivery({ store }) {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
     libraries
   });
+
+  const formatWaNumber = (phone) => {
+    if (!phone) return '';
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) {
+      cleaned = '62' + cleaned.substring(1);
+    }
+    return cleaned;
+  };
 
   useEffect(() => {
     if (store?.id) {
@@ -161,6 +174,9 @@ export default function OutboundDelivery({ store }) {
       const payload = {
         status: selectedDelivery.status,
         driver_name: selectedDelivery.driver_name,
+        driver_phone: selectedDelivery.driver_phone,
+        vehicle_type: selectedDelivery.vehicle_type,
+        license_plate: selectedDelivery.license_plate,
         tracking_number: selectedDelivery.tracking_number,
         distance_km: selectedDelivery.distance_km,
         shipping_fee: shippingFee,
@@ -168,6 +184,18 @@ export default function OutboundDelivery({ store }) {
         cost_allocation: costAllocation
       };
       
+      // Auto-update timestamps and audit logs
+      const now = moment().format('DD/MM/YYYY HH:mm [WIB]');
+      const auditLog = selectedDelivery.audit_logs || [];
+      
+      if (selectedDelivery.status === 'In Transit' && !selectedDelivery.transit_at) {
+        payload.transit_at = new Date().toISOString();
+        payload.audit_logs = [...auditLog, { status: 'In Transit', time: now, note: 'Pengiriman dikirim oleh admin' }];
+      } else if (selectedDelivery.status === 'Delivered' && !selectedDelivery.delivered_at) {
+        payload.delivered_at = new Date().toISOString();
+        payload.audit_logs = [...auditLog, { status: 'Delivered', time: now, note: 'Tanda terima diselesaikan oleh admin' }];
+      }
+
       await api.entities.OutboundDelivery.update(selectedDelivery.id, payload);
 
       // === INTEGRASI AKUNTANSI OTOMATIS ===
@@ -176,9 +204,9 @@ export default function OutboundDelivery({ store }) {
         const customerName = selectedDelivery.customers?.name || 'Manual';
         const reference = `SHIP-${Date.now().toString(36).toUpperCase()}`;
         const today = new Date().toISOString().split('T')[0];
-        const now = new Date();
+        const currentDate = new Date();
         const wibOffset = 7 * 60;
-        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const utc = currentDate.getTime() + (currentDate.getTimezoneOffset() * 60000);
         const wibTime = new Date(utc + (wibOffset * 60000));
         const timestampWib = `${String(wibTime.getDate()).padStart(2, '0')}/${String(wibTime.getMonth() + 1).padStart(2, '0')}/${wibTime.getFullYear()} ${String(wibTime.getHours()).padStart(2, '0')}:${String(wibTime.getMinutes()).padStart(2, '0')} WIB`;
 
@@ -315,8 +343,10 @@ export default function OutboundDelivery({ store }) {
         latitude: lat,
         longitude: lng,
         driver_name: newDelivery.driver_name,
+        driver_phone: newDelivery.driver_phone,
         tracking_number: newDelivery.tracking_number,
-        status: 'Pending'
+        status: 'Pending',
+        audit_logs: [{ status: 'Pending', time: moment().format('DD/MM/YYYY HH:mm [WIB]'), note: 'Pengiriman dijadwalkan' }]
       };
 
       await supabase.from('outbound_deliveries').insert([payload]);
@@ -343,6 +373,8 @@ export default function OutboundDelivery({ store }) {
         title="Outbound Delivery"
         subtitle="Kelola pengiriman barang ke pelanggan dan lacak rute pengiriman"
         icon={Truck}
+        onRefresh={loadDeliveries}
+        isRefreshing={isLoading}
         children={
           <Dialog>
             <DialogTrigger asChild>
@@ -379,7 +411,17 @@ export default function OutboundDelivery({ store }) {
               storeLogoUrl={store?.logo_url} 
               contentId="print-outbound-deliveries" 
             />
-            <Button className="bg-blue-600 hover:bg-blue-700 h-11 rounded-xl" onClick={() => setIsCreateOpen(true)}>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 h-11 rounded-xl" 
+              onClick={() => {
+                const limits = getEffectiveLimits(store);
+                if (limits.maxOutboundDeliveries !== Infinity && deliveries.length >= limits.maxOutboundDeliveries) {
+                  toast.error(`Batas Penggunaan Tercapai: Anda sudah mencapai maksimal ${limits.maxOutboundDeliveries} data pengiriman. Silakan upgrade ke Pro Plan!`);
+                  return;
+                }
+                setIsCreateOpen(true);
+              }}
+            >
               <Plus className="w-4 h-4 mr-2" /> Buat Pengiriman Manual
             </Button>
           </div>
@@ -448,9 +490,29 @@ export default function OutboundDelivery({ store }) {
                       <Badge className={statusColors[delivery.status]}>{delivery.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => calculateRoute(delivery)}>
-                        <Route className="w-4 h-4 mr-2 text-blue-600" /> Rute & Ongkir
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          disabled={!delivery.driver_phone || delivery.status === 'Delivered'}
+                          className="h-8 w-8 p-0 rounded-lg text-emerald-600 hover:bg-emerald-50 border-emerald-200 disabled:opacity-50 disabled:bg-slate-50"
+                          onClick={() => {
+                            if (!delivery.driver_phone) return;
+                            const link = `${window.location.origin}/public/delivery/${delivery.id}/courier`;
+                            const text = `Halo *${delivery.driver_name || 'Kurir'}*,\n\nBerikut adalah rute dan portal pengiriman barang Tradixa untuk Invoice *${delivery.sales_transactions?.invoice_number || delivery.id}*.\n\nSilakan klik link berikut untuk panduan navigasi dan konfirmasi foto saat sampai di tujuan:\n\n${link}\n\nTerima kasih.`;
+                            window.open(`https://wa.me/${formatWaNumber(delivery.driver_phone)}?text=${encodeURIComponent(text)}`, '_blank');
+                          }}
+                          title={!delivery.driver_phone ? "Isi Nomor WA Kurir di Rute & Ongkir terlebih dahulu" : delivery.status === 'Delivered' ? "Pengiriman sudah selesai" : "Kirim Link Portal ke WA"}
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => { setSelectedDelivery(delivery); setIsDetailOpen(true); }} className="h-8 w-8 p-0 rounded-lg" title="Detail & Log">
+                          <Eye className="w-4 h-4 text-slate-500" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => calculateRoute(delivery)}>
+                          <Route className="w-4 h-4 mr-2 text-blue-600" /> Rute & Ongkir
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -527,6 +589,42 @@ export default function OutboundDelivery({ store }) {
                       value={selectedDelivery.driver_name || ''} 
                       onChange={(e) => setSelectedDelivery({...selectedDelivery, driver_name: e.target.value})}
                       className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1">
+                      <Label>Nomor WhatsApp Kurir</Label>
+                      <div className="group relative flex items-center">
+                        <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
+                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 text-center shadow-xl">
+                          Nomor ini akan menerima link portal khusus kurir untuk mengirimkan bukti foto barang diterima oleh customer secara real-time.
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <Input 
+                      value={selectedDelivery.driver_phone || ''} 
+                      onChange={(e) => setSelectedDelivery({...selectedDelivery, driver_phone: e.target.value})}
+                      placeholder="Contoh: 08123456789"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Tipe Kendaraan</Label>
+                    <Input 
+                      value={selectedDelivery.vehicle_type || ''} 
+                      onChange={(e) => setSelectedDelivery({...selectedDelivery, vehicle_type: e.target.value})}
+                      placeholder="Contoh: Mobil Box / Motor"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Nomor Plat Kendaraan</Label>
+                    <Input 
+                      value={selectedDelivery.license_plate || ''} 
+                      onChange={(e) => setSelectedDelivery({...selectedDelivery, license_plate: e.target.value.toUpperCase()})}
+                      placeholder="Contoh: B 1234 CD"
+                      className="mt-1 uppercase"
                     />
                   </div>
                   <div>
@@ -641,6 +739,15 @@ export default function OutboundDelivery({ store }) {
               />
             </div>
             <div>
+              <Label>Nomor WhatsApp Kurir</Label>
+              <Input 
+                value={newDelivery.driver_phone} 
+                onChange={(e) => setNewDelivery({...newDelivery, driver_phone: e.target.value})}
+                placeholder="Contoh: 08123456789"
+                className="mt-1"
+              />
+            </div>
+            <div>
               <Label>Nomor Resi / Lacak</Label>
               <Input 
                 value={newDelivery.tracking_number} 
@@ -653,6 +760,110 @@ export default function OutboundDelivery({ store }) {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Batal</Button>
             <Button onClick={handleCreateManualDelivery} className="bg-blue-600 hover:bg-blue-700">Buat Pengiriman</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail & Audit Log Dialog */}
+      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-blue-600" />
+              Detail Pengiriman & Log
+            </DialogTitle>
+            <DialogDescription>
+              {selectedDelivery?.sales_transactions?.invoice_number || 'Outbound Delivery'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedDelivery && (
+            <div className="space-y-6 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-4 rounded-2xl border">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Customer</p>
+                  <p className="font-bold text-slate-900 mt-1">{selectedDelivery.customers?.name || 'Manual'}</p>
+                  <p className="text-xs text-slate-500 mt-1">{selectedDelivery.customers?.phone || '-'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Status Saat Ini</p>
+                  <Badge className={cn("mt-1", statusColors[selectedDelivery.status])}>{selectedDelivery.status}</Badge>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-bold text-blue-900 flex items-center gap-2">
+                    <Truck className="w-4 h-4" /> Informasi Kurir
+                  </h4>
+                  {selectedDelivery.driver_phone && (
+                    <Button 
+                      size="sm" 
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white h-8 rounded-lg text-xs"
+                      onClick={() => {
+                        window.open(`https://wa.me/${formatWaNumber(selectedDelivery.driver_phone)}`, '_blank');
+                      }}
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Chat Driver
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] font-bold text-blue-400 uppercase">Nama Kurir</p>
+                    <p className="font-bold text-slate-800">{selectedDelivery.driver_name || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-blue-400 uppercase">WhatsApp</p>
+                    <p className="font-bold text-slate-800">{selectedDelivery.driver_phone || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-blue-400 uppercase">Tipe Kendaraan</p>
+                    <p className="font-bold text-slate-800">{selectedDelivery.vehicle_type || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-blue-400 uppercase">Plat Nomor</p>
+                    <p className="font-bold text-slate-800">{selectedDelivery.license_plate || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <History className="w-4 h-4 text-blue-600" /> Riwayat Status & Audit Log
+                </h4>
+                <div className="space-y-4 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
+                  {(selectedDelivery.audit_logs || []).map((log, idx) => (
+                    <div key={idx} className="relative pl-8">
+                      <div className="absolute left-0 top-1.5 w-4 h-4 rounded-full bg-white border-2 border-blue-600 z-10" />
+                      <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                        <div className="flex items-center justify-between mb-1">
+                          <Badge variant="outline" className={statusColors[log.status]}>{log.status}</Badge>
+                          <span className="text-[10px] font-bold text-slate-400">{log.time}</span>
+                        </div>
+                        <p className="text-xs text-slate-600 italic">{log.note}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {selectedDelivery.proof_photo_url && (
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <Camera className="w-4 h-4 text-emerald-600" /> Bukti Foto Penerimaan
+                  </h4>
+                  <div className="rounded-2xl overflow-hidden border-2 border-slate-100 shadow-inner">
+                    <img src={selectedDelivery.proof_photo_url} alt="Proof" className="w-full h-auto object-cover max-h-80" />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDetailOpen(false)}>Tutup</Button>
+            <Button onClick={() => { setIsDetailOpen(false); calculateRoute(selectedDelivery); }} className="bg-blue-600 text-white">Edit Detail / Rute</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

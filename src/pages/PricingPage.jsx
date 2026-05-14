@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   CheckCircle2, X, Crown, Zap, Shield, Sparkles, Lock, ChevronDown,
   Package, ShoppingCart, Truck, DollarSign, Users, BarChart3,
-  Award, Megaphone, Landmark, Palette, History, MessageCircle, Clock
+  Award, Megaphone, Landmark, Palette, History, MessageCircle, Clock, Warehouse
 } from 'lucide-react';
 import { PLAN_TIERS } from '@/planConfig';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -17,9 +17,9 @@ const featureGroups = [
     title: 'Usage & Limits',
     icon: BarChart3,
     features: [
-      { name: 'Produk', free: '100', pro: '10.000', enterprise: 'Unlimited' },
-      { name: 'Customer', free: '100', pro: 'Unlimited', enterprise: 'Unlimited' },
-      { name: 'Upload Foto/Media Produk', free: '20', pro: 'Hingga 2.000/bulan', enterprise: 'Unlimited' },
+      { name: 'Produk', free: '25', pro: '10.000', enterprise: 'Unlimited' },
+      { name: 'Customer', free: '25', pro: 'Unlimited', enterprise: 'Unlimited' },
+      { name: 'Upload Foto/Media Produk', free: '10', pro: 'Hingga 2.000/bulan', enterprise: 'Unlimited' },
       { name: 'Max Ukuran Foto', free: '2 MB', pro: '2 MB', enterprise: '10 MB' },
       { name: 'Email Marketing', free: false, pro: '250/bulan', enterprise: 'Unlimited' },
       { name: 'Purchase Requisition', free: false, pro: 'Unlimited', enterprise: 'Unlimited' },
@@ -33,7 +33,7 @@ const featureGroups = [
     title: 'Inventory',
     icon: Package,
     features: [
-      { name: 'Product Master', free: '100 produk', pro: '10.000 produk', enterprise: 'Unlimited' },
+      { name: 'Product Master', free: '25 produk', pro: '10.000 produk', enterprise: 'Unlimited' },
       { name: 'Location Settings', free: true, pro: true, enterprise: true },
       { name: 'Stock In / Stock Out', free: true, pro: true, enterprise: true },
       { name: 'Stock Opname', free: false, pro: true, enterprise: true },
@@ -48,7 +48,7 @@ const featureGroups = [
     title: 'Sales',
     icon: ShoppingCart,
     features: [
-      { name: 'Sales Transaction', free: '100 / bulan', pro: 'Unlimited', enterprise: 'Unlimited' },
+      { name: 'Sales Transaction', free: '50 / bulan', pro: 'Unlimited', enterprise: 'Unlimited' },
       { name: 'Sales Invoices', free: true, pro: true, enterprise: true },
       { name: 'Revenue Reports', free: false, pro: true, enterprise: true },
       { name: 'Sales Report', free: false, pro: true, enterprise: true },
@@ -64,6 +64,17 @@ const featureGroups = [
       { name: 'Goods Receipt & GRN', free: false, pro: true, enterprise: true },
       { name: 'Purchase Invoices', free: false, pro: true, enterprise: true },
       { name: 'Supplier Return', free: false, pro: true, enterprise: true },
+    ]
+  },
+  {
+    title: 'Warehouse (WMS)',
+    icon: Warehouse,
+    features: [
+      { name: 'Warehouse Dashboard (Real-Time)', free: false, pro: false, enterprise: true },
+      { name: 'Transfer Gudang (Inter-Branch)', free: false, pro: false, enterprise: true },
+      { name: 'Pick List (Konsolidasi Order)', free: false, pro: false, enterprise: true },
+      { name: 'Putaway Suggestion (AI Rak)', free: false, pro: false, enterprise: true },
+      { name: 'WMS Workflow SOP', free: false, pro: false, enterprise: true },
     ]
   },
   {
@@ -83,7 +94,7 @@ const featureGroups = [
     title: 'CRM & Marketing',
     icon: Megaphone,
     features: [
-      { name: 'Customer Master', free: '100 customer', pro: 'Unlimited', enterprise: 'Unlimited' },
+      { name: 'Customer Master', free: '25 customer', pro: 'Unlimited', enterprise: 'Unlimited' },
       { name: 'Customer Segmentation', free: false, pro: true, enterprise: true },
       { name: 'Marketing Automation', free: false, pro: true, enterprise: true },
       { name: 'Discount Management', free: false, pro: true, enterprise: true },
@@ -117,6 +128,7 @@ const featureGroups = [
       { name: 'Export (Excel, PDF, Print)', free: false, pro: true, enterprise: true },
       { name: 'Hapus Watermark Struk', free: false, pro: true, enterprise: true },
       { name: 'AI Assistant', free: false, pro: true, enterprise: true },
+      { name: '1x Bimbingan & Konsultasi Sistem Bersama Tim Anda', free: false, pro: true, enterprise: true },
     ]
   },
 ];
@@ -374,7 +386,8 @@ export default function PricingPage({ store }) {
               { q: 'Apakah ada trial?', a: 'Ya, setiap akun baru mendapat kesempatan free trial Pro selama 14 hari. Selama trial, Anda bisa mencoba hampir semua fitur dengan batasan jumlah data tertentu.' },
               { q: 'Berapa kuota email marketing?', a: 'Free Trial mendapat 5 email. Pro Plan berbayar mendapat 250 email per bulan yang akan direset otomatis setiap awal siklus billing.' },
               { q: 'Apakah data aman?', a: 'Data dienkripsi dengan standar AES-256 dan disimpan di server cloud yang aman.' },
-              { q: 'Apa batasan paket Free / Trial?', a: 'Limit Paket Free: Maksimal 100 transaksi penjualan per bulan, fitur ekspor (Excel/PDF/Print) terkunci, dan terdapat watermark pada struk. Upgrade ke Pro untuk akses tanpa batas dan laporan profesional.' },
+              { q: 'Apa batasan paket Free / Trial?', a: 'Limit Paket Free: Maksimal 50 transaksi penjualan, fitur ekspor (Excel/PDF/Print) terkunci, dan terdapat watermark pada struk. Upgrade ke Pro untuk akses tanpa batas dan laporan profesional.' },
+              { q: 'Apakah ada garansi uang kembali?', a: 'Ya, kami memberikan 100% Money Back Guarantee jika terjadi error fatal pada sistem saat pemakaian. Sebagai ERP sesungguhnya, kami menjamin SLA (Service Level Agreement) dan uptime server 99.9% untuk operasional bisnis Anda yang tanpa hambatan.' },
             ].map((faq, i) => (
               <FaqItem key={i} question={faq.q} answer={faq.a} />
             ))}

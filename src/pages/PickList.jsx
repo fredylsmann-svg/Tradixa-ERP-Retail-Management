@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,8 +17,9 @@ import PremiumGate from '@/components/ui/PremiumGate';
 import { useToast } from '@/components/ui/use-toast';
 import {
   ClipboardList, Plus, Search, Package, CheckCircle2, Clock, Loader2, Eye,
-  Printer, FileText, FileSpreadsheet, MapPin, User, ArrowRight
+  Printer, FileText, FileSpreadsheet, MapPin, User, ArrowRight, ScanLine
 } from 'lucide-react';
+import BarcodeScanner, { playSound } from '@/components/wms/BarcodeScanner';
 
 export default function PickList({ store }) {
   const { toast } = useToast();
@@ -32,6 +34,7 @@ export default function PickList({ store }) {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [assignedTo, setAssignedTo] = useState('');
+  const [isScanningMode, setIsScanningMode] = useState(false);
 
   useEffect(() => {
     if (store?.id) loadData();
@@ -41,7 +44,7 @@ export default function PickList({ store }) {
     try {
       const [pickData, outData, prodData] = await Promise.all([
         api.entities.PickList?.filter({ store_id: store.id }).catch(() => []),
-        api.entities.OutboundDelivery.filter({ store_id: store.id }),
+        supabase.from('outbound_deliveries').select('*, customers(name), sales_transactions(invoice_number, items)').eq('store_id', store.id).then(({data}) => data || []),
         api.entities.Product.filter({ store_id: store.id })
       ]);
       setPickLists((pickData || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
@@ -79,20 +82,24 @@ export default function PickList({ store }) {
   const consolidatedItems = () => {
     const map = {};
     selectedOrders.forEach(order => {
-      const items = order.items || [];
+      // Use items from sales_transactions if they exist, otherwise fallback
+      const items = order.sales_transactions?.items || order.items || [];
       items.forEach(item => {
         const key = item.product_id || item.product_name;
         if (map[key]) {
-          map[key].qty += item.qty || 1;
-          map[key].orders.push(order.id?.substring(0, 8));
+          map[key].qty += item.qty || item.quantity || 1;
+          if (!map[key].orders.includes(order.sales_transactions?.invoice_number || order.id?.substring(0, 8))) {
+             map[key].orders.push(order.sales_transactions?.invoice_number || order.id?.substring(0, 8));
+          }
         } else {
           map[key] = {
             product_name: item.product_name || item.name || '-',
             product_id: item.product_id,
-            sku: item.sku || '',
-            qty: item.qty || 1,
+            sku: item.sku || products.find(p => p.id === item.product_id)?.sku || '',
+            qty: item.qty || item.quantity || 1,
+            picked_qty: 0,
             location: products.find(p => p.id === item.product_id)?.warehouse_name || '-',
-            orders: [order.id?.substring(0, 8)]
+            orders: [order.sales_transactions?.invoice_number || order.id?.substring(0, 8)]
           };
         }
       });
@@ -131,13 +138,51 @@ export default function PickList({ store }) {
   };
 
   const handleCompletePick = async (pick) => {
+    // Check if all items are fully picked
+    const allPicked = pick.items?.every(i => (i.picked_qty || 0) >= i.qty);
+    if (!allPicked && !window.confirm("Ada barang yang belum di-scan seluruhnya. Yakin ingin menyelesaikan Pick List ini?")) {
+      return;
+    }
+    
     await api.entities.PickList.update(pick.id, {
       status: 'Completed',
-      picked_at: new Date().toISOString()
+      picked_at: new Date().toISOString(),
+      items: pick.items
     });
     toast({ title: '✅ Picking Selesai', description: `${pick.pick_number} telah selesai dipicking` });
     setViewingPick(null);
+    setIsScanningMode(false);
     loadData();
+  };
+
+  const handleScan = (code) => {
+    if (!viewingPick || viewingPick.status === 'Completed') return;
+    
+    const items = [...(viewingPick.items || [])];
+    const itemIndex = items.findIndex(i => 
+      i.sku?.toLowerCase() === code.toLowerCase() || 
+      i.product_id?.toLowerCase() === code.toLowerCase() ||
+      i.product_name?.toLowerCase() === code.toLowerCase()
+    );
+    
+    if (itemIndex >= 0) {
+      const item = items[itemIndex];
+      const currentPicked = item.picked_qty || 0;
+      
+      if (currentPicked >= item.qty) {
+         playSound('error');
+         toast({ title: 'Kelebihan!', description: `Produk ${item.product_name} sudah lengkap.`, variant: 'destructive' });
+      } else {
+         items[itemIndex] = { ...item, picked_qty: currentPicked + 1 };
+         // Save to DB periodically or locally first
+         setViewingPick({ ...viewingPick, items });
+         playSound('success');
+         toast({ title: 'Berhasil Scan', description: `1x ${item.product_name} ditambahkan.` });
+      }
+    } else {
+      playSound('error');
+      toast({ title: 'Barang Salah!', description: `Barcode ${code} tidak ada dalam Pick List ini.`, variant: 'destructive' });
+    }
   };
 
   const statusBadge = (status) => {
@@ -259,7 +304,7 @@ export default function PickList({ store }) {
                   <TableCell className="text-sm text-slate-500">{pl.timestamp_wib}</TableCell>
                   <TableCell><Badge variant="outline" className={statusBadge(pl.status)}>{pl.status}</Badge></TableCell>
                   <TableCell className="text-center">
-                    <Button variant="ghost" size="icon" onClick={() => setViewingPick(pl)} className="h-8 w-8">
+                    <Button variant="ghost" size="icon" onClick={() => { setViewingPick(pl); setIsScanningMode(false); }} className="h-8 w-8">
                       <Eye className="w-4 h-4 text-slate-500" />
                     </Button>
                   </TableCell>
@@ -298,8 +343,8 @@ export default function PickList({ store }) {
                         className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-200' : 'bg-white border-slate-100 hover:border-blue-200'}`}>
                         <Checkbox checked={isSelected} />
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-sm text-slate-800 truncate">{ob.customers?.name || 'Unknown'}</p>
-                          <p className="text-xs text-slate-400">{ob.id?.substring(0, 8)} — {ob.items?.length || 0} item</p>
+                          <p className="font-bold text-sm text-slate-800 truncate">{ob.customers?.name || ob.customer_name || 'Unknown'}</p>
+                          <p className="text-xs text-slate-400">{ob.sales_transactions?.invoice_number || ob.id?.substring(0, 8)} — {ob.sales_transactions?.items?.length || ob.items?.length || 0} item</p>
                         </div>
                         <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 text-[10px]">{ob.status}</Badge>
                       </div>
@@ -348,20 +393,34 @@ export default function PickList({ store }) {
       </Dialog>
 
       {/* Detail Dialog */}
-      <Dialog open={!!viewingPick} onOpenChange={() => setViewingPick(null)}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-blue-600" />
+      <Dialog open={!!viewingPick} onOpenChange={(open) => { if(!open) { setViewingPick(null); setIsScanningMode(false); }}}>
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+          <div className="bg-slate-50 p-5 border-b shrink-0 flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+              <ClipboardList className="w-6 h-6 text-blue-600" />
               {viewingPick?.pick_number}
             </DialogTitle>
-          </DialogHeader>
+            {viewingPick?.status !== 'Completed' && (
+              <Button 
+                onClick={() => setIsScanningMode(!isScanningMode)}
+                variant={isScanningMode ? "default" : "outline"}
+                className={isScanningMode ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+              >
+                <ScanLine className="w-4 h-4 mr-2" />
+                {isScanningMode ? "Tutup Scanner" : "Mode Scanner"}
+              </Button>
+            )}
+          </div>
           {viewingPick && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
+            <div className="p-6 space-y-6 overflow-y-auto flex-1">
+              {isScanningMode && viewingPick.status !== 'Completed' && (
+                <BarcodeScanner onScan={handleScan} isActive={isScanningMode} />
+              )}
+              
+              <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
                 <Badge variant="outline" className={statusBadge(viewingPick.status)}>{viewingPick.status}</Badge>
-                <span className="text-sm text-slate-500">Picker: <strong>{viewingPick.assigned_to}</strong></span>
-                <span className="text-xs text-slate-400 ml-auto">{viewingPick.timestamp_wib}</span>
+                <span className="text-sm text-slate-600">Picker: <strong className="text-slate-900">{viewingPick.assigned_to}</strong></span>
+                <span className="text-xs text-slate-400 ml-auto flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {viewingPick.timestamp_wib}</span>
               </div>
 
               <div className="text-xs font-bold uppercase text-slate-400 mb-1">Source Orders</div>
@@ -371,35 +430,50 @@ export default function PickList({ store }) {
                 ))}
               </div>
 
-              <Table className="border rounded-xl">
+              <Table className="border rounded-xl mt-4">
                 <TableHeader className="bg-slate-50">
                   <TableRow>
-                    <TableHead>Produk</TableHead>
-                    <TableHead>Lokasi</TableHead>
-                    <TableHead className="text-center">Qty</TableHead>
+                    <TableHead>Produk & SKU</TableHead>
+                    <TableHead>Lokasi Rak</TableHead>
+                    <TableHead className="text-center w-32">Progress</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {viewingPick.items?.map((item, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell className="font-medium">{item.product_name}</TableCell>
-                      <TableCell className="text-sm flex items-center gap-1"><MapPin className="w-3 h-3 text-slate-400" />{item.location || '-'}</TableCell>
-                      <TableCell className="text-center font-bold">{item.qty}</TableCell>
-                    </TableRow>
-                  ))}
+                  {viewingPick.items?.map((item, idx) => {
+                    const picked = item.picked_qty || 0;
+                    const isDone = picked >= item.qty;
+                    return (
+                      <TableRow key={idx} className={isDone ? "bg-emerald-50/50" : ""}>
+                        <TableCell>
+                          <div className="font-medium text-sm text-slate-800">{item.product_name}</div>
+                          <div className="text-xs text-slate-400 font-mono mt-0.5">{item.sku || item.product_id?.substring(0,8)}</div>
+                        </TableCell>
+                        <TableCell className="text-sm flex items-center gap-1.5 mt-1.5">
+                          <MapPin className={`w-3.5 h-3.5 ${isDone ? 'text-emerald-500' : 'text-slate-400'}`} />
+                          <span className={isDone ? 'font-medium text-emerald-700' : 'text-slate-600'}>{item.location || '-'}</span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className={`flex items-center justify-center gap-1.5 font-black text-sm ${isDone ? 'text-emerald-600' : 'text-blue-600'}`}>
+                            {isDone && <CheckCircle2 className="w-4 h-4" />}
+                            {picked} / {item.qty}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
-
-              <DialogFooter className="gap-2">
-                <Button variant="outline" onClick={() => setViewingPick(null)}>Tutup</Button>
-                {viewingPick.status !== 'Completed' && (
-                  <Button onClick={() => handleCompletePick(viewingPick)} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                    <CheckCircle2 className="w-4 h-4 mr-2" /> Selesai Picking
-                  </Button>
-                )}
-              </DialogFooter>
             </div>
           )}
+          
+          <div className="bg-slate-50 p-5 border-t shrink-0 flex justify-end gap-3">
+            <Button variant="outline" onClick={() => { setViewingPick(null); setIsScanningMode(false); }}>Tutup</Button>
+            {viewingPick?.status !== 'Completed' && (
+              <Button onClick={() => handleCompletePick(viewingPick)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 px-6">
+                <CheckCircle2 className="w-4 h-4 mr-2" /> Selesai & Simpan
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

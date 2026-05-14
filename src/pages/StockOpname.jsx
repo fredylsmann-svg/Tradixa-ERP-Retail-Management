@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import BarcodeScanner from '@/components/barcode/BarcodeScanner';
 import {
-  ClipboardCheck, Plus, Search, Eye, CheckCircle2, XCircle, ArrowUpCircle, ArrowDownCircle,
+  PackageCheck, Plus, Search, Eye, CheckCircle2, XCircle, ArrowUpCircle, ArrowDownCircle,
   MinusCircle, Loader2, ScanLine, FileText, ChevronRight, Package, AlertTriangle, Info, Calendar, MapPin, UserCheck, X,
   Download, Printer, RefreshCw, Shield
 } from 'lucide-react';
@@ -42,7 +42,7 @@ const STATUS_COLORS = {
 function OpnameFlowchart() {
   const [showInfo, setShowInfo] = useState(false);
   const steps = [
-    { icon: ClipboardCheck, label: 'Buat Sesi Opname', desc: 'Tentukan lokasi, tanggal, dan petugas penghitungan', gradient: 'from-blue-500 to-blue-600' },
+    { icon: PackageCheck, label: 'Buat Sesi Opname', desc: 'Tentukan lokasi, tanggal, dan petugas penghitungan', gradient: 'from-blue-500 to-blue-600' },
     { icon: Package, label: 'Muat Data Produk', desc: 'Sistem memuat seluruh produk beserta stok tercatat saat ini', gradient: 'from-indigo-500 to-indigo-600' },
     { icon: ScanLine, label: 'Input Stok Fisik', desc: 'Scan barcode atau input manual jumlah stok aktual di lokasi', gradient: 'from-violet-500 to-violet-600' },
     { icon: FileText, label: 'Analisis Selisih', desc: 'Sistem menghitung variance: Surplus, Deficit, atau Match', gradient: 'from-amber-500 to-amber-600' },
@@ -402,7 +402,7 @@ export default function StockOpname({ store }) {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm px-6 py-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-            <ClipboardCheck className="w-6 h-6 text-white" />
+            <PackageCheck className="w-6 h-6 text-white" />
           </div>
           <div>
             <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">Stock Opname</h1>
@@ -454,7 +454,14 @@ export default function StockOpname({ store }) {
             </TableHeader>
             <TableBody>
               {opnames.length === 0 ? (
-                <TableRow><TableCell colSpan={11} className="text-center py-12 text-slate-400">Belum ada sesi opname</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={11} className="text-center py-20 text-slate-400">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <PackageCheck className="w-12 h-12 text-slate-200" />
+                      <p>Belum ada sesi opname yang tercatat</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
               ) : opnames.map((o, idx) => (
                 <TableRow key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer" onClick={() => openDetail(o)}>
                   <TableCell className="text-center text-slate-500 dark:text-slate-400 font-medium">{idx + 1}</TableCell>
@@ -479,7 +486,7 @@ export default function StockOpname({ store }) {
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><ClipboardCheck className="w-5 h-5 text-blue-600" /> Buat Sesi Opname Baru</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><PackageCheck className="w-5 h-5 text-blue-600" /> Buat Sesi Opname Baru</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
