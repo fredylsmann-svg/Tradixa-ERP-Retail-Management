@@ -15,6 +15,9 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/layout/PageHeader';
+import { exportToPDF, exportToExcel } from '@/components/layout/ExportToolbar';
+import PremiumGate from '@/components/ui/PremiumGate';
+import { Printer, FileText, FileSpreadsheet } from 'lucide-react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend,
@@ -161,16 +164,35 @@ export default function CustomerSegmentation({ store }) {
   if (isLoading) return <div className="space-y-4 p-8"><Skeleton className="h-20 w-full" /><Skeleton className="h-64 w-full" /><Skeleton className="h-64 w-full" /></div>;
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20" id="print-customer-segmentation">
       <PageHeader
         title="Marketing Intelligence"
         subtitle="Analisis RFM & Segmentasi Pelanggan Otomatis"
         icon={Target}
         actions={
-          <Button onClick={() => { setEditingSegment(null); setShowForm(true); }} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-bold rounded-xl text-white shadow-lg shadow-blue-200 transition-all hover:scale-105 active:scale-95">
-            <Plus className="w-4 h-4 mr-2" />
-            Buat Segmen Manual
-          </Button>
+          <div className="flex flex-wrap lg:flex-nowrap gap-2 items-center">
+            <div className="flex items-center gap-1.5 mr-2">
+              <PremiumGate store={store} featureName="Print">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Customer Segmentation', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-customer-segmentation')} className="gap-1.5 text-slate-600 border-slate-200 hover:bg-slate-50 text-xs h-11 px-3 rounded-xl">
+                  <Printer className="w-4 h-4" /><span className="hidden sm:inline">Print</span>
+                </Button>
+              </PremiumGate>
+              <PremiumGate store={store} featureName="Export PDF">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Customer Segmentation', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-customer-segmentation')} className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 text-xs h-11 px-3 rounded-xl">
+                  <FileText className="w-4 h-4" /><span className="hidden sm:inline">PDF</span>
+                </Button>
+              </PremiumGate>
+              <PremiumGate store={store} featureName="Export Excel">
+                <Button variant="outline" size="sm" onClick={() => exportToExcel('Customer Segmentation', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, 'print-customer-segmentation')} className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs h-11 px-3 rounded-xl">
+                  <FileSpreadsheet className="w-4 h-4" /><span className="hidden sm:inline">Excel</span>
+                </Button>
+              </PremiumGate>
+            </div>
+            <Button onClick={() => { setEditingSegment(null); setShowForm(true); }} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-bold rounded-xl text-white transition-all hover:scale-105 active:scale-95">
+              <Plus className="w-4 h-4 mr-2" />
+              Buat Segmen Manual
+            </Button>
+          </div>
         }
       />
 

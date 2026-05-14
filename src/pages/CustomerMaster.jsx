@@ -17,6 +17,8 @@ import moment from 'moment';
 import PageHeader from '@/components/layout/PageHeader';
 import { executeAutomation } from '@/utils/automation';
 import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
+import { getEffectiveLimits } from '@/planConfig';
+import { toast as sonnerToast } from 'sonner';
 
 const libraries = ['places'];
 
@@ -83,6 +85,17 @@ export default function CustomerMaster({ store }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
+
+    // --- CUSTOMER LIMIT CHECK ---
+    const limits = getEffectiveLimits(store);
+    if (!editingCustomer && limits.maxCustomers !== Infinity) {
+      if (customers.length >= limits.maxCustomers) {
+        sonnerToast.error(`Kuota customer habis (${customers.length}/${limits.maxCustomers}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
+        setIsSaving(false);
+        return;
+      }
+    }
+    // ----------------------------
 
     // Combine country code and main number
     const finalPhone = `${formData.country_code}${formData.phone_main}`;

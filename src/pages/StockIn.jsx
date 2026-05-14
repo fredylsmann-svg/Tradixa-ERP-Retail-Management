@@ -13,6 +13,8 @@ import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
 import PageHeader from '@/components/layout/PageHeader';
 import { Package } from 'lucide-react';
+import { toast as sonnerToast } from 'sonner';
+import { getEffectiveLimits } from '@/planConfig';
 
 export default function StockIn({ store }) {
   const [allMovements, setAllMovements] = useState([]);
@@ -24,6 +26,15 @@ export default function StockIn({ store }) {
   useEffect(() => {
     if (store?.id) loadMovements();
   }, [store]);
+
+  const handleOpenForm = () => {
+    const limits = getEffectiveLimits(store);
+    if (limits.maxStockIn !== Infinity && allMovements.length >= limits.maxStockIn) {
+      sonnerToast.error(`Kuota Stock In habis (${allMovements.length}/${limits.maxStockIn}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
+      return;
+    }
+    setShowForm(true);
+  };
 
   const loadMovements = async () => {
     const data = await api.entities.StockMovement.filter({ store_id: store.id, movement_type: 'in' }, '-created_date');
@@ -60,7 +71,7 @@ export default function StockIn({ store }) {
               storeLogoUrl={store?.logo_url}
               contentId="print-stock-in-detailed"
             />
-            <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold rounded-xl text-white">
+            <Button onClick={handleOpenForm} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold rounded-xl text-white">
               <Plus className="w-4 h-4 mr-2" />
               Tambah Stok Masuk
             </Button>

@@ -70,6 +70,10 @@ const WorkflowSystem = lazy(() => import('./pages/WorkflowSystem'));
 const PublicPOSign = lazy(() => import('./pages/PublicPOSign'));
 const SystemSettings = lazy(() => import('./pages/SystemSettings'));
 const UsageStats = lazy(() => import('./pages/UsageStats'));
+const WarehouseTransfer = lazy(() => import('./pages/WarehouseTransfer'));
+const WarehouseDashboard = lazy(() => import('./pages/WarehouseDashboard'));
+const PickList = lazy(() => import('./pages/PickList'));
+const WMSWorkflow = lazy(() => import('./pages/WMSWorkflow'));
 
 
 export const PAGES = {
@@ -141,6 +145,10 @@ export const PAGES = {
     "PricingPage": PricingPage,
     "SystemSettings": SystemSettings,
     "UsageStats": UsageStats,
+    "WarehouseTransfer": WarehouseTransfer,
+    "WarehouseDashboard": WarehouseDashboard,
+    "PickList": PickList,
+    "WMSWorkflow": WMSWorkflow,
 }
 
 export const pagesConfig = {

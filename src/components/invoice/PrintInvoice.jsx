@@ -8,6 +8,8 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 export default function PrintInvoice({ invoice, store, onClose, forceThermal = false, type = 'INVOICE' }) {
   const [printLayout, setPrintLayout] = useState(forceThermal ? 'Thermal' : (store?.invoice_layout_style || 'Modern'));
 
+  const isPaidPro = store?.plan === 'pro' && store?.has_used_trial === false;
+
   const handlePrint = () => {
     window.print();
   };
@@ -31,6 +33,7 @@ export default function PrintInvoice({ invoice, store, onClose, forceThermal = f
     ownerName: store?.owner_name,
     ownerPosition: store?.owner_position,
     layout: printLayout,
+    isPaidPro: isPaidPro,
     data: {
       invoice_number: invoice?.invoice_number,
       date: invoice?.timestamp_wib?.split(' ')[0],

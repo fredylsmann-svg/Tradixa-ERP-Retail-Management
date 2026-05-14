@@ -12,8 +12,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 
 export default function ChatDrawer({ isOpen, onOpenChange, store }) {
   const navigate = useNavigate();
-  // Plan gating
-  const isPaidPro = store?.plan === 'pro' && store?.plan_expires_at && new Date(store.plan_expires_at) > new Date();
+  const isPaidPro = store?.plan === 'pro' && store?.has_used_trial === false;
   const isChatLocked = !isPaidPro && store?.plan !== 'enterprise';
   const [contacts, setContacts] = useState([]);
   const [search, setSearch] = useState('');

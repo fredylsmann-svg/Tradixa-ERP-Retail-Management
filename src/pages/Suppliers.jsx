@@ -13,6 +13,8 @@ import { Plus, Search, Eye, Pencil, Trash2, Users, Loader2, Upload, X, Truck, Co
 import { Skeleton } from '@/components/ui/skeleton';
 import ExportToolbar from '@/components/layout/ExportToolbar';
 import PageHeader from '@/components/layout/PageHeader';
+import { getEffectiveLimits } from '@/planConfig';
+import { toast as sonnerToast } from 'sonner';
 
 export default function Suppliers({ store }) {
   const [suppliers, setSuppliers] = useState([]);
@@ -148,6 +150,18 @@ export default function Suppliers({ store }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
+
+    // --- SUPPLIER LIMIT CHECK ---
+    const limits = getEffectiveLimits(store);
+    if (!editingSupplier && limits.maxSuppliers !== Infinity) {
+      if (suppliers.length >= limits.maxSuppliers) {
+        sonnerToast.error(`Kuota supplier habis (${suppliers.length}/${limits.maxSuppliers}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
+        setIsSaving(false);
+        return;
+      }
+    }
+    // ----------------------------
+
     let imageUrl = editingSupplier?.image_url || '';
     if (imageFile) {
       const _uploadRes = await api.storage.upload(imageFile, 'logo');

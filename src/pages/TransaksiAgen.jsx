@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, ArrowRightLeft, Loader2, Download, FileText, Printer } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/layout/PageHeader';
+import PremiumGate from '@/components/ui/PremiumGate';
 
 export default function TransaksiAgen({ store }) {
   const [transactions, setTransactions] = useState([]);
@@ -132,15 +133,21 @@ export default function TransaksiAgen({ store }) {
         icon={ArrowRightLeft}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={exportCSV} className="h-9 px-3 text-xs font-semibold">
-              <Download className="w-3.5 h-3.5 mr-1.5" />Excel
-            </Button>
-            <Button variant="outline" size="sm" onClick={exportPDF} className="h-9 px-3 text-xs font-semibold">
-              <FileText className="w-3.5 h-3.5 mr-1.5" />PDF
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => window.print()} className="h-9 px-3 text-xs font-semibold">
-              <Printer className="w-3.5 h-3.5 mr-1.5" />Print
-            </Button>
+            <PremiumGate feature="Export Excel" iconType="action" store={store}>
+              <Button variant="outline" size="sm" onClick={exportCSV} className="h-9 px-3 text-xs font-semibold">
+                <Download className="w-3.5 h-3.5 mr-1.5" />Excel
+              </Button>
+            </PremiumGate>
+            <PremiumGate feature="Export PDF" iconType="action" store={store}>
+              <Button variant="outline" size="sm" onClick={exportPDF} className="h-9 px-3 text-xs font-semibold">
+                <FileText className="w-3.5 h-3.5 mr-1.5" />PDF
+              </Button>
+            </PremiumGate>
+            <PremiumGate feature="Print Data" iconType="action" store={store}>
+              <Button variant="outline" size="sm" onClick={() => window.print()} className="h-9 px-3 text-xs font-semibold">
+                <Printer className="w-3.5 h-3.5 mr-1.5" />Print
+              </Button>
+            </PremiumGate>
             <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold rounded-xl text-white">
               <Plus className="w-4 h-4 mr-2" />
               Transaksi Baru

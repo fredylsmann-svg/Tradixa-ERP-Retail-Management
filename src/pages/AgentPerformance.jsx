@@ -11,6 +11,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { PremiumBarChart } from '@/components/ui/PremiumChart';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/layout/PageHeader';
+import PremiumGate from '@/components/ui/PremiumGate';
 
 export default function AgentPerformance({ store }) {
   const [agents, setAgents] = useState([]);
@@ -106,10 +107,12 @@ export default function AgentPerformance({ store }) {
         subtitle="Analisis kinerja dan pendapatan agen"
         icon={TrendingUp}
         actions={
-          <Button onClick={exportToCSV} className="bg-emerald-600 hover:bg-emerald-700 h-11 px-6 font-semibold rounded-xl text-white">
-            <Download className="w-4 h-4 mr-2" />
-            Export CSV
-          </Button>
+          <PremiumGate feature="Export CSV" iconType="action" store={store}>
+            <Button onClick={exportToCSV} className="bg-emerald-600 hover:bg-emerald-700 h-11 px-6 font-semibold rounded-xl text-white">
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+          </PremiumGate>
         }
       />
 

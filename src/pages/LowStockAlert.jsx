@@ -4,11 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Package, ArrowRight } from 'lucide-react';
+import { AlertTriangle, Package, ArrowRight, Printer, FileText, FileSpreadsheet } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import PageHeader from '@/components/layout/PageHeader';
+import { exportToPDF, exportToExcel } from '@/components/layout/ExportToolbar';
+import PremiumGate from '@/components/ui/PremiumGate';
 
 export default function LowStockAlert({ store }) {
   const [products, setProducts] = useState([]);
@@ -44,11 +46,30 @@ export default function LowStockAlert({ store }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" id="print-low-stock-alert">
       <PageHeader
         title="Low Stock Alert"
         subtitle="Produk yang membutuhkan restock"
         icon={AlertTriangle}
+        actions={
+          <div className="flex items-center gap-1.5 mr-2">
+              <PremiumGate store={store} featureName="Print">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Low Stock Alert', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-low-stock-alert')} className="gap-1.5 text-slate-600 border-slate-200 hover:bg-slate-50 text-xs h-11 px-3 rounded-xl">
+                  <Printer className="w-4 h-4" /><span className="hidden sm:inline">Print</span>
+                </Button>
+              </PremiumGate>
+              <PremiumGate store={store} featureName="Export PDF">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Low Stock Alert', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-low-stock-alert')} className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 text-xs h-11 px-3 rounded-xl">
+                  <FileText className="w-4 h-4" /><span className="hidden sm:inline">PDF</span>
+                </Button>
+              </PremiumGate>
+              <PremiumGate store={store} featureName="Export Excel">
+                <Button variant="outline" size="sm" onClick={() => exportToExcel('Low Stock Alert', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, 'print-low-stock-alert')} className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs h-11 px-3 rounded-xl">
+                  <FileSpreadsheet className="w-4 h-4" /><span className="hidden sm:inline">Excel</span>
+                </Button>
+              </PremiumGate>
+          </div>
+        }
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

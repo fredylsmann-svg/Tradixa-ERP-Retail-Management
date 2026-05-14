@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Upload, Scan, Loader2, X, PackageOpen, LayoutGrid, Info, Plus, Boxes, Calendar, Clock, ArrowDownUp } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Upload, Scan, Loader2, X, PackageOpen, LayoutGrid, Info, Plus, Boxes, Calendar, Clock, ArrowDownUp, Camera, Package, Sparkles, ScanBarcode, Barcode, Calculator } from 'lucide-react';
 import BarcodeScanner from '@/components/barcode/BarcodeScanner';
 import { NumberInput } from '@/components/ui/number-input';
 import imageCompression from 'browser-image-compression';
@@ -14,7 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { toast as sonnerToast } from 'sonner';
 
 const CATEGORIES = ['Elektronik', 'Makanan', 'Minuman', 'Pakaian', 'Kesehatan', 'Kecantikan', 'Rumah Tangga', 'Alat Tulis', 'Rokok', 'Sembako', 'Lainnya'];
-const UNITS = ['Pcs', 'Batang', 'Bungkus', 'Sachet', 'Dus', 'Pack', 'Bal', 'Karton', 'Kg', 'Liter'];
+export const UNITS = ['Pcs', 'Batang', 'Bungkus', 'Sachet', 'Dus', 'Pack', 'Bal', 'Karton', 'Kg', 'Liter'];
 
 export default function ProductForm({ open, onClose, product, store, storeId, onSuccess, existingProducts = [] }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -138,16 +139,28 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
 
   const processSubmit = async () => {
     setIsLoading(true);
+
+    // --- PRODUCT LIMIT CHECK (ONLY ON CREATE) ---
+    const limits = getEffectiveLimits(store);
+    if (!product?.id && limits.maxProducts !== Infinity) {
+      if (existingProducts.length >= limits.maxProducts) {
+        sonnerToast.error(`Kuota produk habis (${existingProducts.length}/${limits.maxProducts}). Upgrade ke Pro Plan untuk menambah produk.`, { duration: 5000 });
+        setIsLoading(false);
+        return;
+      }
+    }
+    // ---------------------------------------------
+
     let imageUrl = product?.image_url || '';
     if (imageFile) {
       // --- PHOTO LIMIT CHECK ---
-      const limits = getEffectiveLimits(store);
       if (limits.maxProductPhotos !== Infinity) {
         const { count: photoCount } = await supabase
           .from('products')
           .select('id', { count: 'exact', head: true })
           .eq('store_id', storeId)
-          .not('image_url', 'is', null);
+          .not('image_url', 'is', null)
+          .neq('image_url', '');
         if ((photoCount || 0) >= limits.maxProductPhotos) {
           sonnerToast.error(`Kuota foto produk habis (${photoCount}/${limits.maxProductPhotos}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
           setIsLoading(false);
@@ -311,15 +324,40 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
             <div>
               <Label className="flex items-center gap-1.5">
                 Metode Pelacakan Stok
-                <div className="group relative">
-                  <Info className="w-3.5 h-3.5 text-slate-400 cursor-pointer" />
-                  <div className="hidden group-hover:block absolute z-50 w-64 p-3 mt-1 text-[11px] text-white bg-slate-800 rounded-xl shadow-xl left-1/2 -translate-x-1/2 top-full">
-                    <p className="font-bold mb-1">Batch Management:</p>
-                    Cocok untuk makanan/obat. Memungkinkan pelacakan tanggal kadaluwarsa (Expired) per kloter barang masuk.
-                  </div>
-                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button type="button" className="cursor-pointer p-0.5 text-slate-400 hover:text-blue-500 transition-colors rounded-full hover:bg-slate-100 outline-none focus:ring-2 focus:ring-blue-100">
+                      <Info className="w-3.5 h-3.5" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 bg-slate-800 text-white border-slate-700 text-[11px] p-3 shadow-xl rounded-xl z-[100]" side="top" align="center" sideOffset={5}>
+                    <div className="space-y-2">
+                      <div>
+                        <p className="font-bold text-blue-300">Batch Management:</p>
+                        <p className="text-slate-200">Cocok untuk makanan/obat. Memungkinkan pelacakan tanggal kadaluwarsa (Expired) per kloter barang masuk.</p>
+                      </div>
+                      <div>
+                        <p className="font-bold text-emerald-300">Serial Tracking (IMEI/SN):</p>
+                        <p className="text-slate-200">Pelacakan ketat per unit barang. Membutuhkan <strong>Barcode Scanner</strong> saat barang tiba di <span className="font-semibold text-emerald-200">Inventory GRN</span> dan saat barang keluar di <span className="font-semibold text-emerald-200">Sales Transaction (Kasir)</span>.</p>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </Label>
-              <Select value={formData.tracking_type} onValueChange={(v) => setFormData({ ...formData, tracking_type: v })}>
+              <Select 
+                value={formData.tracking_type} 
+                onValueChange={(v) => {
+                  if (v !== 'None') {
+                    const limits = getEffectiveLimits(store);
+                    // Check if maxProducts is limited (which means they are on Free/Trial)
+                    if (limits.maxProducts !== Infinity) {
+                      sonnerToast.error('Fitur Pelacakan Batch & Serial terkunci. Upgrade ke Pro Plan untuk menggunakan.', { duration: 5000 });
+                      return; // Do not update state
+                    }
+                  }
+                  setFormData({ ...formData, tracking_type: v });
+                }}
+              >
                 <SelectTrigger className="mt-1.5 font-bold">
                   <SelectValue />
                 </SelectTrigger>

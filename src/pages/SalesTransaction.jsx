@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Eye, ShoppingCart, Receipt, CalendarClock, Wallet, Phone, User, CreditCard, X, ZoomIn, CheckCircle2, Clock, ArrowRight } from 'lucide-react';
+import { Plus, Eye, ShoppingCart, Receipt, CalendarClock, Wallet, Phone, User, CreditCard, X, ZoomIn, CheckCircle2, Clock, ArrowRight, Lock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import SalesTransactionForm from '@/components/product/SalesTransactionForm';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
@@ -44,6 +44,16 @@ export default function SalesTransaction({ store }) {
   // Filter by global selected date
   const transactions = allTransactions.filter(tx => matchesDate(tx, selectedDate));
 
+  // Count current month transactions for Free plan limit
+  const currentMonthSales = allTransactions.filter(tx => {
+    const txDate = new Date(tx.created_date || tx.timestamp_wib);
+    const now = new Date();
+    return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
+  }).length;
+
+  const isFree = !store?.plan || store?.plan === 'free';
+  const isLimitReached = isFree && currentMonthSales >= 100;
+
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
 
   return (
@@ -55,14 +65,50 @@ export default function SalesTransaction({ store }) {
         icon={ShoppingCart}
         actions={
           <div className="flex items-center gap-2 flex-wrap">
-            <ExportToolbar title="Laporan Penjualan" date={formattedDate} storeName={store?.store_name} storeAddress={store?.address} storeLogoUrl={store?.logo_url} contentId="print-sales" />
-            <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold rounded-xl text-white">
+            <ExportToolbar 
+              title="Laporan Penjualan" 
+              date={formattedDate} 
+              storeName={store?.store_name} 
+              storeAddress={store?.address} 
+              storeLogoUrl={store?.logo_url} 
+              contentId="print-sales" 
+              store={store}
+            />
+            <Button 
+              onClick={() => isLimitReached ? null : setShowForm(true)} 
+              className={`${isLimitReached ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'} h-11 px-6 font-semibold rounded-xl transition-all`}
+              disabled={isLimitReached}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Transaksi Baru
             </Button>
           </div>
         }
       />
+      
+      {isLimitReached && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="p-2 bg-amber-100 rounded-lg">
+            <Lock className="w-5 h-5 text-amber-600" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-amber-900">Limit Transaksi Tercapai</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Anda telah mencapai batas 100 transaksi bulan ini untuk paket Free. 
+              Upgrade ke <span className="font-bold">Pro</span> untuk transaksi tanpa batas dan fitur premium lainnya.
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.href = '/PricingPage'}
+            className="border-amber-200 text-amber-700 hover:bg-amber-100 font-bold"
+          >
+            Upgrade Sekarang
+          </Button>
+        </div>
+      )}
+
       <PageDatePicker />
 
       <Card>

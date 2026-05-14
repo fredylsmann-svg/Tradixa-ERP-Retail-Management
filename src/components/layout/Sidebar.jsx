@@ -47,6 +47,15 @@ const getFilteredMenuGroups = (isOwner) => {
       ]
     },
     {
+      title: 'Warehouse (WMS)',
+      items: [
+        { name: 'WMS Workflow', icon: Workflow, page: 'WMSWorkflow' },
+        { name: 'Warehouse Dashboard', icon: LayoutDashboard, page: 'WarehouseDashboard' },
+        { name: 'Transfer Gudang', icon: ArrowRightLeft, page: 'WarehouseTransfer' },
+        { name: 'Pick List', icon: ClipboardList, page: 'PickList' }
+      ]
+    },
+    {
       title: 'Procurement',
       items: [
         { name: 'Procurement Workflow', icon: Workflow, page: 'ProcurementWorkflow' },

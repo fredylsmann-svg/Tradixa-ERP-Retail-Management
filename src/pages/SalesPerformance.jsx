@@ -12,6 +12,9 @@ import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import PageHeader from '@/components/layout/PageHeader';
+import { exportToPDF, exportToExcel } from '@/components/layout/ExportToolbar';
+import PremiumGate from '@/components/ui/PremiumGate';
+import { Printer, FileText, FileSpreadsheet } from 'lucide-react';
 
 export default function SalesPerformance({ store }) {
   const [transactions, setTransactions] = useState([]);
@@ -85,16 +88,31 @@ export default function SalesPerformance({ store }) {
   const totalTxs = performanceData.reduce((sum, p) => sum + p.totalTransactions, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" id="print-sales-performance">
       <PageHeader
         title="Sales Performance"
         subtitle="Pantau produktivitas tim sales di lapangan"
         icon={BarChart3}
         actions={
-          <Button variant="outline" className="border-slate-200 h-11 rounded-xl font-bold bg-white text-slate-700 hover:bg-slate-50">
-            <Download className="w-4 h-4 mr-2" />
-            Export Report
-          </Button>
+          <div className="flex flex-wrap lg:flex-nowrap gap-2 items-center">
+            <div className="flex items-center gap-1.5">
+              <PremiumGate store={store} featureName="Print">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Sales Performance', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-sales-performance')} className="gap-1.5 text-slate-600 border-slate-200 hover:bg-slate-50 text-xs h-11 px-3 rounded-xl">
+                  <Printer className="w-4 h-4" /><span className="hidden sm:inline">Print</span>
+                </Button>
+              </PremiumGate>
+              <PremiumGate store={store} featureName="Export PDF">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Sales Performance', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-sales-performance')} className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 text-xs h-11 px-3 rounded-xl">
+                  <FileText className="w-4 h-4" /><span className="hidden sm:inline">PDF</span>
+                </Button>
+              </PremiumGate>
+              <PremiumGate store={store} featureName="Export Excel">
+                <Button variant="outline" size="sm" onClick={() => exportToExcel('Sales Performance', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, 'print-sales-performance')} className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs h-11 px-3 rounded-xl">
+                  <FileSpreadsheet className="w-4 h-4" /><span className="hidden sm:inline">Excel</span>
+                </Button>
+              </PremiumGate>
+            </div>
+          </div>
         }
       />
 

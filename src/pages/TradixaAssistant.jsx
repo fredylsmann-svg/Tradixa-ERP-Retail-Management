@@ -5,9 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { MessageCircle, Send, Bot, User, Loader2, Plus, Menu } from 'lucide-react';
+import { MessageCircle, Send, Bot, User, Loader2, Plus, Menu, Lock, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function TradixaAssistant({ store }) {
+  const navigate = useNavigate();
+  
+  // Premium gating logic
+  const isTrial = store?.plan === 'pro' && store?.has_used_trial;
+  const isFree = !store?.plan || store?.plan === 'free';
+  const isAiLocked = isTrial || isFree;
+
   const [conversations, setConversations] = useState([]);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -176,7 +184,27 @@ export default function TradixaAssistant({ store }) {
       </Card>
 
       {/* Main Chat Area */}
-      <Card className="flex-1 flex flex-col overflow-hidden">
+      <Card className="flex-1 flex flex-col overflow-hidden relative">
+        {isAiLocked && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-8 text-center bg-white/80 backdrop-blur-sm rounded-3xl">
+            <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-6 shadow-inner">
+              <Lock className="w-10 h-10 text-slate-400" />
+            </div>
+            <h3 className="text-xl font-black text-slate-900 mb-2">Tradixa AI Assistant</h3>
+            <p className="text-sm text-slate-500 mb-8 max-w-sm mx-auto">
+              Fitur AI Assistant eksklusif untuk paket <span className="font-bold text-blue-600">Pro & Enterprise</span>. 
+              Upgrade sekarang untuk mendapatkan asisten pintar yang memahami seluruh bisnis Anda.
+            </p>
+            <Button
+              onClick={() => navigate('/PricingPage')}
+              className="flex items-center gap-2 px-8 py-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-2xl shadow-xl hover:opacity-90 transition-all hover:scale-[1.02]"
+            >
+              <Sparkles className="w-5 h-5" /> Upgrade ke Premium
+            </Button>
+            <p className="text-[10px] text-slate-400 mt-6 uppercase tracking-widest font-bold">Premium Feature Only</p>
+          </div>
+        )}
+
         <CardHeader className="border-b flex-shrink-0">
           <div className="flex items-center gap-3">
             {/* Mobile Menu Button */}

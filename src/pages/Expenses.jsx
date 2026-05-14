@@ -210,7 +210,15 @@ export default function Expenses({ store }) {
         icon={ReceiptText}
         actions={
           <>
-            <ExportToolbar title="Laporan Beban Operasional" date={formattedDate} contentId="print-expenses-detailed" />
+            <ExportToolbar 
+              title="Laporan Beban Operasional" 
+              date={formattedDate} 
+              storeName={store?.store_name}
+              storeAddress={store?.address}
+              storeLogoUrl={store?.logo_url}
+              contentId="print-expenses-detailed" 
+              store={store}
+            />
             <Button onClick={() => setIsModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold rounded-xl text-white">
               <Plus className="w-4 h-4 mr-2" />
               Catat Pengeluaran Baru

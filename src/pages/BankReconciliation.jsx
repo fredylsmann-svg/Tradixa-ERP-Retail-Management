@@ -17,7 +17,9 @@ import {
   Info,
   HelpCircle,
   ArchiveRestore,
-  Sparkles
+  Sparkles,
+  Printer,
+  FileText
 } from 'lucide-react';
 import { 
   Dialog,
@@ -35,6 +37,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import * as pdfjsLib from 'pdfjs-dist';
 import PageHeader from '@/components/layout/PageHeader';
 import { useAuth } from '@/lib/AuthContext';
+import { exportToPDF, exportToExcel } from '@/components/layout/ExportToolbar';
+import PremiumGate from '@/components/ui/PremiumGate';
+import { getEffectiveLimits } from '@/planConfig';
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -100,6 +105,19 @@ export default function BankReconciliation({ store }) {
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    const limits = getEffectiveLimits(store);
+    if (statementHistory.length >= limits.maxReconciliationUploads) {
+      toast.error(
+        <div className="flex flex-col gap-1">
+          <span className="font-bold text-sm">Batas Upload Mutasi Tercapai (Max {limits.maxReconciliationUploads})</span>
+          <span className="text-xs">Anda telah mencapai batas maksimal upload file mutasi (seumur hidup) untuk paket gratis. Silakan upgrade ke paket Pro untuk upload tanpa batas.</span>
+        </div>,
+        { duration: 5000 }
+      );
+      e.target.value = '';
+      return;
+    }
 
     const isTrial = store?.plan === 'pro' && store?.has_used_trial;
     const isPremium = ((store?.plan === 'pro' && !store?.has_used_trial) || store?.plan === 'enterprise') || user?.email === 'dev@tradixa.com';
@@ -551,6 +569,24 @@ export default function BankReconciliation({ store }) {
         }
         actions={
           <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5 mr-2">
+              <PremiumGate store={store} featureName="Export PDF & Print">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Bank Reconciliation Report', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-bank-reconciliation')} className="gap-1.5 text-slate-600 border-slate-200 hover:bg-slate-50 text-xs h-11 px-3 rounded-xl">
+                  <Printer className="w-4 h-4" /><span className="hidden sm:inline">Print</span>
+                </Button>
+              </PremiumGate>
+              <PremiumGate store={store} featureName="Export PDF">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Bank Reconciliation Report', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-bank-reconciliation')} className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 text-xs h-11 px-3 rounded-xl">
+                  <FileText className="w-4 h-4" /><span className="hidden sm:inline">PDF</span>
+                </Button>
+              </PremiumGate>
+              <PremiumGate store={store} featureName="Export Excel">
+                <Button variant="outline" size="sm" onClick={() => exportToExcel('Bank Reconciliation Report', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, 'print-bank-reconciliation')} className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs h-11 px-3 rounded-xl">
+                  <FileSpreadsheet className="w-4 h-4" /><span className="hidden sm:inline">Excel</span>
+                </Button>
+              </PremiumGate>
+            </div>
+            
             <Select value={selectedBankId} onValueChange={setSelectedBankId}>
               <SelectTrigger className="w-64 h-11 rounded-xl">
                 <SelectValue placeholder="Pilih Rekening..." />
@@ -620,8 +656,9 @@ export default function BankReconciliation({ store }) {
         }
       />
 
-      <Card className="border-none shadow-sm rounded-2xl overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 p-6 bg-slate-50/50">
+      <div id="print-bank-reconciliation">
+        <Card className="border-none shadow-sm rounded-2xl overflow-hidden mb-8">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 p-6 bg-slate-50/50">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5 text-blue-600" /> Daftar Transaksi Statement
           </CardTitle>
@@ -742,6 +779,7 @@ export default function BankReconciliation({ store }) {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { PremiumBarChart } from '@/components/ui/PremiumChart';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/layout/PageHeader';
+import PremiumGate from '@/components/ui/PremiumGate';
 import { BarChart3 } from 'lucide-react';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 
@@ -218,14 +219,18 @@ export default function SalesReport({ store }) {
         icon={LineChartIcon}
         actions={
           <div className="flex gap-2">
-            <Button onClick={exportToCSV} variant="outline" className="border-emerald-600 text-emerald-600 hover:bg-emerald-50 h-11 rounded-xl font-bold">
-              <Download className="w-4 h-4 mr-2" />
-              CSV
-            </Button>
-            <Button onClick={exportToPDF} variant="outline" className="border-red-600 text-red-600 hover:bg-red-50 h-11 rounded-xl font-bold">
-              <FileDown className="w-4 h-4 mr-2" />
-              PDF
-            </Button>
+            <PremiumGate feature="Export CSV" iconType="action" store={store}>
+              <Button onClick={exportToCSV} variant="outline" className="border-emerald-600 text-emerald-600 hover:bg-emerald-50 h-11 rounded-xl font-bold">
+                <Download className="w-4 h-4 mr-2" />
+                CSV
+              </Button>
+            </PremiumGate>
+            <PremiumGate feature="Export PDF" iconType="action" store={store}>
+              <Button onClick={exportToPDF} variant="outline" className="border-red-600 text-red-600 hover:bg-red-50 h-11 rounded-xl font-bold">
+                <FileDown className="w-4 h-4 mr-2" />
+                PDF
+              </Button>
+            </PremiumGate>
           </div>
         }
       />

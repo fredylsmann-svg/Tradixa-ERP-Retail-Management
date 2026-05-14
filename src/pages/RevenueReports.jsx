@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import PageHeader from '@/components/layout/PageHeader';
+import PremiumGate from '@/components/ui/PremiumGate';
 
 export default function RevenueReports({ store }) {
   const navigate = useNavigate();
@@ -91,14 +92,16 @@ export default function RevenueReports({ store }) {
         icon={BarChart3}
         actions={
           <div className="flex items-center gap-3">
-            <Button
-              onClick={handleExport}
-              variant="outline"
-              className="h-11 px-6 rounded-xl border-slate-200 bg-white hover:bg-slate-50 gap-2"
-            >
-              <Printer className="w-4 h-4 text-slate-500" />
-              <span className="font-bold">Export Report</span>
-            </Button>
+            <PremiumGate store={store} featureName="Export Report">
+              <Button
+                onClick={handleExport}
+                variant="outline"
+                className="h-11 px-6 rounded-xl border-slate-200 bg-white hover:bg-slate-50 gap-2"
+              >
+                <Printer className="w-4 h-4 text-slate-500" />
+                <span className="font-bold">Export Report</span>
+              </Button>
+            </PremiumGate>
             <Select value={period} onValueChange={setPeriod}>
               <SelectTrigger className="w-44 h-11 rounded-xl border-slate-200 bg-white"><SelectValue /></SelectTrigger>
               <SelectContent>

@@ -16,7 +16,8 @@ export const getDocumentTemplate = ({
   data = {},
   layout = 'Modern',
   isPreview = false,
-  fontFamily = 'Inter'
+  fontFamily = 'Inter',
+  isPaidPro = false
 }) => {
   const isAP = type === 'INVOICE AP' || type === 'GOODS RECEIPT' || type === 'GOODS RECEIPT NOTE' || type === 'INVENTORY GRN' || type === 'SURAT JALAN' || type === 'DELIVERY ORDER';
   const isInvoice = type.includes('INVOICE');
@@ -466,6 +467,7 @@ export const getDocumentTemplate = ({
           <div style="margin-bottom: 3px; font-weight: bold;">Payment: ${data.payment_method || 'Cash'}</div>
           <div>Terima kasih atas kunjungan Anda</div>
           <div>Barang yang dibeli tidak dapat ditukar</div>
+          ${!isPaidPro ? `<div style="margin-top: 15px; font-size: 9px; font-weight: 900; letter-spacing: 1px; color: #000; border-top: 1px dashed #000; padding-top: 8px; text-transform: uppercase;">Powered by Tradixa</div>` : ''}
         </div>
       </div>
     `;

@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { FileText, Download, Calendar, TrendingUp, Package, DollarSign, Loader2 } from 'lucide-react';
 import moment from 'moment';
 import PageHeader from '@/components/layout/PageHeader';
+import PremiumGate from '@/components/ui/PremiumGate';
 import { BarChart3 } from 'lucide-react';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 
@@ -192,10 +193,12 @@ export default function Reports({ store }) {
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <FileText className="w-4 h-4 mr-2" />}
                 Generate
               </Button>
-              <Button onClick={exportToCSV} disabled={!reportData} variant="outline" className="text-sm">
-                <Download className="w-4 h-4 mr-2" />
-                CSV
-              </Button>
+              <PremiumGate feature="Export CSV" iconType="action" store={store}>
+                <Button onClick={exportToCSV} disabled={!reportData} variant="outline" className="text-sm">
+                  <Download className="w-4 h-4 mr-2" />
+                  CSV
+                </Button>
+              </PremiumGate>
             </div>
           </div>
         </CardContent>

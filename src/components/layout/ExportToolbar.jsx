@@ -1,6 +1,6 @@
-import React from 'react';
-import { Printer, FileSpreadsheet, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import PremiumGate from '@/components/ui/PremiumGate';
+import { Printer, FileText, FileSpreadsheet } from 'lucide-react';
 
 /**
  * ExportToolbar — Global export utility: Print, PDF, Excel
@@ -107,18 +107,26 @@ function exportToPDF(title, date, storeName, storeAddress, storeLogoUrl, content
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
-export default function ExportToolbar({ title, date, storeName, storeAddress, storeLogoUrl, contentId }) {
+export default function ExportToolbar({ title, date, storeName, storeAddress, storeLogoUrl, contentId, store }) {
   return (
     <div className="flex items-center gap-1.5">
-      <Button variant="outline" size="sm" onClick={() => exportToPDF(title, date, storeName, storeAddress, storeLogoUrl, contentId)} className="gap-1.5 text-slate-600 border-slate-200 hover:bg-slate-50 text-xs h-8 px-2.5">
-        <Printer className="w-3.5 h-3.5" /><span className="hidden sm:inline">Print</span>
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => exportToPDF(title, date, storeName, storeAddress, storeLogoUrl, contentId)} className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 text-xs h-8 px-2.5">
-        <FileText className="w-3.5 h-3.5" /><span className="hidden sm:inline">PDF</span>
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => exportToExcel(title, date, storeName, storeAddress, contentId)} className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs h-8 px-2.5">
-        <FileSpreadsheet className="w-3.5 h-3.5" /><span className="hidden sm:inline">Excel</span>
-      </Button>
+      <PremiumGate store={store} featureName="Export PDF & Print">
+        <Button variant="outline" size="sm" onClick={() => exportToPDF(title, date, storeName, storeAddress, storeLogoUrl, contentId)} className="gap-1.5 text-slate-600 border-slate-200 hover:bg-slate-50 text-xs h-8 px-2.5">
+          <Printer className="w-3.5 h-3.5" /><span className="hidden sm:inline">Print</span>
+        </Button>
+      </PremiumGate>
+
+      <PremiumGate store={store} featureName="Export PDF">
+        <Button variant="outline" size="sm" onClick={() => exportToPDF(title, date, storeName, storeAddress, storeLogoUrl, contentId)} className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 text-xs h-8 px-2.5">
+          <FileText className="w-3.5 h-3.5" /><span className="hidden sm:inline">PDF</span>
+        </Button>
+      </PremiumGate>
+
+      <PremiumGate store={store} featureName="Export Excel">
+        <Button variant="outline" size="sm" onClick={() => exportToExcel(title, date, storeName, storeAddress, contentId)} className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs h-8 px-2.5">
+          <FileSpreadsheet className="w-3.5 h-3.5" /><span className="hidden sm:inline">Excel</span>
+        </Button>
+      </PremiumGate>
     </div>
   );
 }

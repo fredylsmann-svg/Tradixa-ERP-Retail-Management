@@ -13,6 +13,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { NumberInput } from '@/components/ui/number-input';
 import { formatNumber } from '@/utils/currencyFormatter';
 import PageHeader from '@/components/layout/PageHeader';
+import { exportToPDF, exportToExcel } from '@/components/layout/ExportToolbar';
+import PremiumGate from '@/components/ui/PremiumGate';
+import { Printer, FileText, FileSpreadsheet } from 'lucide-react';
 
 export default function BankAccounts({ store }) {
   const [accounts, setAccounts] = useState([]);
@@ -74,17 +77,36 @@ export default function BankAccounts({ store }) {
   const totalBalance = (accounts || []).reduce((sum, acc) => sum + (acc.balance || 0), 0);
 
   return (
-    <div className="space-y-4 md:space-y-6 px-2 md:px-0 min-h-full">
+    <div className="space-y-4 md:space-y-6 px-2 md:px-0 min-h-full" id="print-bank-accounts">
       {/* Header */}
       <PageHeader
         title="Bank Accounts"
         subtitle="Kelola rekening bank toko"
         icon={Landmark}
         actions={
-          <Button onClick={() => { setEditingAccount(null); setFormData({ bank_name: '', account_number: '', account_name: '', account_type: 'Savings', balance: 0 }); setShowForm(true); }} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold rounded-xl text-white">
-            <Plus className="w-4 h-4 mr-2" />
-            Tambah Rekening
-          </Button>
+          <div className="flex flex-wrap lg:flex-nowrap gap-2 items-center">
+            <div className="flex items-center gap-1.5 mr-2">
+              <PremiumGate store={store} featureName="Print">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Bank Accounts', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-bank-accounts')} className="gap-1.5 text-slate-600 border-slate-200 hover:bg-slate-50 text-xs h-11 px-3 rounded-xl">
+                  <Printer className="w-4 h-4" /><span className="hidden sm:inline">Print</span>
+                </Button>
+              </PremiumGate>
+              <PremiumGate store={store} featureName="Export PDF">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Bank Accounts', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-bank-accounts')} className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 text-xs h-11 px-3 rounded-xl">
+                  <FileText className="w-4 h-4" /><span className="hidden sm:inline">PDF</span>
+                </Button>
+              </PremiumGate>
+              <PremiumGate store={store} featureName="Export Excel">
+                <Button variant="outline" size="sm" onClick={() => exportToExcel('Bank Accounts', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, 'print-bank-accounts')} className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs h-11 px-3 rounded-xl">
+                  <FileSpreadsheet className="w-4 h-4" /><span className="hidden sm:inline">Excel</span>
+                </Button>
+              </PremiumGate>
+            </div>
+            <Button onClick={() => { setEditingAccount(null); setFormData({ bank_name: '', account_number: '', account_name: '', account_type: 'Savings', balance: 0 }); setShowForm(true); }} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold rounded-xl text-white">
+              <Plus className="w-4 h-4 mr-2" />
+              Tambah Rekening
+            </Button>
+          </div>
         }
       />
 

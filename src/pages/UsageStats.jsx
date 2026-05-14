@@ -21,7 +21,13 @@ import {
   Truck,
   RotateCcw,
   FileInput,
-  Camera
+  Camera,
+  ShoppingCart,
+  Contact,
+  CreditCard,
+  Wallet,
+  Download,
+  Upload
 } from 'lucide-react';
 import PageHeader from "@/components/layout/PageHeader";
 import { PLAN_TIERS, getEffectiveLimits } from '@/planConfig';
@@ -58,8 +64,8 @@ function UsageCard({ icon: Icon, title, current, limit, color = 'blue', descript
       
       <div className="relative flex items-center justify-between mb-3.5">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110
-            ${isLocked ? 'bg-slate-300 shadow-slate-200/50' : isReached ? 'bg-gradient-to-br from-red-500 to-red-700 shadow-red-500/30' : `bg-gradient-to-br ${c.iconBg} ${c.glow}`}`}
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110
+            ${isLocked ? 'bg-slate-300' : isReached ? 'bg-gradient-to-br from-red-500 to-red-700' : `bg-gradient-to-br ${c.iconBg}`}`}
           >
             <Icon className="w-4.5 h-4.5 text-white" />
           </div>
@@ -110,14 +116,20 @@ export default function UsageStats({ store }) {
   const [stats, setStats] = useState({
     emailSent: 0,
     monthlyEmail: 0,
+    monthlySales: 0,
     products: 0,
     productPhotos: 0,
     customers: 0,
+    suppliers: 0,
+    payables: 0,
+    receivables: 0,
     purchaseRequisitions: 0,
     purchaseOrders: 0,
     grn: 0,
     inventoryGRN: 0,
     supplierReturn: 0,
+    stockIn: 0,
+    stockOut: 0,
   });
   const [loading, setLoading] = useState(true);
   
@@ -138,22 +150,35 @@ export default function UsageStats({ store }) {
           ruleRes,
           productRes,
           customerRes,
+          supplierRes,
           prRes,
           poRes,
           grnRes,
           invGrnRes,
           srRes,
+          payablesRes,
+          receivablesRes,
+          salesRes,
+          stockInRes,
+          stockOutRes,
+          bankRecRes,
         ] = await Promise.all([
           supabase.from('marketing_campaigns').select('sent_count', { count: 'exact' }).eq('store_id', store.id).in('status', ['Sent', 'Running']),
           supabase.from('marketing_automation_rules').select('total_executions', { count: 'exact' }).eq('store_id', store.id),
           supabase.from('products').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
           supabase.from('customers').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
+          supabase.from('suppliers').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
           supabase.from('purchase_requisitions').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
           supabase.from('purchase_orders').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
           supabase.from('goods_receipts').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
           supabase.from('inventory_grn').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
           supabase.from('supplier_returns').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
-          supabase.from('products').select('id', { count: 'exact', head: true }).eq('store_id', store.id),  // total products (no photo filter)
+          supabase.from('payables').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
+          supabase.from('receivables').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
+          supabase.from('sales_transactions').select('created_date, timestamp_wib').eq('store_id', store.id),
+          supabase.from('stock_movements').select('id', { count: 'exact', head: true }).eq('store_id', store.id).eq('movement_type', 'in'),
+          supabase.from('stock_movements').select('id', { count: 'exact', head: true }).eq('store_id', store.id).eq('movement_type', 'out'),
+          supabase.from('bank_statement_history').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
         ]);
 
         // Hitung total email terkirim (hanya dari campaign sent_count — source of truth)
@@ -180,17 +205,32 @@ export default function UsageStats({ store }) {
         // Hitung foto produk (products with image_url yang benar-benar ada)
         const photoRes = await supabase.from('products').select('id', { count: 'exact', head: true }).eq('store_id', store.id).not('image_url', 'is', null).neq('image_url', '');
 
+        let monthlySales = 0;
+        if (salesRes.data) {
+          monthlySales = salesRes.data.filter(tx => {
+            const txDate = new Date(tx.created_date || tx.timestamp_wib);
+            return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
+          }).length;
+        }
+
         setStats({
           emailSent: totalEmail,
           monthlyEmail: monthlyEmail,
+          monthlySales: monthlySales,
           products: productRes.count || 0,
           productPhotos: photoRes.count || 0,
           customers: customerRes.count || 0,
+          suppliers: supplierRes.count || 0,
           purchaseRequisitions: prRes.count || 0,
           purchaseOrders: poRes.count || 0,
           grn: grnRes.count || 0,
           inventoryGRN: invGrnRes.count || 0,
           supplierReturn: srRes.count || 0,
+          payables: payablesRes.count || 0,
+          receivables: receivablesRes.count || 0,
+          stockIn: stockInRes.count || 0,
+          stockOut: stockOutRes.count || 0,
+          reconciliationUploads: bankRecRes.count || 0,
         });
       } catch (err) {
         console.error('Gagal mengambil data penggunaan:', err);
@@ -269,6 +309,11 @@ export default function UsageStats({ store }) {
                 description="Jumlah pelanggan terdaftar"
               />
               <UsageCard 
+                icon={Contact} title="Supplier" color="amber"
+                current={stats.suppliers} limit={limits.maxSuppliers}
+                description="Jumlah supplier terdaftar"
+              />
+              <UsageCard 
                 icon={Camera} title="Upload Foto/Media Produk" color="cyan"
                 current={stats.productPhotos} limit={limits.maxProductPhotos}
                 description={store?.plan === 'free' || isTrial ? 'Total selama trial/free' : 'Total kuota foto/bulan'}
@@ -276,9 +321,23 @@ export default function UsageStats({ store }) {
             </div>
           </div>
 
+          {/* Sales */}
+          <div>
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2 mt-4">
+              <ShoppingCart className="w-4 h-4" /> Sales
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <UsageCard 
+                icon={ShoppingCart} title="Sales Transaction" color="emerald"
+                current={stats.monthlySales} limit={limits.maxSalesPerMonth}
+                description="Total transaksi penjualan bulan ini"
+              />
+            </div>
+          </div>
+
           {/* Email Marketing */}
           <div>
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2 mt-4">
               <Mail className="w-4 h-4" /> Marketing
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -329,6 +388,49 @@ export default function UsageStats({ store }) {
                 icon={RotateCcw} title="Supplier Return" color="amber"
                 current={stats.supplierReturn} limit={limits.maxSupplierReturn}
                 description="Jumlah retur supplier"
+              />
+            </div>
+          </div>
+
+          {/* Finance */}
+          <div>
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2 mt-4">
+              <CreditCard className="w-4 h-4" /> Finance
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <UsageCard 
+                icon={CreditCard} title="Account Payables" color="rose"
+                current={stats.payables} limit={limits.maxPayables}
+                description="Jumlah tagihan hutang dibuat"
+              />
+              <UsageCard 
+                icon={Wallet} title="Account Receivables" color="emerald"
+                current={stats.receivables} limit={limits.maxReceivables}
+                description="Jumlah tagihan piutang dibuat"
+              />
+              <UsageCard 
+                icon={Upload} title="Bank Rec. Uploads" color="blue"
+                current={stats.reconciliationUploads} limit={limits.maxReconciliationUploads}
+                description="Jumlah upload file mutasi"
+              />
+            </div>
+          </div>
+
+          {/* Inventory Movements */}
+          <div>
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2 mt-4">
+              <Package className="w-4 h-4" /> Inventory Movements
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <UsageCard 
+                icon={Download} title="Stock In" color="emerald"
+                current={stats.stockIn} limit={limits.maxStockIn}
+                description="Jumlah penerimaan barang sederhana"
+              />
+              <UsageCard 
+                icon={Upload} title="Stock Out" color="rose"
+                current={stats.stockOut} limit={limits.maxStockOut}
+                description="Jumlah pengeluaran barang sederhana"
               />
             </div>
           </div>

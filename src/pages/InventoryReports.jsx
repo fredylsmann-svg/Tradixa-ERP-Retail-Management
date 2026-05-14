@@ -14,6 +14,7 @@ import * as XLSX from 'xlsx';
 import html2pdf from 'html2pdf.js';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import PageHeader from '@/components/layout/PageHeader';
+import PremiumGate from '@/components/ui/PremiumGate';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
@@ -129,12 +130,16 @@ export default function InventoryReports({ store }) {
         icon={FileText}
         actions={
           <>
-            <Button onClick={handleExportExcel} variant="outline" className="bg-white border-slate-200 text-slate-700 hover:bg-slate-50 font-bold h-11 rounded-xl">
-              <Download className="w-4 h-4 mr-2" /> Export Excel
-            </Button>
-            <Button onClick={handlePrintPDF} className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 rounded-xl">
-              <Printer className="w-4 h-4 mr-2" /> Cetak PDF
-            </Button>
+            <PremiumGate store={store} featureName="Export Excel">
+              <Button onClick={handleExportExcel} variant="outline" className="bg-white border-slate-200 text-slate-700 hover:bg-slate-50 font-bold h-11 rounded-xl">
+                <Download className="w-4 h-4 mr-2" /> Export Excel
+              </Button>
+            </PremiumGate>
+            <PremiumGate store={store} featureName="Cetak PDF">
+              <Button onClick={handlePrintPDF} className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 rounded-xl">
+                <Printer className="w-4 h-4 mr-2" /> Cetak PDF
+              </Button>
+            </PremiumGate>
           </>
         }
       />

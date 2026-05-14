@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Loader2, Calculator } from 'lucide-react';
 import { NumberInput } from '@/components/ui/number-input';
+import { UNITS } from '@/components/products/ProductForm';
 
 const STOCK_TYPES = ['KULAKAN (Purchase)', 'GRN', 'Return', 'Adjustment'];
 
@@ -217,19 +218,9 @@ export default function StockInForm({ open, onClose, storeId, onSuccess }) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {(() => {
-                          const units = new Set();
-                          if (selectedProduct.buy_unit) units.add(selectedProduct.buy_unit);
-                          if (selectedProduct.sell_unit) units.add(selectedProduct.sell_unit);
-                          if (selectedProduct.unit) units.add(selectedProduct.unit);
-                          
-                          // If no units found at all, add a default
-                          if (units.size === 0) units.add('Pcs');
-                          
-                          return Array.from(units).map(unit => (
-                            <SelectItem key={unit} value={unit}>{unit}</SelectItem>
-                          ));
-                        })()}
+                        {UNITS.map(unit => (
+                          <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

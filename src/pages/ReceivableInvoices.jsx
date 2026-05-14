@@ -12,6 +12,7 @@ import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
 import PageHeader from '@/components/layout/PageHeader';
+import PremiumGate from '@/components/ui/PremiumGate';
 import moment from 'moment';
 
 export default function ReceivableInvoices({ store }) {
@@ -207,14 +208,18 @@ export default function ReceivableInvoices({ store }) {
                    <p className="text-sm font-bold text-slate-800">Preview Invoice Piutang</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => handleShareWhatsApp(viewingInvoice)} className="rounded-xl font-bold gap-2">
-                    <FileInput className="w-4 h-4 text-emerald-600" />
-                    Share Whatsapp
-                  </Button>
-                  <Button size="sm" onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold gap-2">
-                    <Printer className="w-4 h-4" />
-                    Cetak / PDF
-                  </Button>
+                  <PremiumGate feature="Share Invoice Piutang" iconType="action" store={store}>
+                    <Button variant="outline" size="sm" onClick={() => handleShareWhatsApp(viewingInvoice)} className="rounded-xl font-bold gap-2">
+                      <FileInput className="w-4 h-4 text-emerald-600" />
+                      Share Whatsapp
+                    </Button>
+                  </PremiumGate>
+                  <PremiumGate feature="Cetak Invoice Piutang" iconType="action" store={store}>
+                    <Button size="sm" onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold gap-2">
+                      <Printer className="w-4 h-4" />
+                      Cetak / PDF
+                    </Button>
+                  </PremiumGate>
                 </div>
               </div>
 

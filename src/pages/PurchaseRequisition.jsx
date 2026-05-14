@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Trash2, X, Plus, LayoutGrid, Package, Eye, Send, FileText, Settings, PlusCircle, Save, CheckCircle2, XCircle, ShoppingCart, UserCircle, Calendar, Search, Building2, Loader2, Clock, ClipboardList, FileInput, HelpCircle, Calculator, AlertTriangle } from 'lucide-react';
+import { Trash2, X, Plus, LayoutGrid, Package, Eye, Send, FileText, Settings, PlusCircle, Save, CheckCircle2, XCircle, ShoppingCart, UserCircle, Calendar, Search, Building2, Loader2, Clock, ClipboardList, FileInput, HelpCircle, Calculator, AlertTriangle, Printer, FileSpreadsheet } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
@@ -23,6 +23,8 @@ import PageHeader from '@/components/layout/PageHeader';
 import { useTaxRate } from '@/hooks/useTaxRate';
 import { getEffectiveLimits } from '@/planConfig';
 import { toast as sonnerToast } from 'sonner';
+import { exportToPDF, exportToExcel } from '@/components/layout/ExportToolbar';
+import PremiumGate from '@/components/ui/PremiumGate';
 
 const COMMON_UNITS = ['pcs', 'box', 'kg', 'gram', 'meter', 'liter', 'roll', 'paket', 'sak', 'bal', 'lusin'];
 
@@ -701,13 +703,30 @@ export default function PurchaseRequisition({ store }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" id="print-purchase-requisition">
       <PageHeader
         title="Purchase Requisition"
         subtitle="Ajukan dan filter permohonan PR"
         icon={FileInput}
         actions={
-          <>
+          <div className="flex flex-wrap lg:flex-nowrap gap-2 items-center">
+            <div className="flex items-center gap-1.5 mr-2">
+              <PremiumGate store={store} featureName="Print">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Purchase Requisition', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-purchase-requisition')} className="gap-1.5 text-slate-600 border-slate-200 hover:bg-slate-50 text-xs h-11 px-3 rounded-xl">
+                  <Printer className="w-4 h-4" /><span className="hidden sm:inline">Print</span>
+                </Button>
+              </PremiumGate>
+              <PremiumGate store={store} featureName="Export PDF">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Purchase Requisition', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-purchase-requisition')} className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 text-xs h-11 px-3 rounded-xl">
+                  <FileText className="w-4 h-4" /><span className="hidden sm:inline">PDF</span>
+                </Button>
+              </PremiumGate>
+              <PremiumGate store={store} featureName="Export Excel">
+                <Button variant="outline" size="sm" onClick={() => exportToExcel('Purchase Requisition', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, 'print-purchase-requisition')} className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs h-11 px-3 rounded-xl">
+                  <FileSpreadsheet className="w-4 h-4" /><span className="hidden sm:inline">Excel</span>
+                </Button>
+              </PremiumGate>
+            </div>
             <Button variant="outline" onClick={() => setShowItemMaster(true)} className="border-slate-200 text-slate-600 hover:bg-slate-50 font-bold rounded-xl h-11 px-6">
               <ShoppingCart className="w-4 h-4 mr-2" />
               Buat PR dari Item Master
@@ -716,7 +735,7 @@ export default function PurchaseRequisition({ store }) {
               <Plus className="w-4 h-4 mr-2" />
               Buat PR Baru
             </Button>
-          </>
+          </div>
         }
       />
       <PageDatePicker />

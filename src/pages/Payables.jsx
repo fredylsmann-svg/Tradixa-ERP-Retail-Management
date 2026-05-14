@@ -23,6 +23,7 @@ import ExportToolbar from '@/components/layout/ExportToolbar';
 import moment from 'moment';
 import 'moment/locale/id';
 import { useSettings } from '@/contexts/SettingsContext';
+import { getEffectiveLimits } from '@/planConfig';
 
 export default function Payables({ store }) {
   const { toast } = useToast();
@@ -265,6 +266,17 @@ export default function Payables({ store }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // --- PAYABLES LIMIT CHECK ---
+    const limits = getEffectiveLimits(store);
+    if (limits.maxPayables !== Infinity) {
+      if (payables.length >= limits.maxPayables) {
+        sonnerToast.error(`Kuota Hutang habis (${payables.length}/${limits.maxPayables}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
+        return;
+      }
+    }
+    // ----------------------------
+
     if (!formData.supplier_id) {
       toast({ title: "Validation Error", description: "Pilih supplier terlebih dahulu", variant: "destructive" });
       return;

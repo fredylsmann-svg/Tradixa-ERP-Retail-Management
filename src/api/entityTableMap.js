@@ -72,6 +72,10 @@ export const ENTITY_TABLE_MAP = {
   LoyaltyTransaction:'loyalty_transactions',
   InternalMessage:    'internal_messages',
   SystemAuditLog:     'system_audit_logs',
+
+  // === WMS ===
+  WarehouseTransfer:  'warehouse_transfers',
+  PickList:           'pick_lists',
 };
 
 /**

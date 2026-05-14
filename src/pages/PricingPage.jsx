@@ -48,7 +48,7 @@ const featureGroups = [
     title: 'Sales',
     icon: ShoppingCart,
     features: [
-      { name: 'Sales Transaction', free: true, pro: true, enterprise: true },
+      { name: 'Sales Transaction', free: '100 / bulan', pro: 'Unlimited', enterprise: 'Unlimited' },
       { name: 'Sales Invoices', free: true, pro: true, enterprise: true },
       { name: 'Revenue Reports', free: false, pro: true, enterprise: true },
       { name: 'Sales Report', free: false, pro: true, enterprise: true },
@@ -114,7 +114,8 @@ const featureGroups = [
     features: [
       { name: 'Design Studio', free: false, pro: true, enterprise: true },
       { name: 'Audit Log', free: false, pro: true, enterprise: true },
-      { name: 'Export (CSV, PDF, Print)', free: false, pro: true, enterprise: true },
+      { name: 'Export (Excel, PDF, Print)', free: false, pro: true, enterprise: true },
+      { name: 'Hapus Watermark Struk', free: false, pro: true, enterprise: true },
       { name: 'AI Assistant', free: false, pro: true, enterprise: true },
     ]
   },
@@ -370,10 +371,10 @@ export default function PricingPage({ store }) {
             {[
               { q: 'Apakah bisa downgrade?', a: 'Ya, Anda bisa downgrade kapan saja. Data Anda tetap aman, hanya akses ke modul premium yang dibatasi.' },
               { q: 'Bagaimana cara pembayaran?', a: 'Pembayaran melalui transfer bank, e-wallet, atau kartu kredit. Invoice otomatis dikirim ke email.' },
-              { q: 'Apakah ada trial?', a: 'Ya, setiap akun baru mendapat kesempatan free trial Pro selama 14 hari (sekali seumur hidup). Selama trial, beberapa fitur memiliki batasan penggunaan.' },
+              { q: 'Apakah ada trial?', a: 'Ya, setiap akun baru mendapat kesempatan free trial Pro selama 14 hari. Selama trial, Anda bisa mencoba hampir semua fitur dengan batasan jumlah data tertentu.' },
               { q: 'Berapa kuota email marketing?', a: 'Free Trial mendapat 5 email. Pro Plan berbayar mendapat 250 email per bulan yang akan direset otomatis setiap awal siklus billing.' },
               { q: 'Apakah data aman?', a: 'Data dienkripsi dengan standar AES-256 dan disimpan di server cloud yang aman.' },
-              { q: 'Apa batasan saat trial?', a: 'Selama trial: max 5 PR, 5 PO, 5 GRN, 5 Supplier Return, 5 email, 20 upload foto, 100 produk, dan 100 customer. Upgrade untuk akses penuh tanpa batas.' },
+              { q: 'Apa batasan paket Free / Trial?', a: 'Limit Paket Free: Maksimal 100 transaksi penjualan per bulan, fitur ekspor (Excel/PDF/Print) terkunci, dan terdapat watermark pada struk. Upgrade ke Pro untuk akses tanpa batas dan laporan profesional.' },
             ].map((faq, i) => (
               <FaqItem key={i} question={faq.q} answer={faq.a} />
             ))}

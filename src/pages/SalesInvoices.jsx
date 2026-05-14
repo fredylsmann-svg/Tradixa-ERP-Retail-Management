@@ -14,6 +14,7 @@ import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
 import { toast } from 'sonner';
 import PageHeader from '@/components/layout/PageHeader';
+import PremiumGate from '@/components/ui/PremiumGate';
 import { FileText } from 'lucide-react';
 
 export default function SalesInvoices({ store }) {
@@ -138,7 +139,7 @@ Terima kasih telah berbelanja di ${store.store_name}.
         subtitle="Daftar invoice penjualan"
         icon={Receipt}
         actions={
-          <ExportToolbar title="Laporan Invoice Penjualan (Detail)" date={formattedDate} storeName={store?.store_name} storeAddress={store?.address} storeLogoUrl={store?.logo_url} contentId="print-sales-detailed" />
+          <ExportToolbar title="Laporan Invoice Penjualan (Detail)" date={formattedDate} storeName={store?.store_name} storeAddress={store?.address} storeLogoUrl={store?.logo_url} contentId="print-sales-detailed" store={store} />
         }
       />
       <PageDatePicker />
@@ -202,15 +203,21 @@ Terima kasih telah berbelanja di ${store.store_name}.
                           <Button variant="ghost" size="icon" onClick={() => setViewingInvoice(tx)}>
                             <Eye className="w-4 h-4 text-slate-500" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setPrintingInvoice(tx)}>
-                            <Printer className="w-4 h-4 text-slate-500" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setEmailingInvoice(tx)}>
-                            <Mail className="w-4 h-4 text-blue-500" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleSendWA(tx)}>
-                            <MessageCircle className="w-4 h-4 text-emerald-500" />
-                          </Button>
+                          <PremiumGate feature="Print Invoice" iconType="action" store={store}>
+                            <Button variant="ghost" size="icon" onClick={() => setPrintingInvoice(tx)}>
+                              <Printer className="w-4 h-4 text-slate-500" />
+                            </Button>
+                          </PremiumGate>
+                          <PremiumGate feature="Email Invoice" iconType="action" store={store}>
+                            <Button variant="ghost" size="icon" onClick={() => setEmailingInvoice(tx)}>
+                              <Mail className="w-4 h-4 text-blue-500" />
+                            </Button>
+                          </PremiumGate>
+                          <PremiumGate feature="Share Whatsapp" iconType="action" store={store}>
+                            <Button variant="ghost" size="icon" onClick={() => handleSendWA(tx)}>
+                              <MessageCircle className="w-4 h-4 text-emerald-500" />
+                            </Button>
+                          </PremiumGate>
                         </div>
                       </TableCell>
                     </TableRow>

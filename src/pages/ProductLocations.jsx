@@ -11,6 +11,9 @@ import { Plus, Search, Pencil, Trash2, MapPin, Loader2, Columns3, Info, Store } 
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/layout/PageHeader';
 import { useToast } from '@/components/ui/use-toast';
+import { exportToPDF, exportToExcel } from '@/components/layout/ExportToolbar';
+import { Printer, FileText, FileSpreadsheet } from 'lucide-react';
+import PremiumGate from '@/components/ui/PremiumGate';
 
 export default function ProductLocations({ store }) {
   const { toast } = useToast();
@@ -133,13 +136,30 @@ export default function ProductLocations({ store }) {
   );
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-8 pb-20" id="print-location-settings">
       <PageHeader
         title="Location Settings"
         subtitle="Kelola titik lokasi gudang/toko dan rak penyimpanan internal"
         icon={MapPin}
         actions={
           <div className="flex flex-wrap lg:flex-nowrap gap-2 w-full sm:w-auto justify-end">
+            <div className="flex items-center gap-1.5 mr-2">
+              <PremiumGate store={store} featureName="Print">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Location Settings', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-location-settings')} className="gap-1.5 text-slate-600 border-slate-200 hover:bg-slate-50 text-xs h-11 px-3 rounded-xl">
+                  <Printer className="w-4 h-4" /><span className="hidden sm:inline">Print</span>
+                </Button>
+              </PremiumGate>
+              <PremiumGate store={store} featureName="Export PDF">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Location Settings', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-location-settings')} className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 text-xs h-11 px-3 rounded-xl">
+                  <FileText className="w-4 h-4" /><span className="hidden sm:inline">PDF</span>
+                </Button>
+              </PremiumGate>
+              <PremiumGate store={store} featureName="Export Excel">
+                <Button variant="outline" size="sm" onClick={() => exportToExcel('Location Settings', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, 'print-location-settings')} className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs h-11 px-3 rounded-xl">
+                  <FileSpreadsheet className="w-4 h-4" /><span className="hidden sm:inline">Excel</span>
+                </Button>
+              </PremiumGate>
+            </div>
             <Button onClick={() => { setEditingLocation(null); setFormData({ name: '', description: '', type: 'store', address: '', postal_code: '', coordinates: '', reference: '' }); setShowForm(true); }} className="bg-emerald-600 hover:bg-emerald-700 h-11 px-4 md:px-6 font-semibold rounded-xl text-white whitespace-nowrap w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Tambah Gudang/Toko

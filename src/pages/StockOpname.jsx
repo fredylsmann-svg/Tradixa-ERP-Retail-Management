@@ -28,6 +28,7 @@ import {
   Download, Printer, RefreshCw, Shield
 } from 'lucide-react';
 import { DialogTrigger } from '@/components/ui/dialog';
+import PremiumGate from '@/components/ui/PremiumGate';
 
 const STATUS_COLORS = {
   'Draft': 'bg-slate-100 text-slate-700',
@@ -409,15 +410,21 @@ export default function StockOpname({ store }) {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          <Button variant="outline" size="sm" onClick={() => exportOpnameCSV(opnames)} className="h-9 px-3 text-xs font-semibold">
-            <Download className="w-3.5 h-3.5 mr-1.5" />Excel
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => exportOpnamePDF(opnames)} className="h-9 px-3 text-xs font-semibold">
-            <FileText className="w-3.5 h-3.5 mr-1.5" />PDF
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => window.print()} className="h-9 px-3 text-xs font-semibold">
-            <Printer className="w-3.5 h-3.5 mr-1.5" />Print
-          </Button>
+          <PremiumGate store={store} featureName="Export Excel">
+            <Button variant="outline" size="sm" onClick={() => exportOpnameCSV(opnames)} className="h-9 px-3 text-xs font-semibold">
+              <Download className="w-3.5 h-3.5 mr-1.5" />Excel
+            </Button>
+          </PremiumGate>
+          <PremiumGate store={store} featureName="Export PDF">
+            <Button variant="outline" size="sm" onClick={() => exportOpnamePDF(opnames)} className="h-9 px-3 text-xs font-semibold">
+              <FileText className="w-3.5 h-3.5 mr-1.5" />PDF
+            </Button>
+          </PremiumGate>
+          <PremiumGate store={store} featureName="Cetak Laporan">
+            <Button variant="outline" size="sm" onClick={() => window.print()} className="h-9 px-3 text-xs font-semibold">
+              <Printer className="w-3.5 h-3.5 mr-1.5" />Print
+            </Button>
+          </PremiumGate>
           <Button onClick={() => setShowCreate(true)} className="bg-blue-600 hover:bg-blue-700">
             <Plus className="w-4 h-4 mr-2" /> Buat Opname
           </Button>

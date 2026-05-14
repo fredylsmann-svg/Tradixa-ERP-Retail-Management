@@ -17,6 +17,8 @@ import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
 import PageHeader from '@/components/layout/PageHeader';
 import { Package } from 'lucide-react';
+import { toast as sonnerToast } from 'sonner';
+import { getEffectiveLimits } from '@/planConfig';
 
 const STOCK_OUT_TYPES = ['Sales', 'Damaged', 'Return', 'Adjustment', 'Transfer'];
 
@@ -41,6 +43,15 @@ export default function StockOut({ store }) {
       loadData();
     }
   }, [store]);
+
+  const handleOpenForm = () => {
+    const limits = getEffectiveLimits(store);
+    if (limits.maxStockOut !== Infinity && allMovements.length >= limits.maxStockOut) {
+      sonnerToast.error(`Kuota Stock Out habis (${allMovements.length}/${limits.maxStockOut}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
+      return;
+    }
+    setShowForm(true);
+  };
 
   const loadData = async () => {
     const [movementsData, productsData] = await Promise.all([
@@ -119,7 +130,7 @@ export default function StockOut({ store }) {
               storeLogoUrl={store?.logo_url}
               contentId="print-stock-out-detailed"
             />
-            <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold rounded-xl text-white">
+            <Button onClick={handleOpenForm} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold rounded-xl text-white">
               <Plus className="w-4 h-4 mr-2" />
               Tambah Stok Keluar
             </Button>

@@ -1111,6 +1111,42 @@ export default function InventoryGRN({ store }) {
                       </div>
                       <div className="space-y-2">
                         <Label>Rak Penyimpanan</Label>
+                        {/* Putaway Suggestion */}
+                        {(() => {
+                          if (!selectedGrn || !items.length) return null;
+                          const racks = locations.filter(l => l.type === 'rack' || !l.type);
+                          if (racks.length === 0) return null;
+                          // Find category of first item
+                          const firstItemCategory = items[0]?.category || '';
+                          // Find rack where products of same category are stored
+                          const productsAll = products || [];
+                          const sameCatProducts = productsAll.filter(p => p.category && p.category === firstItemCategory && p.location_name);
+                          let suggestedRack = null;
+                          if (sameCatProducts.length > 0) {
+                            // Most common rack for this category
+                            const rackCount = {};
+                            sameCatProducts.forEach(p => { rackCount[p.location_name] = (rackCount[p.location_name] || 0) + 1; });
+                            suggestedRack = Object.entries(rackCount).sort((a, b) => b[1] - a[1])[0]?.[0];
+                          }
+                          if (!suggestedRack && racks.length > 0) {
+                            // Fallback: rack with fewest products
+                            const rackUsage = {};
+                            racks.forEach(r => { rackUsage[r.name] = 0; });
+                            productsAll.forEach(p => { if (p.location_name && rackUsage[p.location_name] !== undefined) rackUsage[p.location_name]++; });
+                            suggestedRack = Object.entries(rackUsage).sort((a, b) => a[1] - b[1])[0]?.[0];
+                          }
+                          if (!suggestedRack || form.storage_location === suggestedRack) return null;
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => setForm({ ...form, storage_location: suggestedRack })}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold hover:bg-amber-100 transition-all animate-in fade-in slide-in-from-left-2 duration-300"
+                            >
+                              💡 Disarankan: <span className="font-black">{suggestedRack}</span>
+                              <span className="text-amber-400 text-[10px]">(klik untuk apply)</span>
+                            </button>
+                          );
+                        })()}
                         <div className="relative">
                           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                           {isManualLocation ? (

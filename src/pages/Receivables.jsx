@@ -23,6 +23,7 @@ import ExportToolbar from '@/components/layout/ExportToolbar';
 import moment from 'moment';
 import 'moment/locale/id';
 import { useSettings } from '@/contexts/SettingsContext';
+import { getEffectiveLimits } from '@/planConfig';
 
 export default function Receivables({ store }) {
   const { toast } = useToast();
@@ -281,6 +282,17 @@ export default function Receivables({ store }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // --- RECEIVABLES LIMIT CHECK ---
+    const limits = getEffectiveLimits(store);
+    if (limits.maxReceivables !== Infinity) {
+      if (receivables.length >= limits.maxReceivables) {
+        sonnerToast.error(`Kuota Piutang habis (${receivables.length}/${limits.maxReceivables}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
+        return;
+      }
+    }
+    // -------------------------------
+
     if (!formData.customer_id) {
       toast({ title: "Validation Error", description: "Pilih pelanggan terlebih dahulu", variant: "destructive" });
       return;

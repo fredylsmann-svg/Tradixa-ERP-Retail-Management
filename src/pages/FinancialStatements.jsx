@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import PremiumGate from '@/components/ui/PremiumGate';
 
 // =====================================================
 // FINANCIAL STATEMENTS — FORMAT STANDAR PERUSAHAAN
@@ -173,12 +174,17 @@ export default function FinancialStatements({ store }) {
     const hpp = (at['Harga Pokok Penjualan (HPP)']?.debit || 0) - (at['Harga Pokok Penjualan (HPP)']?.credit || 0);
     const grossProfit = revenue - hpp;
 
+    // Opex dihitung dari Journal Lines yang sudah Posted (bukan dari Expense langsung)
+    // Ini memastikan hanya transaksi yang sudah di-Accept/Post oleh akuntan yang muncul di Laporan Keuangan
     const opex = {}; let totalOpex = 0;
-    eData.forEach(e => {
-      if (e.category === 'Pembelian Produk (HPP)') return;
-      if (!opex[e.category]) opex[e.category] = 0;
-      opex[e.category] += Number(e.amount || 0);
-      totalOpex += Number(e.amount || 0);
+    jData.forEach(j => {
+      const name = j.account_name || '';
+      if (name.startsWith('Beban ') && Number(j.debit) > 0) {
+        const category = name.replace('Beban ', '');
+        if (!opex[category]) opex[category] = 0;
+        opex[category] += Number(j.debit);
+        totalOpex += Number(j.debit);
+      }
     });
 
     const netProfit = grossProfit - totalOpex;
@@ -245,15 +251,21 @@ export default function FinancialStatements({ store }) {
         icon={LineChartIcon}
         actions={
           <div className="flex items-center gap-1.5 flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => fsExport('print', store?.store_name, store?.address, store?.logo_url, tabTitles[activeTab], periodLabel, tabIds[activeTab])} className="gap-1.5 text-xs h-11 px-4 rounded-xl border-slate-200">
-              <Printer className="w-4 h-4" />Print
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => fsExport('pdf', store?.store_name, store?.address, store?.logo_url, tabTitles[activeTab], periodLabel, tabIds[activeTab])} className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 text-xs h-11 px-4 rounded-xl">
-              <FileText className="w-4 h-4" />PDF
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => fsExport('excel', store?.store_name, store?.address, store?.logo_url, tabTitles[activeTab], periodLabel, tabIds[activeTab])} className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs h-11 px-4 rounded-xl">
-              <FileSpreadsheet className="w-4 h-4" />Excel
-            </Button>
+            <PremiumGate store={store} featureName="Cetak Laporan">
+              <Button variant="outline" size="sm" onClick={() => fsExport('print', store?.store_name, store?.address, store?.logo_url, tabTitles[activeTab], periodLabel, tabIds[activeTab])} className="gap-1.5 text-xs h-11 px-4 rounded-xl border-slate-200">
+                <Printer className="w-4 h-4" />Print
+              </Button>
+            </PremiumGate>
+            <PremiumGate store={store} featureName="Export PDF">
+              <Button variant="outline" size="sm" onClick={() => fsExport('pdf', store?.store_name, store?.address, store?.logo_url, tabTitles[activeTab], periodLabel, tabIds[activeTab])} className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 text-xs h-11 px-4 rounded-xl">
+                <FileText className="w-4 h-4" />PDF
+              </Button>
+            </PremiumGate>
+            <PremiumGate store={store} featureName="Export Excel">
+              <Button variant="outline" size="sm" onClick={() => fsExport('excel', store?.store_name, store?.address, store?.logo_url, tabTitles[activeTab], periodLabel, tabIds[activeTab])} className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs h-11 px-4 rounded-xl">
+                <FileSpreadsheet className="w-4 h-4" />Excel
+              </Button>
+            </PremiumGate>
             <Button variant="outline" size="sm" onClick={loadAllData} className="gap-1.5 text-xs h-11 px-4 rounded-xl border-slate-200"><RefreshCw className="w-4 h-4" />Refresh</Button>
           </div>
         }

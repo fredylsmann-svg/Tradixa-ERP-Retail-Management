@@ -156,17 +156,128 @@ export default function OutboundDelivery({ store }) {
 
   const handleUpdateDelivery = async () => {
     try {
+      const shippingFee = Number(selectedDelivery.shipping_fee) || 0;
+      const costAllocation = selectedDelivery.cost_allocation || 'company';
       const payload = {
         status: selectedDelivery.status,
         driver_name: selectedDelivery.driver_name,
         tracking_number: selectedDelivery.tracking_number,
         distance_km: selectedDelivery.distance_km,
-        shipping_fee: selectedDelivery.shipping_fee,
-        shipping_address: selectedDelivery.shipping_address
+        shipping_fee: shippingFee,
+        shipping_address: selectedDelivery.shipping_address,
+        cost_allocation: costAllocation
       };
       
       await api.entities.OutboundDelivery.update(selectedDelivery.id, payload);
-      toast.success('Pengiriman berhasil diupdate');
+
+      // === INTEGRASI AKUNTANSI OTOMATIS ===
+      if (shippingFee > 0) {
+        const invoiceNum = selectedDelivery.sales_transactions?.invoice_number || selectedDelivery.id?.substring(0, 8);
+        const customerName = selectedDelivery.customers?.name || 'Manual';
+        const reference = `SHIP-${Date.now().toString(36).toUpperCase()}`;
+        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const wibOffset = 7 * 60;
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const wibTime = new Date(utc + (wibOffset * 60000));
+        const timestampWib = `${String(wibTime.getDate()).padStart(2, '0')}/${String(wibTime.getMonth() + 1).padStart(2, '0')}/${wibTime.getFullYear()} ${String(wibTime.getHours()).padStart(2, '0')}:${String(wibTime.getMinutes()).padStart(2, '0')} WIB`;
+
+        if (costAllocation === 'company') {
+          // --- OPSI: DITANGGUNG TOKO ---
+          // 1. Auto-create Expense
+          await api.entities.Expense.create({
+            store_id: store.id,
+            date: today,
+            category: 'Transportasi & Pengiriman',
+            amount: shippingFee,
+            notes: `Ongkir Outbound - ${customerName} (${invoiceNum})`,
+            reference: reference,
+            created_date: today,
+            timestamp_wib: timestampWib
+          });
+
+          // 2. Auto-create Journal Entry (Draft)
+          const journal = await api.entities.JournalEntry.create({
+            store_id: store.id,
+            transaction_id: reference,
+            date: today,
+            description: `Beban Pengiriman - ${customerName} (${invoiceNum})`,
+            type: 'Payment',
+            status: 'Draft',
+            total_debit: shippingFee,
+            total_credit: shippingFee,
+            created_by: 'Sistem Outbound'
+          });
+
+          await Promise.all([
+            api.entities.JournalLine.create({
+              journal_id: journal.id,
+              account_name: 'Beban Transportasi & Pengiriman',
+              description: `Ongkir ${customerName} - ${invoiceNum}`,
+              debit: shippingFee,
+              credit: 0
+            }),
+            api.entities.JournalLine.create({
+              journal_id: journal.id,
+              account_name: 'Kas Kantor',
+              description: `Pembayaran ongkir ${invoiceNum}`,
+              debit: 0,
+              credit: shippingFee
+            })
+          ]);
+
+        } else {
+          // --- OPSI: DITAGIHKAN KE CUSTOMER ---
+          // 1. Auto-create Receivable (Piutang Ongkir)
+          const customerId = selectedDelivery.customer_id;
+          await api.entities.Receivable.create({
+            store_id: store.id,
+            invoice_number: reference,
+            customer_id: customerId,
+            customer_name: customerName,
+            amount: shippingFee,
+            remaining_amount: shippingFee,
+            due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            notes: `Ongkir pengiriman ${invoiceNum}`,
+            status: 'Pending',
+            timestamp_wib: timestampWib,
+            created_date: today
+          });
+
+          // 2. Auto-create Journal Entry (Draft)
+          const journal = await api.entities.JournalEntry.create({
+            store_id: store.id,
+            transaction_id: reference,
+            date: today,
+            description: `Piutang Ongkir - ${customerName} (${invoiceNum})`,
+            type: 'Receivable',
+            status: 'Draft',
+            total_debit: shippingFee,
+            total_credit: shippingFee,
+            created_by: 'Sistem Outbound'
+          });
+
+          await Promise.all([
+            api.entities.JournalLine.create({
+              journal_id: journal.id,
+              account_name: 'Piutang Usaha',
+              description: `Piutang ongkir ${customerName} - ${invoiceNum}`,
+              debit: shippingFee,
+              credit: 0
+            }),
+            api.entities.JournalLine.create({
+              journal_id: journal.id,
+              account_name: 'Pendapatan Pengiriman',
+              description: `Pendapatan ongkir ${invoiceNum}`,
+              debit: 0,
+              credit: shippingFee
+            })
+          ]);
+        }
+      }
+      // === END INTEGRASI AKUNTANSI ===
+
+      toast.success('Pengiriman berhasil diupdate & dicatat ke akuntansi');
       setIsMapOpen(false);
       loadDeliveries();
     } catch (error) {
@@ -443,6 +554,22 @@ export default function OutboundDelivery({ store }) {
                       onChange={(e) => setSelectedDelivery({...selectedDelivery, shipping_fee: e.target.value})}
                       className="mt-1 text-lg font-bold"
                     />
+                  </div>
+                  <div className="pt-4 border-t">
+                    <Label className="text-emerald-600 font-bold">Pembebanan Ongkir</Label>
+                    <p className="text-xs text-slate-500 mb-2">Tentukan siapa yang menanggung biaya pengiriman ini.</p>
+                    <Select
+                      value={selectedDelivery.cost_allocation || 'company'}
+                      onValueChange={(v) => setSelectedDelivery({...selectedDelivery, cost_allocation: v})}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="company">Ditanggung Toko (Masuk Beban Operasional)</SelectItem>
+                        <SelectItem value="customer">Ditagihkan ke Customer (Masuk Piutang / AR)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </>
               )}
