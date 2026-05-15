@@ -15,7 +15,7 @@ import { getEmailTemplate } from '@/utils/emailTemplates';
 export async function executeAutomation(storeId, trigger, contextData = {}) {
   try {
     console.log(`[Tradixa Automation] Checking rules for trigger: ${trigger}`);
-    
+
     // 1. Ambil data toko untuk nama pengirim dan WhatsApp
     const store = await api.entities.Store.get(storeId);
     const storeName = store?.store_name || 'Tradixa Store';
@@ -122,7 +122,7 @@ export async function executeAutomation(storeId, trigger, contextData = {}) {
           console.error(`[Tradixa Automation] Critical Error calling Function:`, emailErr.message);
         }
       }
-      
+
       // 3. Update statistik pada aturan tersebut
       const currentExecutions = parseInt(rule.total_executions || 0);
       await api.entities.AutomationRule.update(rule.id, {

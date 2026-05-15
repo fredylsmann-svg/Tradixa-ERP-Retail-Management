@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  BarChart3, 
-  Mail, 
-  MessageSquare, 
-  Zap, 
-  AlertCircle, 
-  CheckCircle2, 
+import {
+  BarChart3,
+  Mail,
+  MessageSquare,
+  Zap,
+  AlertCircle,
+  CheckCircle2,
   ArrowRight,
   ShieldCheck,
   Sparkles,
@@ -51,17 +51,17 @@ function UsageCard({ icon: Icon, title, current, limit, color = 'blue', descript
 
   return (
     <div className={`relative p-5 rounded-2xl border backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 group
-      ${isLocked 
-        ? 'bg-slate-50/80 border-slate-200 opacity-60' 
-        : isReached 
-          ? 'bg-gradient-to-br from-white to-slate-50/80 border-slate-200 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.04),0_10px_15px_-3px_rgba(0,0,0,0.06),0_20px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_12px_-2px_rgba(0,0,0,0.06),0_16px_24px_-4px_rgba(0,0,0,0.08),0_24px_32px_-6px_rgba(0,0,0,0.04)] ring-1 ring-slate-100' 
+      ${isLocked
+        ? 'bg-slate-50/80 border-slate-200 opacity-60'
+        : isReached
+          ? 'bg-gradient-to-br from-white to-slate-50/80 border-slate-200 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.04),0_10px_15px_-3px_rgba(0,0,0,0.06),0_20px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_12px_-2px_rgba(0,0,0,0.06),0_16px_24px_-4px_rgba(0,0,0,0.08),0_24px_32px_-6px_rgba(0,0,0,0.04)] ring-1 ring-slate-100'
           : `bg-gradient-to-br from-white to-slate-50/80 border-slate-200/80 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.04),0_10px_15px_-3px_rgba(0,0,0,0.06),0_20px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_12px_-2px_rgba(0,0,0,0.06),0_16px_24px_-4px_rgba(0,0,0,0.08),0_24px_32px_-6px_rgba(0,0,0,0.04)] ${c.ring} ring-1`}`}
     >
       {/* Subtle gradient overlay */}
       {!isLocked && !isReached && (
         <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/40 via-transparent to-transparent pointer-events-none" />
       )}
-      
+
       <div className="relative flex items-center justify-between mb-3.5">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110
@@ -84,7 +84,7 @@ function UsageCard({ icon: Icon, title, current, limit, color = 'blue', descript
       {!isLocked && !isUnlimited && (
         <div className="relative space-y-1.5">
           <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden ring-1 ring-slate-200/50">
-            <div 
+            <div
               className={`h-full rounded-full transition-all duration-1000 ease-out bg-gradient-to-r ${isReached ? 'from-red-400 to-red-600 shadow-[0_0_12px_rgba(239,68,68,0.5)]' : c.bar}`}
               style={{ width: `${percent}%` }}
             />
@@ -136,7 +136,7 @@ export default function UsageStats({ store }) {
     payments: 0,
   });
   const [loading, setLoading] = useState(true);
-  
+
   const isTrial = store?.plan === 'pro' && store?.has_used_trial;
   const isPaidPro = store?.plan === 'pro' && !store?.has_used_trial;
   const limits = getEffectiveLimits(store);
@@ -144,7 +144,7 @@ export default function UsageStats({ store }) {
 
   useEffect(() => {
     if (!store?.id) return;
-    
+
     const fetchAllStats = async () => {
       setLoading(true);
       try {
@@ -208,7 +208,7 @@ export default function UsageStats({ store }) {
             .eq('store_id', store.id)
             .in('status', ['Sent', 'Running'])
             .gte('created_date', `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
-          
+
           if (thisMonthCampaigns) {
             monthlyEmail = thisMonthCampaigns.reduce((sum, c) => sum + (c.sent_count || 0), 0);
           }
@@ -286,12 +286,12 @@ export default function UsageStats({ store }) {
               <Sparkles className="w-6 h-6 text-yellow-300 fill-yellow-300" />
             </h2>
             <p className="text-white/80 font-medium max-w-md">
-              {isTrial 
-                ? 'Anda sedang menikmati fitur premium Tradixa dengan kuota percobaan terbatas.' 
+              {isTrial
+                ? 'Anda sedang menikmati fitur premium Tradixa dengan kuota percobaan terbatas.'
                 : 'Akun Anda aktif dengan akses penuh sesuai paket langganan Anda.'}
             </p>
           </div>
-          <Button 
+          <Button
             onClick={() => navigate('/PricingPage')}
             className="bg-white text-slate-900 hover:bg-slate-100 font-black h-14 px-8 rounded-2xl shadow-xl hover:scale-105 transition-all group"
           >
@@ -313,27 +313,27 @@ export default function UsageStats({ store }) {
               <Package className="w-4 h-4" /> Data & Resource
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <UsageCard 
+              <UsageCard
                 icon={Package} title="Produk" color="blue"
                 current={stats.products} limit={limits.maxProducts}
                 description="Jumlah produk terdaftar"
               />
-              <UsageCard 
+              <UsageCard
                 icon={Users} title="Customer" color="purple"
                 current={stats.customers} limit={limits.maxCustomers}
                 description="Jumlah pelanggan terdaftar"
               />
-              <UsageCard 
+              <UsageCard
                 icon={Contact} title="Supplier" color="amber"
                 current={stats.suppliers} limit={limits.maxSuppliers}
                 description="Jumlah supplier terdaftar"
               />
-              <UsageCard 
+              <UsageCard
                 icon={Camera} title="Upload Foto/Media Produk" color="cyan"
                 current={stats.productPhotos} limit={limits.maxProductPhotos}
                 description={store?.plan === 'free' || isTrial ? 'Total selama trial/free' : 'Total kuota foto/bulan'}
               />
-              <UsageCard 
+              <UsageCard
                 icon={Users} title="Employee Management" color="orange"
                 current={stats.employees} limit={limits.maxEmployees}
                 description="Jumlah karyawan terdaftar"
@@ -347,7 +347,7 @@ export default function UsageStats({ store }) {
               <ShoppingCart className="w-4 h-4" /> Sales
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <UsageCard 
+              <UsageCard
                 icon={ShoppingCart} title="Sales Transaction" color="emerald"
                 current={stats.monthlySales} limit={limits.maxSalesPerMonth}
                 description="Total transaksi penjualan bulan ini"
@@ -361,7 +361,7 @@ export default function UsageStats({ store }) {
               <Mail className="w-4 h-4" /> Marketing
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <UsageCard 
+              <UsageCard
                 icon={Mail} title="Email Marketing" color="rose"
                 current={emailCurrent} limit={emailLimit}
                 description={emailDesc}
@@ -384,27 +384,27 @@ export default function UsageStats({ store }) {
               <Truck className="w-4 h-4" /> Procurement
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <UsageCard 
+              <UsageCard
                 icon={FileInput} title="Purchase Requisition" color="purple"
                 current={stats.purchaseRequisitions} limit={limits.maxPR}
                 description="Jumlah PR dibuat"
               />
-              <UsageCard 
+              <UsageCard
                 icon={FileText} title="Purchase Order" color="emerald"
                 current={stats.purchaseOrders} limit={limits.maxPO}
                 description="Jumlah PO dibuat"
               />
-              <UsageCard 
+              <UsageCard
                 icon={ClipboardList} title="Goods Receipt (GRN)" color="emerald"
                 current={stats.grn} limit={limits.maxGRN}
                 description="Jumlah GRN dibuat"
               />
-              <UsageCard 
+              <UsageCard
                 icon={Package} title="Inventory GRN" color="blue"
                 current={stats.inventoryGRN} limit={limits.maxInventoryGRN}
                 description="Jumlah Inventory GRN"
               />
-              <UsageCard 
+              <UsageCard
                 icon={RotateCcw} title="Supplier Return" color="amber"
                 current={stats.supplierReturn} limit={limits.maxSupplierReturn}
                 description="Jumlah retur supplier"
@@ -418,7 +418,7 @@ export default function UsageStats({ store }) {
               <Truck className="w-4 h-4" /> Logistics & Delivery
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <UsageCard 
+              <UsageCard
                 icon={Truck} title="Outbound Delivery" color="blue"
                 current={stats.outboundDeliveries} limit={limits.maxOutboundDeliveries}
                 description="Jumlah pengiriman kurir"
@@ -432,27 +432,27 @@ export default function UsageStats({ store }) {
               <CreditCard className="w-4 h-4" /> Finance
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <UsageCard 
+              <UsageCard
                 icon={CreditCard} title="Account Payables" color="rose"
                 current={stats.payables} limit={limits.maxPayables}
                 description="Jumlah tagihan hutang dibuat"
               />
-              <UsageCard 
+              <UsageCard
                 icon={Wallet} title="Account Receivables" color="emerald"
                 current={stats.receivables} limit={limits.maxReceivables}
                 description="Jumlah tagihan piutang dibuat"
               />
-              <UsageCard 
+              <UsageCard
                 icon={Upload} title="Bank Rec. Uploads" color="blue"
                 current={stats.reconciliationUploads} limit={limits.maxReconciliationUploads}
                 description="Jumlah upload file mutasi"
               />
-              <UsageCard 
+              <UsageCard
                 icon={CreditCard} title="Operational Expenses" color="purple"
                 current={stats.expenses} limit={limits.maxExpenses}
                 description="Jumlah pencatatan beban operasional"
               />
-              <UsageCard 
+              <UsageCard
                 icon={Wallet} title="Payments" color="cyan"
                 current={stats.payments} limit={limits.maxPayments}
                 description="Jumlah pembayaran tercatat"
@@ -466,12 +466,12 @@ export default function UsageStats({ store }) {
               <Package className="w-4 h-4" /> Inventory Movements
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <UsageCard 
+              <UsageCard
                 icon={Download} title="Stock In" color="emerald"
                 current={stats.stockIn} limit={limits.maxStockIn}
                 description="Jumlah penerimaan barang sederhana"
               />
-              <UsageCard 
+              <UsageCard
                 icon={Upload} title="Stock Out" color="rose"
                 current={stats.stockOut} limit={limits.maxStockOut}
                 description="Jumlah pengeluaran barang sederhana"

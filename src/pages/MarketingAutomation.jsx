@@ -356,7 +356,7 @@ export default function MarketingAutomation({ store }) {
     }
 
     if (currentUsage >= EMAIL_LIMIT) {
-      const msg = isTrial 
+      const msg = isTrial
         ? `Kuota Trial Habis! Anda telah mengirim ${currentUsage} dari maksimal ${EMAIL_LIMIT} email. Upgrade plan untuk melanjutkan.`
         : `Kuota email bulan ini habis (${currentUsage}/${EMAIL_LIMIT}). Kuota akan direset di awal bulan depan.`;
       toast.error(msg, { duration: 5000 });
