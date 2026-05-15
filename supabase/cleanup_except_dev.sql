@@ -46,7 +46,7 @@ TRUNCATE TABLE
   customer_segments,
   suppliers,
   bank_accounts,
-  chart_of_accounts,
+  coa,
   employees,
   tax_rates,
   subscriptions
