@@ -61,7 +61,7 @@ WHERE user_id IN (
 -- 3. Hapus data Toko (stores) selain toko milik dev
 DELETE FROM stores 
 WHERE id NOT IN (
-  SELECT current_store_id FROM users WHERE email = 'dev@tradixa.com' AND current_store_id IS NOT NULL
+  SELECT current_store_id::uuid FROM users WHERE email = 'dev@tradixa.com' AND current_store_id IS NOT NULL
 );
 
 -- 4. Hapus data Profil Akun (users) selain dev
