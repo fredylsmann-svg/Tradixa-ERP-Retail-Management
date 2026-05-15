@@ -17,7 +17,7 @@ export const PLAN_TIERS = {
     modules: [
       'Dashboard', 'ProductMaster', 'ProductLocations',
       'StockIn', 'StockOut', 'SalesTransaction',
-      'SalesInvoices', 'CustomerMaster',
+      'CustomerMaster',
       'ProfileAccount', 'CompanySettings', 'StoreSetup',
       'SystemSettings', 'PricingPage',
       'UserManagement', 'UsageStats'
@@ -57,7 +57,6 @@ export const PLAN_TIERS = {
       'Transaksi Jual (max 50 transaksi)',
       'Location Settings',
       'Stock In / Stock Out',
-      'Sales Invoices',
       'User Management (1 User)'
     ],
     notIncluded: [

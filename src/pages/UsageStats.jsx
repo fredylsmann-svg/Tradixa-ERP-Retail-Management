@@ -27,7 +27,16 @@ import {
   CreditCard,
   Wallet,
   Download,
-  Upload
+  Upload,
+  Boxes,
+  UserCircle,
+  Megaphone,
+  ClipboardCheck,
+  Warehouse,
+  ArrowRightLeft,
+  FileCheck,
+  ReceiptText,
+  HandCoins
 } from 'lucide-react';
 import PageHeader from "@/components/layout/PageHeader";
 import { PLAN_TIERS, getEffectiveLimits } from '@/planConfig';
@@ -314,7 +323,7 @@ export default function UsageStats({ store }) {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <UsageCard
-                icon={Package} title="Produk" color="blue"
+                icon={Boxes} title="Produk" color="blue"
                 current={stats.products} limit={limits.maxProducts}
                 description="Jumlah produk terdaftar"
               />
@@ -334,7 +343,7 @@ export default function UsageStats({ store }) {
                 description={store?.plan === 'free' || isTrial ? 'Total selama trial/free' : 'Total kuota foto/bulan'}
               />
               <UsageCard
-                icon={Users} title="Employee Management" color="orange"
+                icon={UserCircle} title="Employee Management" color="orange"
                 current={stats.employees} limit={limits.maxEmployees}
                 description="Jumlah karyawan terdaftar"
               />
@@ -358,11 +367,11 @@ export default function UsageStats({ store }) {
           {/* Email Marketing */}
           <div>
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2 mt-4">
-              <Mail className="w-4 h-4" /> Marketing
+              <Megaphone className="w-4 h-4" /> Marketing
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <UsageCard
-                icon={Mail} title="Email Marketing" color="rose"
+                icon={Megaphone} title="Email Marketing" color="rose"
                 current={emailCurrent} limit={emailLimit}
                 description={emailDesc}
               />
@@ -390,22 +399,22 @@ export default function UsageStats({ store }) {
                 description="Jumlah PR dibuat"
               />
               <UsageCard
-                icon={FileText} title="Purchase Order" color="emerald"
+                icon={ClipboardList} title="Purchase Order" color="emerald"
                 current={stats.purchaseOrders} limit={limits.maxPO}
                 description="Jumlah PO dibuat"
               />
               <UsageCard
-                icon={ClipboardList} title="Goods Receipt (GRN)" color="emerald"
+                icon={ClipboardCheck} title="Goods Receipt (GRN)" color="emerald"
                 current={stats.grn} limit={limits.maxGRN}
                 description="Jumlah GRN dibuat"
               />
               <UsageCard
-                icon={Package} title="Inventory GRN" color="blue"
+                icon={Warehouse} title="Inventory GRN" color="blue"
                 current={stats.inventoryGRN} limit={limits.maxInventoryGRN}
                 description="Jumlah Inventory GRN"
               />
               <UsageCard
-                icon={RotateCcw} title="Supplier Return" color="amber"
+                icon={ArrowRightLeft} title="Supplier Return" color="amber"
                 current={stats.supplierReturn} limit={limits.maxSupplierReturn}
                 description="Jumlah retur supplier"
               />
@@ -443,17 +452,17 @@ export default function UsageStats({ store }) {
                 description="Jumlah tagihan piutang dibuat"
               />
               <UsageCard
-                icon={Upload} title="Bank Rec. Uploads" color="blue"
+                icon={FileCheck} title="Bank Rec. Uploads" color="blue"
                 current={stats.reconciliationUploads} limit={limits.maxReconciliationUploads}
                 description="Jumlah upload file mutasi"
               />
               <UsageCard
-                icon={CreditCard} title="Operational Expenses" color="purple"
+                icon={ReceiptText} title="Operational Expenses" color="purple"
                 current={stats.expenses} limit={limits.maxExpenses}
                 description="Jumlah pencatatan beban operasional"
               />
               <UsageCard
-                icon={Wallet} title="Payments" color="cyan"
+                icon={HandCoins} title="Payments" color="cyan"
                 current={stats.payments} limit={limits.maxPayments}
                 description="Jumlah pembayaran tercatat"
               />

@@ -36,11 +36,9 @@ const featureGroups = [
       { name: 'Product Master', free: '25 produk', pro: '10.000 produk', enterprise: 'Unlimited' },
       { name: 'Location Settings', free: true, pro: true, enterprise: true },
       { name: 'Stock In / Stock Out', free: true, pro: true, enterprise: true },
-      { name: 'Stock Opname', free: false, pro: true, enterprise: true },
       { name: 'Inventory Reports', free: false, pro: true, enterprise: true },
       { name: 'Inventory Ledger', free: false, pro: true, enterprise: true },
       { name: 'Low Stock Alert', free: false, pro: true, enterprise: true },
-      { name: 'Outbound Delivery', free: false, pro: true, enterprise: true },
       { name: 'Inventory Workflow', free: false, pro: true, enterprise: true },
     ]
   },
@@ -49,7 +47,7 @@ const featureGroups = [
     icon: ShoppingCart,
     features: [
       { name: 'Sales Transaction', free: '50 / bulan', pro: 'Unlimited', enterprise: 'Unlimited' },
-      { name: 'Sales Invoices', free: true, pro: true, enterprise: true },
+      { name: 'Sales Invoices', free: false, pro: true, enterprise: true },
       { name: 'Revenue Reports', free: false, pro: true, enterprise: true },
       { name: 'Sales Report', free: false, pro: true, enterprise: true },
     ]
@@ -70,11 +68,13 @@ const featureGroups = [
     title: 'Warehouse (WMS)',
     icon: Warehouse,
     features: [
-      { name: 'Warehouse Dashboard (Real-Time)', free: false, pro: false, enterprise: true },
-      { name: 'Transfer Gudang (Inter-Branch)', free: false, pro: false, enterprise: true },
-      { name: 'Pick List (Konsolidasi Order)', free: false, pro: false, enterprise: true },
-      { name: 'Putaway Suggestion (AI Rak)', free: false, pro: false, enterprise: true },
-      { name: 'WMS Workflow SOP', free: false, pro: false, enterprise: true },
+      { name: 'Warehouse Dashboard (Real-Time)', free: false, pro: true, enterprise: true },
+      { name: 'Transfer Gudang (Inter-Branch)', free: false, pro: true, enterprise: true },
+      { name: 'Pick List (Konsolidasi Order)', free: false, pro: true, enterprise: true },
+      { name: 'Putaway Suggestion (AI Rak)', free: false, pro: true, enterprise: true },
+      { name: 'WMS Workflow SOP', free: false, pro: true, enterprise: true },
+      { name: 'Stock Opname', free: false, pro: true, enterprise: true },
+      { name: 'Outbound Delivery', free: false, pro: true, enterprise: true },
     ]
   },
   {

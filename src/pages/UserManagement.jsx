@@ -29,11 +29,11 @@ const MODULE_GROUPS = [
   },
   {
     category: 'INVENTORY',
-    modules: ['Product Master', 'Location Settings', 'Stock In', 'Stock Out', 'Inventory Ledger', 'Inventory Reports', 'Low Stock Alert', 'Stock Opname', 'Outbound Delivery']
+    modules: ['Product Master', 'Location Settings', 'Stock In', 'Stock Out', 'Inventory Ledger', 'Inventory Reports', 'Low Stock Alert']
   },
   {
     category: 'WAREHOUSE (WMS)',
-    modules: ['WMS Workflow', 'Warehouse Dashboard', 'Transfer Gudang', 'Pick List']
+    modules: ['WMS Workflow', 'Warehouse Dashboard', 'Transfer Gudang', 'Pick List', 'Stock Opname', 'Outbound Delivery']
   },
   {
     category: 'PROCUREMENT',
