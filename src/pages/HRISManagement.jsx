@@ -17,6 +17,7 @@ import { Users } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import ExportToolbar from '@/components/layout/ExportToolbar';
 import moment from 'moment';
+import { getEffectiveLimits } from '@/planConfig';
 
 export default function HRISManagement({ store }) {
   const { toast } = useToast();
@@ -66,6 +67,20 @@ export default function HRISManagement({ store }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
+
+    if (!editingEmployee) {
+      const limits = getEffectiveLimits(store);
+      if (limits.maxEmployees !== Infinity && employees.length >= limits.maxEmployees) {
+        toast({
+          title: "Batas Karyawan Tercapai",
+          description: `Anda telah mencapai batas maksimal karyawan (${limits.maxEmployees} data). Silakan upgrade ke Pro untuk akses tanpa batas.`,
+          variant: "destructive"
+        });
+        setIsSaving(false);
+        return;
+      }
+    }
+
     const employeeData = { ...formData, store_id: store.id, salary: Number(formData.salary) };
     if (!employeeData.employee_id) {
       employeeData.employee_id = `EMP-${Date.now().toString().slice(-6)}`;

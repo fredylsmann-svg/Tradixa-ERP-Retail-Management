@@ -17,6 +17,7 @@ import {
   ArrowRightLeft, Plus, Search, Truck, Package, MapPin, Loader2, Eye, CheckCircle2,
   XCircle, Clock, Printer, FileText, FileSpreadsheet, Trash2, Send
 } from 'lucide-react';
+import WarehouseTransferIcon from '@/components/icons/WarehouseTransferIcon';
 
 export default function WarehouseTransfer({ store }) {
   const { toast } = useToast();
@@ -183,7 +184,7 @@ export default function WarehouseTransfer({ store }) {
       <PageHeader
         title="Inter-Warehouse Transfer"
         subtitle="Perpindahan stok antar gudang/lokasi"
-        icon={ArrowRightLeft}
+        icon={WarehouseTransferIcon}
         actions={
           <div className="flex flex-wrap lg:flex-nowrap gap-2 items-center">
             <div className="flex items-center gap-1.5 mr-2">
@@ -233,7 +234,7 @@ export default function WarehouseTransfer({ store }) {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Transfer', value: transfers.length, color: 'from-blue-500 to-blue-700', icon: ArrowRightLeft },
+          { label: 'Total Transfer', value: transfers.length, color: 'from-blue-500 to-blue-700', icon: WarehouseTransferIcon },
           { label: 'Draft', value: transfers.filter(t => t.status === 'Draft').length, color: 'from-slate-400 to-slate-600', icon: Clock },
           { label: 'In Transit', value: transfers.filter(t => t.status === 'In Transit').length, color: 'from-amber-500 to-amber-700', icon: Truck },
           { label: 'Received', value: transfers.filter(t => t.status === 'Received').length, color: 'from-emerald-500 to-emerald-700', icon: CheckCircle2 }
@@ -272,7 +273,7 @@ export default function WarehouseTransfer({ store }) {
               ) : filteredTransfers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-12 text-slate-400 italic">
-                    <ArrowRightLeft className="w-12 h-12 mx-auto mb-3 text-slate-200" />
+                    <WarehouseTransferIcon className="w-12 h-12 mx-auto mb-3 text-slate-200" />
                     Belum ada transfer order
                   </TableCell>
                 </TableRow>
@@ -314,7 +315,7 @@ export default function WarehouseTransfer({ store }) {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ArrowRightLeft className="w-5 h-5 text-blue-600" />
+              <WarehouseTransferIcon className="w-5 h-5 text-blue-600" />
               Buat Transfer Order
             </DialogTitle>
           </DialogHeader>
@@ -394,7 +395,7 @@ export default function WarehouseTransfer({ store }) {
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ArrowRightLeft className="w-5 h-5 text-blue-600" />
+              <WarehouseTransferIcon className="w-5 h-5 text-blue-600" />
               {viewingTransfer?.transfer_number}
             </DialogTitle>
           </DialogHeader>

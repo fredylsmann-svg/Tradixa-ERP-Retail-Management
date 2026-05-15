@@ -9,6 +9,7 @@ import {
   Layers, Target, Boxes
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import WarehouseTransferIcon from '@/components/icons/WarehouseTransferIcon';
 
 const wmsSteps = [
   {
@@ -105,7 +106,7 @@ const wmsSteps = [
     title: 'Transfer Gudang',
     subtitle: 'Pemindahan Antar Lokasi',
     description: 'Pindahkan stok dari satu gudang/cabang ke yang lain dengan workflow 3-tahap: Draft → In Transit → Received. Setiap transfer terekam dengan audit trail lengkap.',
-    icon: ArrowRightLeft,
+    icon: WarehouseTransferIcon,
     gradient: 'from-indigo-500 to-indigo-600',
     path: '/WarehouseTransfer',
     tip: 'Pastikan gudang tujuan melakukan konfirmasi "Terima" agar lokasi produk ter-update di sistem secara akurat.',
@@ -241,7 +242,7 @@ export default function WMSWorkflow() {
               {[
                 { icon: Lightbulb, color: 'amber', title: 'Putaway Suggestion Otomatis', desc: 'Sistem menyarankan rak berdasarkan histori produk sejenis. Staf tinggal klik.' },
                 { icon: Layers, color: 'blue', title: 'Batch Picking Multi-Order', desc: 'Gabungkan 10 order jadi 1 daftar picking. Efisiensi naik 3-5x lipat.' },
-                { icon: ArrowRightLeft, color: 'indigo', title: 'Transfer Antar Gudang Terlacak', desc: 'Workflow 3 tahap dengan audit trail. Tidak ada stok hilang misterius.' },
+                { icon: WarehouseTransferIcon, color: 'indigo', title: 'Transfer Antar Gudang Terlacak', desc: 'Workflow 3 tahap dengan audit trail. Tidak ada stok hilang misterius.' },
                 { icon: LayoutDashboard, color: 'emerald', title: 'Dashboard Real-Time', desc: 'KPI, grafik, dan alert dalam satu layar. Keputusan berbasis data.' }
               ].map((item, idx) => (
                 <div key={idx} className="flex gap-3 items-start">

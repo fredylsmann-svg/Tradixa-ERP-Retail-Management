@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, History, Download, FileText, Loader2, RefreshCw, User, Database, Activity } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
+import PremiumGate from '@/components/ui/PremiumGate';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
@@ -181,14 +182,18 @@ export default function AuditLog({ store }) {
           </Select>
 
           <div className="flex gap-2">
-            <Button variant="outline" onClick={exportCSV} className="h-12 px-4 rounded-xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50">
-              <Download className="w-4 h-4 mr-2" />
-              CSV
-            </Button>
-            <Button variant="outline" onClick={() => window.print()} className="h-12 px-4 rounded-xl border-emerald-100 text-emerald-600 font-bold hover:bg-emerald-50">
-              <FileText className="w-4 h-4 mr-2" />
-              PDF
-            </Button>
+            <PremiumGate store={store} featureName="Export CSV">
+              <Button variant="outline" onClick={exportCSV} className="h-12 px-4 rounded-xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50">
+                <Download className="w-4 h-4 mr-2" />
+                CSV
+              </Button>
+            </PremiumGate>
+            <PremiumGate store={store} featureName="Export PDF">
+              <Button variant="outline" onClick={() => window.print()} className="h-12 px-4 rounded-xl border-emerald-100 text-emerald-600 font-bold hover:bg-emerald-50">
+                <FileText className="w-4 h-4 mr-2" />
+                PDF
+              </Button>
+            </PremiumGate>
           </div>
         </div>
       </div>

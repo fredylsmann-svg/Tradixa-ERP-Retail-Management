@@ -15,6 +15,7 @@ import {
   BookOpen, ReceiptText, LineChart, BarChart, Activity, Warehouse, ClipboardCheck, MapPin, Palette, Boxes, BarChart3, HandCoins, History,
   Lock, CreditCard as CreditCardIcon, Calculator, FileSignature, PackageCheck
 } from 'lucide-react';
+import WarehouseTransferIcon from '@/components/icons/WarehouseTransferIcon';
 
 const getFilteredMenuGroups = (isOwner) => {
   const allGroups = [
@@ -51,7 +52,7 @@ const getFilteredMenuGroups = (isOwner) => {
         { name: 'Warehouse Dashboard', icon: LayoutDashboard, page: 'WarehouseDashboard' },
         { name: 'Pick List', icon: ClipboardList, page: 'PickList' },
         { name: 'Outbound Delivery', icon: Truck, page: 'OutboundDelivery' },
-        { name: 'Transfer Gudang', icon: ArrowRightLeft, page: 'WarehouseTransfer' },
+        { name: 'Transfer Gudang', icon: WarehouseTransferIcon, page: 'WarehouseTransfer' },
         { name: 'Stock Opname', icon: PackageCheck, page: 'StockOpname' }
       ]
     },

@@ -131,6 +131,9 @@ export default function UsageStats({ store }) {
     stockIn: 0,
     stockOut: 0,
     outboundDeliveries: 0,
+    employees: 0,
+    expenses: 0,
+    payments: 0,
   });
   const [loading, setLoading] = useState(true);
   
@@ -164,6 +167,9 @@ export default function UsageStats({ store }) {
           stockOutRes,
           bankRecRes,
           outboundRes,
+          employeesRes,
+          expensesRes,
+          paymentsRes,
         ] = await Promise.all([
           supabase.from('marketing_campaigns').select('sent_count', { count: 'exact' }).eq('store_id', store.id).in('status', ['Sent', 'Running']),
           supabase.from('marketing_automation_rules').select('total_executions', { count: 'exact' }).eq('store_id', store.id),
@@ -173,7 +179,7 @@ export default function UsageStats({ store }) {
           supabase.from('purchase_requisitions').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
           supabase.from('purchase_orders').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
           supabase.from('goods_receipts').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
-          supabase.from('inventory_grn').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
+          supabase.from('inventory_grns').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
           supabase.from('supplier_returns').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
           supabase.from('payables').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
           supabase.from('receivables').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
@@ -182,6 +188,9 @@ export default function UsageStats({ store }) {
           supabase.from('stock_movements').select('id', { count: 'exact', head: true }).eq('store_id', store.id).eq('movement_type', 'out'),
           supabase.from('bank_statement_history').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
           supabase.from('outbound_deliveries').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
+          supabase.from('employees').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
+          supabase.from('expenses').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
+          supabase.from('bank_transactions').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
         ]);
 
         // Hitung total email terkirim (hanya dari campaign sent_count — source of truth)
@@ -235,6 +244,9 @@ export default function UsageStats({ store }) {
           stockOut: stockOutRes.count || 0,
           reconciliationUploads: bankRecRes.count || 0,
           outboundDeliveries: outboundRes.count || 0,
+          employees: employeesRes.count || 0,
+          expenses: expensesRes.count || 0,
+          payments: paymentsRes.count || 0,
         });
       } catch (err) {
         console.error('Gagal mengambil data penggunaan:', err);
@@ -320,6 +332,11 @@ export default function UsageStats({ store }) {
                 icon={Camera} title="Upload Foto/Media Produk" color="cyan"
                 current={stats.productPhotos} limit={limits.maxProductPhotos}
                 description={store?.plan === 'free' || isTrial ? 'Total selama trial/free' : 'Total kuota foto/bulan'}
+              />
+              <UsageCard 
+                icon={Users} title="Employee Management" color="orange"
+                current={stats.employees} limit={limits.maxEmployees}
+                description="Jumlah karyawan terdaftar"
               />
             </div>
           </div>
@@ -429,6 +446,16 @@ export default function UsageStats({ store }) {
                 icon={Upload} title="Bank Rec. Uploads" color="blue"
                 current={stats.reconciliationUploads} limit={limits.maxReconciliationUploads}
                 description="Jumlah upload file mutasi"
+              />
+              <UsageCard 
+                icon={CreditCard} title="Operational Expenses" color="purple"
+                current={stats.expenses} limit={limits.maxExpenses}
+                description="Jumlah pencatatan beban operasional"
+              />
+              <UsageCard 
+                icon={Wallet} title="Payments" color="cyan"
+                current={stats.payments} limit={limits.maxPayments}
+                description="Jumlah pembayaran tercatat"
               />
             </div>
           </div>

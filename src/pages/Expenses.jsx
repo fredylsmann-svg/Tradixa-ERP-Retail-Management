@@ -16,6 +16,7 @@ import ExportToolbar from '@/components/layout/ExportToolbar';
 import PageHeader from '@/components/layout/PageHeader';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { Wallet } from 'lucide-react';
+import { getEffectiveLimits } from '@/planConfig';
 
 const EXPENSE_CATEGORIES = [
   'Gaji Karyawan',
@@ -100,6 +101,17 @@ export default function Expenses({ store }) {
     }
     setIsSubmitting(true);
     try {
+      const limits = getEffectiveLimits(store);
+      if (limits.maxExpenses !== Infinity && allExpenses.length >= limits.maxExpenses) {
+        toast({
+          title: "Batas Operational Expenses Tercapai",
+          description: `Anda telah mencapai batas maksimal pencatatan beban operasional (${limits.maxExpenses} data). Silakan upgrade ke Pro untuk akses tanpa batas.`,
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       const amountNumeric = Number(formData.amount);
       const trxId = `OPEX-${Date.now().toString(36).toUpperCase()}`;
       

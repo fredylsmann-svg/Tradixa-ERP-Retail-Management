@@ -16,8 +16,11 @@ import PageDatePicker from '@/components/layout/PageDatePicker';
 import PageHeader from '@/components/layout/PageHeader';
 import PrintPayment from '@/components/invoice/PrintPayment';
 import ExportToolbar from '@/components/layout/ExportToolbar';
+import { getEffectiveLimits } from '@/planConfig';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function Payments({ store }) {
+  const { toast } = useToast();
   const [payments, setPayments] = useState([]);
   const [receivables, setReceivables] = useState([]);
   const [payables, setPayables] = useState([]);
@@ -95,6 +98,17 @@ export default function Payments({ store }) {
     if (!formData.invoice_ref || !formData.amount || (!isCash && !formData.bank_id)) return;
     setIsSaving(true);
     
+    const limits = getEffectiveLimits(store);
+    if (limits.maxPayments !== Infinity && payments.length >= limits.maxPayments) {
+      toast({
+        title: "Batas Pembayaran Tercapai",
+        description: `Anda telah mencapai batas maksimal rekam pembayaran (${limits.maxPayments} data). Silakan upgrade ke Pro untuk akses tanpa batas.`,
+        variant: "destructive"
+      });
+      setIsSaving(false);
+      return;
+    }
+
     let uploadedUrl = '';
     if (proofFile) {
       try {
