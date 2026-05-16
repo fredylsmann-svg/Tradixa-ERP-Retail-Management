@@ -187,7 +187,7 @@ export default function Layout({ children, currentPageName }) {
             })()}
           </div>
           <div className="mt-10 pb-4 text-center text-[10px] text-slate-400 font-medium print:hidden">
-            © 2026 Tradixa Digital Architect. All rights reserved
+            © 2026 Tradixa Management Retail System. All rights reserved
           </div>
         </main>
       </div>
