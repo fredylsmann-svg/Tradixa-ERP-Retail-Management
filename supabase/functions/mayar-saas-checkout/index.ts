@@ -8,7 +8,7 @@ const corsHeaders = {
 }
 
 const PLAN_PRICES = {
-  pro: { monthly: 15000, yearly: 150000 },
+  pro: { monthly: 149000, yearly: 1490000 },
   enterprise: { monthly: 499000, yearly: 4990000 },
 };
 
