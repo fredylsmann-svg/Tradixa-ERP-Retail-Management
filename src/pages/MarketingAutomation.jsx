@@ -334,22 +334,43 @@ export default function MarketingAutomation({ store }) {
     const allCampaigns = await api.entities.MarketingCampaign.filter({ store_id: store?.id });
     const totalEmailsSent = allCampaigns.reduce((sum, c) => sum + (c.sent_count || 0), 0);
 
+    // Hitung juga email transaksional (Invoice, Low Stock) dari communication_logs
+    const { count: transactionalCount } = await supabase
+      .from('communication_logs')
+      .select('id', { count: 'exact', head: true })
+      .eq('store_id', store?.id)
+      .eq('type', 'Email')
+      .or('campaign_id.is.null,campaign_id.eq.');
+    const totalTransactional = transactionalCount || 0;
+
     let EMAIL_LIMIT;
     let currentUsage;
 
     if (isTrial) {
       EMAIL_LIMIT = 5;
-      currentUsage = totalEmailsSent;
+      currentUsage = totalEmailsSent + totalTransactional;
     } else if (isPaidPro) {
       EMAIL_LIMIT = 250;
       // Hitung hanya campaign bulan ini
       const now = new Date();
+      const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
       const thisMonthCampaigns = allCampaigns.filter(c => {
         if (!c.created_date) return false;
         const d = new Date(c.created_date);
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       });
-      currentUsage = thisMonthCampaigns.reduce((sum, c) => sum + (c.sent_count || 0), 0);
+      const campaignUsage = thisMonthCampaigns.reduce((sum, c) => sum + (c.sent_count || 0), 0);
+
+      // Hitung juga transaksional bulan ini
+      const { count: monthlyTransactional } = await supabase
+        .from('communication_logs')
+        .select('id', { count: 'exact', head: true })
+        .eq('store_id', store?.id)
+        .eq('type', 'Email')
+        .or('campaign_id.is.null,campaign_id.eq.')
+        .gte('created_date', startOfMonth);
+
+      currentUsage = campaignUsage + (monthlyTransactional || 0);
     } else {
       toast.error('Fitur Email Marketing hanya tersedia di paket Pro. Upgrade untuk menggunakan fitur ini.', { duration: 5000 });
       return;

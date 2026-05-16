@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import PageHeader from '@/components/layout/PageHeader';
 import PremiumGate from '@/components/ui/PremiumGate';
 import { FileText } from 'lucide-react';
+import { marketingApi } from '@/api/marketing';
 
 export default function SalesInvoices({ store }) {
   const [allTransactions, setAllTransactions] = useState([]);
@@ -57,34 +58,63 @@ export default function SalesInvoices({ store }) {
   );
 
   const sendInvoiceEmail = async () => {
-    if (!emailingInvoice || !emailingInvoice.customer_id) return;
+    if (!emailingInvoice) return;
+    if (!emailingInvoice.customer_id) {
+      toast.error('Data pelanggan tidak tersedia (Walk-in Customer).');
+      setEmailingInvoice(null);
+      return;
+    }
     
     setIsSendingEmail(true);
     try {
+      const quotaCheck = await marketingApi.checkEmailQuota(store);
+      if (!quotaCheck.allowed) {
+        toast.error(`Gagal mengirim email: ${quotaCheck.message}`);
+        setIsSendingEmail(false);
+        return;
+      }
+
       const customer = await api.entities.Customer.filter({ id: emailingInvoice.customer_id });
       if (customer.length > 0 && customer[0].email) {
         const invoiceDetails = `
-Invoice: ${emailingInvoice.invoice_number}
-Customer: ${emailingInvoice.customer_name}
-Total: Rp ${formatCurrency(emailingInvoice.total)}
-Status: ${emailingInvoice.payment_status}
+          <div style="font-family: sans-serif; padding: 20px;">
+            <h2>Invoice dari ${store.store_name}</h2>
+            <p>Halo ${emailingInvoice.customer_name},</p>
+            <p>Terima kasih telah berbelanja di toko kami. Berikut adalah ringkasan invoice Anda:</p>
+            <ul>
+              <li><strong>No. Invoice:</strong> ${emailingInvoice.invoice_number}</li>
+              <li><strong>Total:</strong> Rp ${formatCurrency(emailingInvoice.total)}</li>
+              <li><strong>Status Pembayaran:</strong> ${emailingInvoice.payment_status}</li>
+            </ul>
+            <p>Silakan klik tombol di bawah untuk melihat detail lebih lanjut.</p>
+          </div>
+        `;
 
-Terima kasih telah berbelanja di ${store.store_name}.
-        `.trim();
-
-        await api.integrations.Core.SendEmail({
+        await marketingApi.sendEmail({
           to: customer[0].email,
           subject: `Invoice ${emailingInvoice.invoice_number} - ${store.store_name}`,
-          body: invoiceDetails
+          html: invoiceDetails,
+          storeName: store.store_name,
+          ctaUrl: `${window.location.origin}/public/invoice/sales/${emailingInvoice.id}`
         });
         
-        // Log Activity
+        // Log Activity to Audit
         api.logActivity({
           store_id: store.id,
           entity_name: 'SalesInvoice',
           entity_id: emailingInvoice.id,
           action_type: 'email_sent',
           description: `Sent invoice ${emailingInvoice.invoice_number} to ${customer[0].email}`
+        });
+
+        // Log to Communication Logs for Quota
+        await api.entities.CommunicationLog.create({
+          store_id: store.id,
+          customer_id: customer[0].id,
+          type: 'Email',
+          subject: `Invoice ${emailingInvoice.invoice_number} - ${store.store_name}`,
+          content: `Dikirim invoice ${emailingInvoice.invoice_number}`,
+          status: 'Sent'
         });
 
         toast.success('Email berhasil dikirim!');

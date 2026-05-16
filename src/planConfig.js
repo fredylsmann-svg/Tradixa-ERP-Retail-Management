@@ -70,11 +70,11 @@ export const PLAN_TIERS = {
     id: 'pro',
     name: 'Pro',
     label: 'Professional',
-    price: 149000,
-    yearlyPrice: 1490000,
-    priceLabel: 'Rp 149.000',
-    yearlyPriceLabel: 'Rp 1.490.000',
-    savingsLabel: 'Hemat Rp 298.000',
+    price: 15000,
+    yearlyPrice: 150000,
+    priceLabel: 'Rp 15.000',
+    yearlyPriceLabel: 'Rp 150.000',
+    savingsLabel: 'Hemat Rp 30.000',
     color: 'blue',
     badge: 'bg-blue-100 text-blue-700',
     gradient: 'from-blue-500 to-blue-600',
@@ -144,12 +144,12 @@ export const PLAN_TIERS = {
       'HRIS & User Management (max 10 user)',
       'Export Data (CSV, PDF, Print)',
       'Workflow System',
-      'Email Marketing (250/bulan)',
+      'Email & Notifikasi (250/bulan)',
       '1x Bimbingan & Konsultasi Sistem Bersama Tim Ahli',
     ],
     notIncluded: []
   },
- 
+
   enterprise: {
     id: 'enterprise',
     name: 'Enterprise',
@@ -252,19 +252,19 @@ export function getPlanLimits(planId) {
  */
 export function getEffectiveLimits(store) {
   if (!store) return PLAN_TIERS.free.limits;
-  
+
   const plan = store.plan || 'free';
   const planConfig = PLAN_TIERS[plan] || PLAN_TIERS.free;
-  
+
   // Jika Pro Trial (has_used_trial = true berarti sedang/sudah trial)
   const isTrial = plan === 'pro' && store.has_used_trial;
-  
+
   if (isTrial && planConfig.trialLimits) {
     return {
       ...planConfig.limits,
       ...planConfig.trialLimits,
     };
   }
-  
+
   return planConfig.limits;
 }

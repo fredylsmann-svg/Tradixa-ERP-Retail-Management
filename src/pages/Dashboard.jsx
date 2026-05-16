@@ -47,7 +47,7 @@ export default function Dashboard({ store }) {
       api.entities.Receivable.filter({ store_id: store.id, status: 'Pending' })
     ]);
 
-    const lowStockCount = products.filter(p => p.stock <= p.reorder_level).length;
+    const lowStockCount = products.filter(p => p.stock <= p.reorder_level && p.stock > 0).length;
     const totalRevenue = sales.reduce((sum, s) => sum + (s.total || 0), 0);
     const totalProfit = sales.reduce((sum, s) => sum + (s.profit || 0), 0);
     const totalPayables = payables.reduce((sum, p) => sum + (p.remaining_amount || p.amount || 0), 0);

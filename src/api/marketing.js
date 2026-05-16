@@ -41,11 +41,78 @@ export const marketingApi = {
   },
 
   /**
-   * Placeholder untuk WhatsApp Meta API
+   * Mendapatkan penggunaan email bulan ini (Marketing + Transactional)
    */
-  async sendWhatsApp({ to, templateName, components }) {
-    console.log(`[Simulasi WA] Mengirim template ${templateName} ke ${to}`);
-    return { success: true };
+  async getMonthlyEmailUsage(storeId) {
+    if (!storeId) return 0;
+    const now = new Date();
+    const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
+    try {
+      // 1. Hitung dari Marketing Campaigns
+      const { data: campaigns } = await supabase
+        .from('marketing_campaigns')
+        .select('sent_count')
+        .eq('store_id', storeId)
+        .gte('created_date', startOfMonth);
+      
+      const marketingSent = campaigns?.reduce((sum, c) => sum + (c.sent_count || 0), 0) || 0;
+
+      // 2. Hitung dari Transactional Logs (Email yang tidak berasal dari campaign)
+      const { count: transactionalSent } = await supabase
+        .from('communication_logs')
+        .select('id', { count: 'exact', head: true })
+        .eq('store_id', storeId)
+        .eq('type', 'Email')
+        .or('campaign_id.is.null,campaign_id.eq.')
+        .gte('created_date', startOfMonth);
+
+      return marketingSent + (transactionalSent || 0);
+    } catch (err) {
+      console.error('[Tradixa] Error calculating email usage:', err);
+      return 0;
+    }
+  },
+
+  /**
+   * Helper untuk validasi kuota sebelum kirim
+   */
+  async checkEmailQuota(store) {
+    if (!store) return { allowed: false, message: 'Data store tidak ditemukan' };
+    
+    const plan = store.plan || 'free';
+    const isTrial = plan === 'pro' && store.has_used_trial;
+    const isPaidPro = plan === 'pro' && !store.has_used_trial;
+    const isEnterprise = plan === 'enterprise';
+
+    if (plan === 'free') {
+      return { allowed: false, message: 'Fitur email hanya tersedia di paket Pro. Silakan upgrade.' };
+    }
+
+    if (isTrial) {
+      // Trial limit: 5 total
+      const { data: allCampaigns } = await supabase.from('marketing_campaigns').select('sent_count').eq('store_id', store.id);
+      const { count: allLogs } = await supabase.from('communication_logs').select('id', { count: 'exact', head: true }).eq('store_id', store.id).eq('type', 'Email').or('campaign_id.is.null,campaign_id.eq.');
+      const totalSent = (allCampaigns?.reduce((sum, c) => sum + (c.sent_count || 0), 0) || 0) + (allLogs || 0);
+      
+      if (totalSent >= 5) {
+        return { allowed: false, message: 'Kuota Trial habis (5/5). Upgrade ke Pro untuk kuota lebih besar.' };
+      }
+      return { allowed: true, remaining: 5 - totalSent };
+    }
+
+    if (isPaidPro) {
+      const usage = await this.getMonthlyEmailUsage(store.id);
+      const limit = 250;
+      if (usage >= limit) {
+        return { allowed: false, message: `Kuota bulan ini habis (${usage}/${limit}). Akan direset awal bulan depan.` };
+      }
+      return { allowed: true, remaining: limit - usage };
+    }
+
+    if (isEnterprise) return { allowed: true, remaining: Infinity };
+
+    return { allowed: false, message: 'Plan tidak valid' };
   }
 };
 

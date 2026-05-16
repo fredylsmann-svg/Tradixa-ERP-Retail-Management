@@ -8,13 +8,13 @@ const corsHeaders = {
 }
 
 // SaaS plan prices — must match planConfig.js
-const SAAS_PRICES: Record<number, { plan: string; days: number }> = {
-  1000: { plan: 'pro', days: 30 },         // Pro monthly (sandbox)
-  10000: { plan: 'pro', days: 365 },       // Pro yearly (sandbox)
-  1500: { plan: 'enterprise', days: 30 },  // Enterprise monthly (sandbox)
-  15000: { plan: 'enterprise', days: 365 },// Enterprise yearly (sandbox)
-  149000: { plan: 'pro', days: 30 },       // Pro monthly (production)
-  1490000: { plan: 'pro', days: 365 },     // Pro yearly (production)
+const SAAS_PRICES: Record<number, { plan: string; cycle: string }> = {
+  1000: { plan: 'pro', cycle: 'monthly' },         // Pro monthly (sandbox)
+  10000: { plan: 'pro', cycle: 'yearly' },          // Pro yearly (sandbox)
+  15000: { plan: 'pro', cycle: 'monthly' },         // Pro monthly (testing Rp 15.000)
+  150000: { plan: 'pro', cycle: 'yearly' },         // Pro yearly (testing Rp 150.000)
+  149000: { plan: 'pro', cycle: 'monthly' },        // Pro monthly (production)
+  1490000: { plan: 'pro', cycle: 'yearly' },        // Pro yearly (production)
 }
 
 serve(async (req: any) => {
@@ -47,33 +47,46 @@ serve(async (req: any) => {
     const eventName = String(payload.event || '')
 
     // ─── 1. SaaS UPGRADE CHECK ───
-    // Identify SaaS payments by description or amount matching
-    const paymentDescription = String(payload.data?.productDescription || payload.data?.description || '').toLowerCase()
-    const isSaaSPayment = paymentDescription.includes('saas upgrade') || (SAAS_PRICES[amount] && paymentDescription.includes('tradixa'))
-    const matched = SAAS_PRICES[amount]
-    const matchedPlan = matched?.plan
+    const paymentDescription = String(payload.data?.productDescription || payload.data?.description || '')
+    const isSaaSPayment = paymentDescription.toLowerCase().includes('saas upgrade')
+    const isPaymentSuccess = dataStatus === 'SUCCESS' || dataStatus === 'PAID' || dataStatus === 'COMPLETED' || dataStatus === 'SETTLEMENT'
 
-    if (isSaaSPayment && matchedPlan && customerEmail && (dataStatus === 'SUCCESS' || dataStatus === 'PAID' || dataStatus === 'COMPLETED' || dataStatus === 'SETTLEMENT')) {
-      // Find the user by email to get their store_id
-      const { data: user } = await supabase
-        .from('users')
-        .select('store_id, current_store_id')
-        .eq('email', customerEmail)
-        .single()
+    if (isSaaSPayment && isPaymentSuccess) {
+      // Parse store_id, plan, and cycle directly from description
+      const storeMatch = paymentDescription.match(/Store:\s*([a-zA-Z0-9-]+)/)
+      const planMatch = paymentDescription.match(/Plan:\s*([a-zA-Z0-9-]+)/)
+      const cycleMatch = paymentDescription.match(/Cycle:\s*([a-zA-Z]+)/)
 
-      const targetStoreId = user?.current_store_id || user?.store_id;
+      // Determine store ID: prefer description parsing, fallback to user email lookup
+      let targetStoreId = storeMatch ? storeMatch[1] : null
+      const planId = planMatch ? planMatch[1] : (SAAS_PRICES[amount]?.plan || 'pro')
+      const billingCycle = cycleMatch ? cycleMatch[1] : (SAAS_PRICES[amount]?.cycle || 'monthly')
+
+      // Fallback: find store by email if description parsing failed
+      if (!targetStoreId && customerEmail) {
+        const { data: user } = await supabase
+          .from('users')
+          .select('store_id, current_store_id')
+          .eq('email', customerEmail)
+          .single()
+        targetStoreId = user?.current_store_id || user?.store_id
+      }
 
       if (targetStoreId) {
         // Calculate subscription dates
-        const durationDays = matched?.days || 30
         const now = new Date()
-        const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000)
+        const expiresAt = new Date(now)
+        if (billingCycle === 'yearly') {
+          expiresAt.setFullYear(expiresAt.getFullYear() + 1)
+        } else {
+          expiresAt.setMonth(expiresAt.getMonth() + 1)
+        }
 
         // Upgrade the store plan with dates!
         const { error: updateError } = await supabase
           .from('stores')
           .update({ 
-            plan: matchedPlan,
+            plan: planId,
             has_used_trial: false,
             plan_started_at: now.toISOString(),
             plan_expires_at: expiresAt.toISOString()
@@ -84,22 +97,42 @@ serve(async (req: any) => {
           throw new Error(`Failed to upgrade store: ${updateError.message}`)
         }
 
-        // Save to subscriptions for billing history
-        await supabase.from('subscriptions').insert({
-          store_id: targetStoreId,
-          plan: matchedPlan,
-          status: 'active',
-          payment_method: 'mayar',
-          amount: amount,
-          started_at: now.toISOString(),
-          expires_at: expiresAt.toISOString(),
-          notes: `productId:${productId}|email:${customerEmail}|days:${durationDays}`,
-        })
+        // Update pending subscription to active, or insert new one
+        const { data: pendingSub } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('store_id', targetStoreId)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (pendingSub) {
+          await supabase.from('subscriptions').update({
+            status: 'active',
+            started_at: now.toISOString(),
+            expires_at: expiresAt.toISOString(),
+            notes: `mayar_confirmed|cycle:${billingCycle}|txn:${payload.data?.transactionId || productId}`,
+          }).eq('id', pendingSub.id)
+        } else {
+          await supabase.from('subscriptions').insert({
+            store_id: targetStoreId,
+            plan: planId,
+            status: 'active',
+            payment_method: 'mayar',
+            amount: amount,
+            started_at: now.toISOString(),
+            expires_at: expiresAt.toISOString(),
+            notes: `mayar_confirmed|cycle:${billingCycle}|txn:${payload.data?.transactionId || productId}`,
+          })
+        }
+
+        console.log(`[Tradixa Webhook] ✅ SaaS Upgrade: Store ${targetStoreId} → ${planId} (${billingCycle}). Expires: ${expiresAt.toISOString()}`)
 
         return new Response(JSON.stringify({ 
           received: true, 
           type: 'saas_upgrade_ok', 
-          plan: matchedPlan,
+          plan: planId,
           store_id: targetStoreId 
         }), { 
           headers: { 'Content-Type': 'application/json' }, 

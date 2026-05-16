@@ -179,6 +179,7 @@ export default function UsageStats({ store }) {
           employeesRes,
           expensesRes,
           paymentsRes,
+          commLogsRes,
         ] = await Promise.all([
           supabase.from('marketing_campaigns').select('sent_count', { count: 'exact' }).eq('store_id', store.id).in('status', ['Sent', 'Running']),
           supabase.from('marketing_automation_rules').select('total_executions', { count: 'exact' }).eq('store_id', store.id),
@@ -200,28 +201,43 @@ export default function UsageStats({ store }) {
           supabase.from('employees').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
           supabase.from('expenses').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
           supabase.from('bank_transactions').select('id', { count: 'exact', head: true }).eq('store_id', store.id),
+          supabase.from('communication_logs').select('id', { count: 'exact', head: true }).eq('store_id', store.id).eq('type', 'Email').or('campaign_id.is.null,campaign_id.eq.'),
         ]);
 
-        // Hitung total email terkirim (hanya dari campaign sent_count — source of truth)
-        let totalEmail = 0;
-        if (campaignRes.data) totalEmail = campaignRes.data.reduce((sum, c) => sum + (c.sent_count || 0), 0);
+        // Get transactional email count
+        const transactionalLogCount = commLogsRes?.count || 0;
 
-        // Monthly email — hitung dari campaign yang dibuat bulan ini
+        // Hitung total email terkirim (campaign sent_count + transactional logs)
+        let totalEmail = transactionalLogCount;
+        if (campaignRes.data) totalEmail += campaignRes.data.reduce((sum, c) => sum + (c.sent_count || 0), 0);
+
+        // Monthly email — hitung dari campaign yang dibuat bulan ini + transactional bulan ini
         const now = new Date();
+        const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+        
         let monthlyEmail = 0;
         if (campaignRes.data) {
-          // Filter campaign bulan ini dan hitung sent_count
           const { data: thisMonthCampaigns } = await supabase
             .from('marketing_campaigns')
             .select('sent_count, created_date')
             .eq('store_id', store.id)
             .in('status', ['Sent', 'Running'])
-            .gte('created_date', `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
+            .gte('created_date', startOfMonth);
 
           if (thisMonthCampaigns) {
-            monthlyEmail = thisMonthCampaigns.reduce((sum, c) => sum + (c.sent_count || 0), 0);
+            monthlyEmail += thisMonthCampaigns.reduce((sum, c) => sum + (c.sent_count || 0), 0);
           }
         }
+
+        const { count: thisMonthLogs } = await supabase
+          .from('communication_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('store_id', store.id)
+          .eq('type', 'Email')
+          .or('campaign_id.is.null,campaign_id.eq.')
+          .gte('created_date', startOfMonth);
+        
+        monthlyEmail += (thisMonthLogs || 0);
 
         // Hitung foto produk (products with image_url yang benar-benar ada)
         const photoRes = await supabase.from('products').select('id', { count: 'exact', head: true }).eq('store_id', store.id).not('image_url', 'is', null).neq('image_url', '');
@@ -364,14 +380,14 @@ export default function UsageStats({ store }) {
             </div>
           </div>
 
-          {/* Email Marketing */}
+          {/* Communication Usage */}
           <div>
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2 mt-4">
-              <Megaphone className="w-4 h-4" /> Marketing
+              <Megaphone className="w-4 h-4" /> Komunikasi & Notifikasi
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <UsageCard
-                icon={Megaphone} title="Email Marketing" color="rose"
+                icon={Mail} title="Email & Notifikasi" color="rose"
                 current={emailCurrent} limit={emailLimit}
                 description={emailDesc}
               />

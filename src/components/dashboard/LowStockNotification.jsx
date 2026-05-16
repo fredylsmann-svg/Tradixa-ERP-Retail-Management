@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/api/client';
 import { supabase } from '@/lib/supabase';
+import { marketingApi } from '@/api/marketing';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -60,6 +61,17 @@ export default function LowStockNotification({ store }) {
   const sendEmailNotification = async () => {
     setIsSendingEmail(true);
     try {
+      const quotaCheck = await marketingApi.checkEmailQuota(store);
+      if (!quotaCheck.allowed) {
+        toast({
+          title: "Gagal Mengirim Email",
+          description: quotaCheck.message,
+          variant: "destructive",
+        });
+        setIsSendingEmail(false);
+        return;
+      }
+
       const user = await api.auth.me();
       const storeName = store?.store_name || 'Tradixa Store';
 
@@ -106,6 +118,15 @@ export default function LowStockNotification({ store }) {
       if (functionError) {
         throw new Error(functionError.message || 'Edge Function error');
       }
+
+      await api.entities.CommunicationLog.create({
+        store_id: store.id,
+        customer_id: user.id || 'system',
+        type: 'Email',
+        subject: `⚠️ Notifikasi Stok Rendah - ${storeName}`,
+        content: `Notifikasi stok rendah untuk ${visibleProducts.length} produk.`,
+        status: 'Sent'
+      });
 
       toast({
         title: "✅ Email Terkirim!",

@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   CheckCircle2, X, Crown, Zap, Shield, Sparkles, Lock, ChevronDown,
   Package, ShoppingCart, Truck, DollarSign, Users, BarChart3,
-  Award, Megaphone, Landmark, Palette, History, MessageCircle, Clock, Warehouse
+  Award, Megaphone, Landmark, Palette, History, MessageCircle, Clock, Warehouse, PartyPopper
 } from 'lucide-react';
 import { PLAN_TIERS } from '@/planConfig';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -21,7 +22,7 @@ const featureGroups = [
       { name: 'Customer', free: '25', pro: 'Unlimited', enterprise: 'Unlimited' },
       { name: 'Upload Foto/Media Produk', free: '10', pro: 'Hingga 2.000/bulan', enterprise: 'Unlimited' },
       { name: 'Max Ukuran Foto', free: '2 MB', pro: '2 MB', enterprise: '10 MB' },
-      { name: 'Email Marketing', free: false, pro: '250/bulan', enterprise: 'Unlimited' },
+      { name: 'Email & Notifikasi (Email/WA)', free: false, pro: '250/bulan', enterprise: 'Unlimited' },
       { name: 'Purchase Requisition', free: false, pro: 'Unlimited', enterprise: 'Unlimited' },
       { name: 'Purchase Order', free: false, pro: 'Unlimited', enterprise: 'Unlimited' },
       { name: 'GRN', free: false, pro: 'Unlimited', enterprise: 'Unlimited' },
@@ -159,11 +160,25 @@ function FaqItem({ question, answer }) {
 
 export default function PricingPage({ store }) {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const currentPlan = store?.plan || 'free';
   const isTrial = currentPlan === 'pro' && store?.has_used_trial;
   const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState(null);
   const [billingCycle, setBillingCycle] = useState('yearly'); // 'yearly' | 'monthly'
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+
+  // Detect return from Mayar after successful payment
+  useEffect(() => {
+    if (searchParams.get('payment') === 'success') {
+      setShowPaymentSuccess(true);
+      // Clean up URL parameter
+      searchParams.delete('payment');
+      setSearchParams(searchParams, { replace: true });
+      // Reload store data to reflect updated plan
+      window.dispatchEvent(new Event('refresh_data'));
+    }
+  }, []);
 
   const handleCheckout = async () => {
     if (!selectedPlanForCheckout || !store?.id) return;
@@ -177,7 +192,7 @@ export default function PricingPage({ store }) {
           billingCycle: billingCycle,
           customer_name: user?.full_name || store.owner_name,
           customer_email: user?.email || store.owner_email || store.email,
-          redirect_url: window.location.href
+          redirect_url: `${window.location.origin}${window.location.pathname}?payment=success`
         }
       });
 
@@ -384,7 +399,7 @@ export default function PricingPage({ store }) {
               { q: 'Apakah bisa downgrade?', a: 'Ya, Anda bisa downgrade kapan saja. Data Anda tetap aman, hanya akses ke modul premium yang dibatasi.' },
               { q: 'Bagaimana cara pembayaran?', a: 'Pembayaran melalui transfer bank, e-wallet, atau kartu kredit. Invoice otomatis dikirim ke email.' },
               { q: 'Apakah ada trial?', a: 'Ya, setiap akun baru mendapat kesempatan free trial Pro selama 14 hari. Selama trial, Anda bisa mencoba hampir semua fitur dengan batasan jumlah data tertentu.' },
-              { q: 'Berapa kuota email marketing?', a: 'Free Trial mendapat 5 email. Pro Plan berbayar mendapat 250 email per bulan yang akan direset otomatis setiap awal siklus billing.' },
+              { q: 'Berapa kuota komunikasi (Email & WA)?', a: 'Free Trial mendapat 5 kuota komunikasi. Pro Plan berbayar mendapat 250 kuota per bulan (gabungan untuk Marketing, Invoice, dan Alert Stok) yang akan direset otomatis setiap awal siklus billing.' },
               { q: 'Apakah data aman?', a: 'Data dienkripsi dengan standar AES-256 dan disimpan di server cloud yang aman.' },
               { q: 'Apa batasan paket Free / Trial?', a: 'Limit Paket Free: Maksimal 50 transaksi penjualan, fitur ekspor (Excel/PDF/Print) terkunci, dan terdapat watermark pada struk. Upgrade ke Pro untuk akses tanpa batas dan laporan profesional.' },
               { q: 'Apakah ada garansi uang kembali?', a: 'Ya, kami memberikan 100% Money Back Guarantee jika terjadi error fatal pada sistem saat pemakaian. Sebagai ERP sesungguhnya, kami menjamin SLA (Service Level Agreement) dan uptime server 99.9% untuk operasional bisnis Anda yang tanpa hambatan.' },
@@ -471,6 +486,49 @@ export default function PricingPage({ store }) {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Success Dialog */}
+      <Dialog open={showPaymentSuccess} onOpenChange={setShowPaymentSuccess}>
+        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-0 shadow-2xl">
+          <DialogTitle className="sr-only">Pembayaran Berhasil</DialogTitle>
+          <DialogDescription className="sr-only">Paket Pro Anda telah diaktifkan</DialogDescription>
+          <div className="text-center p-8 space-y-5">
+            <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto animate-in zoom-in duration-500">
+              <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                Selamat! 🎉
+              </h2>
+              <p className="text-sm text-slate-600 leading-relaxed max-w-sm mx-auto">
+                Paket <strong>Pro Plan</strong> Anda telah berhasil diaktifkan. 
+                Nikmati akses penuh ke seluruh modul premium Tradixa untuk mengembangkan bisnis Anda.
+              </p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-left">
+              <div className="flex items-center gap-2 text-xs font-medium text-emerald-700">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Akses seluruh modul Pro telah dibuka
+              </div>
+              <div className="flex items-center gap-2 text-xs font-medium text-emerald-700">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Kuota email & notifikasi: 250/bulan
+              </div>
+              <div className="flex items-center gap-2 text-xs font-medium text-emerald-700">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Limit produk, customer, dan transaksi ditingkatkan
+              </div>
+            </div>
+            <Button 
+              onClick={() => {
+                setShowPaymentSuccess(false);
+                window.dispatchEvent(new Event('refresh_data'));
+              }}
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-sm hover:opacity-90 shadow-lg transition-all hover:scale-[1.02]"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Mulai Gunakan Pro
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

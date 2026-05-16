@@ -25,7 +25,7 @@ BEGIN
         plan_expires_at = NULL
     WHERE plan != 'free'
       AND plan_expires_at IS NOT NULL
-      AND plan_expires_at + INTERVAL '2 days' < NOW()
+      AND plan_expires_at + INTERVAL '3 days' < NOW()
     RETURNING id, plan
   )
   SELECT COUNT(*) INTO downgraded_count FROM downgraded;
@@ -54,7 +54,7 @@ SELECT cron.schedule(
 -- ============================================================
 -- CATATAN:
 -- - Cron berjalan di timezone UTC (00:00 UTC = 07:00 WIB)
--- - Grace period: 2 hari setelah expired sebelum downgrade
+-- - Grace period: 3 hari setelah expired sebelum downgrade
 -- - User bisa memperpanjang kapan saja sebelum downgrade
 -- - Setelah downgrade, modul Pro/Enterprise akan terkunci
 -- ============================================================
