@@ -5,7 +5,7 @@ import { marketingApi } from '@/api/marketing';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, X, Mail, MessageCircle, Loader2 } from 'lucide-react';
+import { AlertTriangle, X, Mail, MessageCircle, Loader2, Lock } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 export default function LowStockNotification({ store }) {
@@ -205,13 +205,14 @@ export default function LowStockNotification({ store }) {
             </Button>
             <Button 
               size="sm" 
-              variant="outline" 
+              variant={store?.plan === 'free' ? 'ghost' : 'outline'} 
               onClick={sendEmailNotification}
-              disabled={isSendingEmail}
-              className="text-amber-700 border-amber-300 hover:bg-amber-100"
+              disabled={isSendingEmail || store?.plan === 'free'}
+              className={`border-amber-300 hover:bg-amber-100 ${store?.plan === 'free' ? 'text-slate-400 bg-slate-50 opacity-70 cursor-not-allowed border-slate-200' : 'text-amber-700'}`}
             >
-              {isSendingEmail ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Mail className="w-3 h-3 mr-2" />}
-              {isSendingEmail ? 'Mengirim...' : 'Kirim Email'}
+              {isSendingEmail ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : 
+                store?.plan === 'free' ? <Lock className="w-3 h-3 mr-2" /> : <Mail className="w-3 h-3 mr-2" />}
+              {isSendingEmail ? 'Mengirim...' : store?.plan === 'free' ? 'Email (Pro)' : 'Kirim Email'}
             </Button>
           </div>
         </div>

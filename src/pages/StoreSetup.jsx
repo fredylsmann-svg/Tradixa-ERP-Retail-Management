@@ -306,19 +306,28 @@ export default function StoreSetup({ onComplete }) {
                       <li>Mengganggu integritas atau stabilitas sistem cloud Tradixa Systems.</li>
                     </ul>
 
-                    <h3 className="font-bold text-slate-800 mb-2">04. Kepemilikan Data Bisnis</h3>
+                    <h3 className="font-bold text-slate-800 mb-2">04. Hak Kekayaan Intelektual (HAKI) dan Batasan Penggunaan</h3>
+                    <p className="mb-2">Seluruh hak cipta, desain antarmuka (UI/UX), merek dagang, kode sumber (source code), dan logika sistem yang terdapat di dalam layanan Tradixa Systems sepenuhnya adalah milik sah Tradixa. Dengan menggunakan layanan ini, Anda setuju untuk <strong>TIDAK</strong>:</p>
+                    <ul className="list-disc pl-5 mb-4 space-y-1">
+                      <li>Menyalin, menduplikasi, menjiplak, atau mereproduksi desain visual, alur kerja (workflow), dan struktur sistem Tradixa untuk tujuan komersial maupun pembuatan produk pesaing.</li>
+                      <li>Melakukan Reverse Engineering (rekayasa balik), decompiling, atau mencoba membongkar kode sumber dari platform Tradixa.</li>
+                      <li>Menyewakan, menjual kembali, atau melisensikan ulang akses akun Tradixa Anda kepada pihak ketiga tanpa izin tertulis dari kami.</li>
+                      <li>Menggunakan bot, spider, scraper, atau alat otomatis lainnya untuk mengambil data atau struktur kode dari platform kami.</li>
+                    </ul>
+
+                    <h3 className="font-bold text-slate-800 mb-2">05. Kepemilikan Data Bisnis</h3>
                     <p className="mb-4">Anda memegang kepemilikan penuh atas semua data bisnis, catatan karyawan, dan konten yang Anda unggah ke Tradixa Systems. Kami hanya bertindak sebagai pemroses data untuk memfasilitasi operasional Anda sesuai dengan instruksi yang diberikan melalui fitur-fitur aplikasi.</p>
 
-                    <h3 className="font-bold text-slate-800 mb-2">05. Ketersediaan dan Dukungan</h3>
+                    <h3 className="font-bold text-slate-800 mb-2">06. Ketersediaan dan Dukungan</h3>
                     <p className="mb-4">Meskipun kami berkomitmen untuk menyediakan layanan terbaik, kami tidak menjamin ketersediaan sistem 100% tanpa gangguan (uptime). Kami melakukan pemeliharaan rutin yang mungkin menyebabkan downtime singkat, dan kami akan berusaha memberikan notifikasi sebelumnya melalui dashboard aplikasi.</p>
 
-                    <h3 className="font-bold text-slate-800 mb-2">06. Batasan Tanggung Jawab</h3>
+                    <h3 className="font-bold text-slate-800 mb-2">07. Batasan Tanggung Jawab</h3>
                     <p className="mb-4">Tradixa Systems tidak bertanggung jawab atas kerugian tidak langsung, kehilangan keuntungan bisnis, atau kerusakan data yang disebabkan oleh kelalaian pihak ketiga atau penggunaan platform yang tidak sesuai instruksi teknis kami. Layanan disediakan apa adanya sesuai dengan spesifikasi fitur yang tersedia pada sistem.</p>
 
-                    <h3 className="font-bold text-slate-800 mb-2">07. Penghentian Akun</h3>
+                    <h3 className="font-bold text-slate-800 mb-2">08. Penghentian Akun</h3>
                     <p className="mb-4">Anda dapat menghentikan penggunaan layanan kapan saja. Tradixa Systems juga berhak menangguhkan atau menghentikan akses jika ditemukan pelanggaran serius terhadap ketentuan penggunaan ini, demi melindungi keamanan pengguna lainnya.</p>
 
-                    <h3 className="font-bold text-slate-800 mb-2">08. Hukum yang Berlaku</h3>
+                    <h3 className="font-bold text-slate-800 mb-2">09. Hukum yang Berlaku</h3>
                     <p className="mb-4">Ketentuan ini diatur dan ditafsirkan sesuai dengan hukum yang berlaku di Republik Indonesia. Setiap perselisihan yang timbul akan diselesaikan melalui musyawarah untuk mufakat atau melalui yurisdiksi pengadilan yang berwenang.</p>
                   </ScrollBox>
 
