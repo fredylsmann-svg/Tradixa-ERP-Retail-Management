@@ -43,9 +43,22 @@ export default function DesignStudio({ store }) {
   const [marketingLogoSize, setMarketingLogoSize] = useState(store?.marketing_logo_size || 'medium');
   const [previewCtaText, setPreviewCtaText] = useState('Belanja Sekarang');
 
+  // Logo upload limit tracking (max 3, synced with CompanySettings)
+  const MAX_LOGO_UPLOADS = 3;
+  const getLogoUploadCount = () => {
+    if (!store?.id) return 0;
+    return parseInt(localStorage.getItem(`tradixa_logo_uploads_${store?.id}`) || '0', 10);
+  };
+
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Check upload limit (max 3, synced with CompanySettings)
+      const currentCount = getLogoUploadCount();
+      if (currentCount >= MAX_LOGO_UPLOADS) {
+        toast.error(`Batas upload logo tercapai (${MAX_LOGO_UPLOADS}x maksimal). Hubungi support untuk reset.`);
+        e.target.value = ''; return;
+      }
       if (file.size > 2 * 1024 * 1024) {
         toast.error(`Ukuran file ${(file.size / (1024 * 1024)).toFixed(1)}MB melebihi batas maksimal 2MB.`);
         e.target.value = ''; return;
@@ -151,6 +164,14 @@ export default function DesignStudio({ store }) {
         .eq('id', store.id);
 
       if (error) throw error;
+
+      // Increment logo upload counter if a new logo was saved
+      if (logoFile) {
+        const newCount = getLogoUploadCount() + 1;
+        localStorage.setItem(`tradixa_logo_uploads_${store.id}`, String(newCount));
+        setLogoFile(null);
+      }
+
       window.dispatchEvent(new Event('refresh_data'));
       toast.success('Pengaturan Branding berhasil disimpan & diterapkan!');
     } catch (err) {
@@ -221,7 +242,7 @@ export default function DesignStudio({ store }) {
                       </div>
                       <div>
                         <p className="text-sm font-semibold">Ganti Logo</p>
-                        <p className="text-xs text-slate-400">PNG, SVG atau JPG (Maks. 2MB)</p>
+                        <p className="text-xs text-slate-400">PNG, SVG atau JPG (Maks. 2MB) — Sisa {Math.max(0, MAX_LOGO_UPLOADS - getLogoUploadCount())}x</p>
                       </div>
                     </label>
 
@@ -778,7 +799,8 @@ export default function DesignStudio({ store }) {
         id="logo-upload" 
         className="hidden" 
         accept="image/*" 
-        onChange={handleLogoChange} 
+        onChange={handleLogoChange}
+        disabled={getLogoUploadCount() >= MAX_LOGO_UPLOADS}
       />
     </div>
   );
