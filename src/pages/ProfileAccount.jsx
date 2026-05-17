@@ -464,9 +464,6 @@ export default function ProfileAccount({ store }) {
               <Card className="border-slate-200 rounded-3xl shadow-sm overflow-hidden">
                 <div className={`bg-gradient-to-r ${plan.gradient} p-5`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
-                      <PlanIcon className="w-6 h-6 text-white" />
-                    </div>
                     <div>
                       <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest">Paket Langganan</p>
                       <h3 className="text-xl font-black text-white">{plan.name} Plan</h3>
