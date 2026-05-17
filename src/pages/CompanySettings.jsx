@@ -60,6 +60,13 @@ export default function CompanySettings({ store }) {
   const isApiLocked = isTrial || isFree;
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(store?.logo_url || null);
+
+  // Logo upload limit tracking (max 3)
+  const MAX_LOGO_UPLOADS = 3;
+  const getLogoUploadCount = () => {
+    if (!store?.id) return 0;
+    return parseInt(localStorage.getItem(`tradixa_logo_uploads_${store?.id}`) || '0', 10);
+  };
   const [formData, setFormData] = useState({
     id: store?.id || '',
     store_name: store?.store_name || '',
@@ -119,6 +126,13 @@ export default function CompanySettings({ store }) {
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Check upload limit (max 3)
+      const currentCount = getLogoUploadCount();
+      if (currentCount >= MAX_LOGO_UPLOADS) {
+        toast({ title: 'Batas Upload Tercapai', description: `Anda sudah mengubah logo ${MAX_LOGO_UPLOADS}x (maksimal). Hubungi support untuk reset.`, variant: 'destructive' });
+        e.target.value = '';
+        return;
+      }
       if (file.size > 2 * 1024 * 1024) {
         toast({ title: 'File Terlalu Besar', description: `Ukuran file ${(file.size / (1024 * 1024)).toFixed(1)}MB melebihi batas maksimal 2MB.`, variant: 'destructive' });
         e.target.value = '';
@@ -146,6 +160,13 @@ export default function CompanySettings({ store }) {
       ...formData,
       logo_url: logoUrl
     });
+
+    // Increment logo upload counter if a new logo was uploaded
+    if (logoFile) {
+      const newCount = getLogoUploadCount() + 1;
+      localStorage.setItem(`tradixa_logo_uploads_${store.id}`, String(newCount));
+      setLogoFile(null);
+    }
 
     // Trigger app-wide refresh to update header/sidebar logo
     window.dispatchEvent(new Event('refresh_data'));
@@ -176,8 +197,8 @@ export default function CompanySettings({ store }) {
             {/* Logo */}
             <div className="flex justify-center">
               <div className="relative">
-                <input type="file" accept="image/*" onChange={handleLogoChange} className="hidden" id="logo-upload" />
-                <label htmlFor="logo-upload" className="cursor-pointer block">
+                <input type="file" accept="image/*" onChange={handleLogoChange} className="hidden" id="logo-upload" disabled={getLogoUploadCount() >= MAX_LOGO_UPLOADS} />
+                <label htmlFor="logo-upload" className={`cursor-pointer block ${getLogoUploadCount() >= MAX_LOGO_UPLOADS ? 'opacity-50 pointer-events-none' : ''}`}>
                   {logoPreview ? (
                     <img src={logoPreview} alt="Logo" className="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-lg" />
                   ) : (
@@ -187,6 +208,7 @@ export default function CompanySettings({ store }) {
                     </div>
                   )}
                 </label>
+                <p className="text-[10px] text-slate-400 text-center mt-1.5">Maks 2MB (Sisa {Math.max(0, MAX_LOGO_UPLOADS - getLogoUploadCount())}x perubahan)</p>
               </div>
             </div>
 

@@ -50,6 +50,13 @@ export default function ProfileAccount({ store }) {
   const fileInputRef = useRef(null);
   const { toast } = useToast();
 
+  // Upload limit tracking (max 3 photo changes)
+  const MAX_PHOTO_UPLOADS = 3;
+  const getPhotoUploadCount = () => {
+    if (!user?.id) return 0;
+    return parseInt(localStorage.getItem(`tradixa_photo_uploads_${user?.id}`) || '0', 10);
+  };
+
   // Trial detection
   const isTrial = store?.plan === 'pro' && store?.has_used_trial;
 
@@ -159,6 +166,18 @@ export default function ProfileAccount({ store }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Check upload limit (max 3)
+    const currentCount = getPhotoUploadCount();
+    if (currentCount >= MAX_PHOTO_UPLOADS) {
+      toast({
+        title: "Batas Upload Tercapai",
+        description: `Anda sudah mengubah foto profil ${MAX_PHOTO_UPLOADS}x (maksimal). Hubungi support untuk reset.`,
+        variant: "destructive",
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     // Validasi ukuran (max 2MB) dan tipe
     if (file.size > 2 * 1024 * 1024) {
       toast({
@@ -220,6 +239,10 @@ export default function ProfileAccount({ store }) {
         title: "✅ Foto Profil Diperbarui",
         description: "Foto profil Anda telah berhasil diubah dan tersinkronisasi.",
       });
+
+      // Increment upload counter
+      const newCount = getPhotoUploadCount() + 1;
+      localStorage.setItem(`tradixa_photo_uploads_${user.id}`, String(newCount));
     } catch (error) {
       console.error('Upload error:', error);
       toast({
@@ -351,13 +374,13 @@ export default function ProfileAccount({ store }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm text-slate-800">Foto Profil</p>
-                  <p className="text-xs text-slate-500 mt-0.5">JPG, PNG atau WEBP. Maks 2MB.</p>
+                  <p className="text-xs text-slate-500 mt-0.5">JPG, PNG atau WEBP. Maks 2MB. (Sisa {Math.max(0, MAX_PHOTO_UPLOADS - getPhotoUploadCount())}x perubahan)</p>
                 </div>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingPhoto}
+                  disabled={isUploadingPhoto || getPhotoUploadCount() >= MAX_PHOTO_UPLOADS}
                   className="flex-shrink-0"
                 >
                   {isUploadingPhoto ? (
