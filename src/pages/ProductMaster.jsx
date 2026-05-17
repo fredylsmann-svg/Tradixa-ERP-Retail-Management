@@ -60,7 +60,7 @@ export default function ProductMaster({ store }) {
       const timer = setTimeout(() => setShowActionColumnGuide(true), 1000);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, products.length]);
+  }, [isLoading, products.length, store]);
 
   const dismissAddProductGuide = () => {
     setShowAddProductGuide(false);
