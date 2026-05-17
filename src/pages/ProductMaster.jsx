@@ -35,6 +35,7 @@ export default function ProductMaster({ store }) {
 
   const [showAddProductGuide, setShowAddProductGuide] = useState(false);
   const [showActionColumnGuide, setShowActionColumnGuide] = useState(false);
+  const [readyForActionGuide, setReadyForActionGuide] = useState(false);
 
   useEffect(() => {
     if (store?.id) loadProducts();
@@ -57,7 +58,7 @@ export default function ProductMaster({ store }) {
       const timer = setTimeout(() => setShowAddProductGuide(true), 1000);
       return () => clearTimeout(timer);
     } else if (step === '3' && products.length > 0 && !showForm) {
-      const timer = setTimeout(() => setShowActionColumnGuide(true), 1000);
+      const timer = setTimeout(() => setReadyForActionGuide(true), 1000);
       return () => clearTimeout(timer);
     }
   }, [isLoading, products.length, store, showForm]);
@@ -78,14 +79,18 @@ export default function ProductMaster({ store }) {
   };
 
   useEffect(() => {
-    if (showActionColumnGuide) {
-      // Auto-scroll the table to the right on mobile so the Aksi column is visible
+    if (readyForActionGuide && !showActionColumnGuide) {
+      // Auto-scroll the table to the right on mobile so the Aksi column is visible FIRST
       const tableContainer = document.getElementById('print-products');
-      if (tableContainer) {
+      if (tableContainer && window.innerWidth < 1024) {
         tableContainer.scrollTo({ left: tableContainer.scrollWidth, behavior: 'smooth' });
       }
+      
+      // Give it time to scroll before rendering the popover, avoiding collision math bugs
+      const timer = setTimeout(() => setShowActionColumnGuide(true), 600);
+      return () => clearTimeout(timer);
     }
-  }, [showActionColumnGuide]);
+  }, [readyForActionGuide, showActionColumnGuide]);
 
   const loadProducts = async () => {
     const data = await api.entities.Product.filter({ store_id: store.id });

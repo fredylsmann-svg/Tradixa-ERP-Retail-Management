@@ -333,8 +333,8 @@ export default function Header({ store, isSidebarOpen, setIsSidebarOpen, isMobil
               <RefreshCw className={`w-4 h-4 md:w-5 md:h-5 ${isSpinning ? 'animate-spin text-blue-600 dark:text-blue-400' : ''}`} />
             </button>
             {showRefreshGuide && (
-              <div className="absolute top-full right-0 mt-4 w-[280px] md:w-[340px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl z-[60] cursor-default border border-slate-700/50 animate-in fade-in zoom-in-95 duration-300">
-                <div className="absolute -top-1.5 right-[14px] w-3 h-3 bg-slate-900 border-t border-l border-slate-700/50 rotate-45" />
+              <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 md:absolute md:top-full md:right-0 md:left-auto md:translate-x-0 md:translate-y-0 md:mt-4 w-[90vw] sm:w-[280px] md:w-[340px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl z-[60] cursor-default border border-slate-700/50 animate-in fade-in zoom-in-95 duration-300">
+                <div className="hidden md:block absolute -top-1.5 right-[14px] w-3 h-3 bg-slate-900 border-t border-l border-slate-700/50 rotate-45" />
                 <div className="flex flex-col gap-3">
                   <div className="relative z-10 space-y-2">
                     <h4 className="text-xs font-black text-white tracking-wider uppercase">Sinkronisasi Data</h4>
