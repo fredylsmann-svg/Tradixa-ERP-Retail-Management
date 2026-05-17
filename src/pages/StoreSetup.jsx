@@ -118,12 +118,18 @@ export default function StoreSetup({ onComplete }) {
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
-    if (file) { setLogoFile(file); const r = new FileReader(); r.onloadend = () => setLogoPreview(r.result); r.readAsDataURL(file); }
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { alert(`Ukuran file ${(file.size / (1024 * 1024)).toFixed(1)}MB melebihi batas maksimal 2MB.`); e.target.value = ''; return; }
+      setLogoFile(file); const r = new FileReader(); r.onloadend = () => setLogoPreview(r.result); r.readAsDataURL(file);
+    }
   };
 
   const handleOwnerPhotoChange = (e) => {
     const file = e.target.files[0];
-    if (file) { setOwnerPhotoFile(file); const r = new FileReader(); r.onloadend = () => setOwnerPhotoPreview(r.result); r.readAsDataURL(file); }
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { alert(`Ukuran file ${(file.size / (1024 * 1024)).toFixed(1)}MB melebihi batas maksimal 2MB.`); e.target.value = ''; return; }
+      setOwnerPhotoFile(file); const r = new FileReader(); r.onloadend = () => setOwnerPhotoPreview(r.result); r.readAsDataURL(file);
+    }
   };
 
   const handleNext = (e) => { if (e) e.preventDefault(); setStep(prev => prev + 1); };

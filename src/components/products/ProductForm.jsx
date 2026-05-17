@@ -92,6 +92,15 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
+      // === VALIDASI UKURAN FILE (MAX 2MB) ===
+      const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+      if (file.size > MAX_SIZE) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        sonnerToast.error(`Ukuran file ${sizeMB}MB melebihi batas maksimal 2MB. Silakan pilih foto dengan ukuran lebih kecil.`, { duration: 5000 });
+        e.target.value = ''; // Reset input
+        return;
+      }
+
       try {
         const options = {
           maxSizeMB: 0.2, // ~200KB

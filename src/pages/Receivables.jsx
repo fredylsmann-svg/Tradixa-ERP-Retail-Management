@@ -161,6 +161,10 @@ export default function Receivables({ store }) {
   const handleOcrUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      sonnerToast.error(`Ukuran file ${(file.size / (1024 * 1024)).toFixed(1)}MB melebihi batas maksimal 2MB.`, { duration: 5000 });
+      e.target.value = ''; return;
+    }
     setLastUploadedFile(file);
 
     setIsOcrProcessing(true);

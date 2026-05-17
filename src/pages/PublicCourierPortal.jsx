@@ -47,6 +47,10 @@ export default function PublicCourierPortal() {
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error(`Ukuran file ${(file.size / (1024 * 1024)).toFixed(1)}MB melebihi batas maksimal 2MB.`);
+        e.target.value = ''; return;
+      }
       setPhoto(file);
       const reader = new FileReader();
       reader.onloadend = () => {

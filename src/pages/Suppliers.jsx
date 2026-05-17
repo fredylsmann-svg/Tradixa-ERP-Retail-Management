@@ -140,6 +140,10 @@ export default function Suppliers({ store }) {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        sonnerToast.error(`Ukuran file ${(file.size / (1024 * 1024)).toFixed(1)}MB melebihi batas maksimal 2MB.`, { duration: 5000 });
+        e.target.value = ''; return;
+      }
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => setImagePreview(reader.result);

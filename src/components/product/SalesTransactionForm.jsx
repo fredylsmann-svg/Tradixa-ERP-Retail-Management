@@ -232,6 +232,10 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
   const handleProofChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({ title: 'File Terlalu Besar', description: `Ukuran file ${(file.size / (1024 * 1024)).toFixed(1)}MB melebihi batas maksimal 2MB.`, variant: 'destructive' });
+        e.target.value = ''; return;
+      }
       setProofFile(file);
       const reader = new FileReader();
       reader.onloadend = () => setProofPreview(reader.result);

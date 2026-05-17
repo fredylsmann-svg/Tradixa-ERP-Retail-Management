@@ -69,6 +69,10 @@ export default function SupplierReturn({ store }) {
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'File Terlalu Besar', description: `Ukuran file ${(file.size / (1024 * 1024)).toFixed(1)}MB melebihi batas maksimal 2MB.`, variant: 'destructive' });
+      e.target.value = ''; return;
+    }
 
     setIsUploading(true);
     try {

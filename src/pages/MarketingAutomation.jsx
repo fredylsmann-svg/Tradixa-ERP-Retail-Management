@@ -212,6 +212,10 @@ export default function MarketingAutomation({ store }) {
   const handlePromoUpload = async (e, formType) => {
     const file = e.target.files[0];
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error(`Ukuran file ${(file.size / (1024 * 1024)).toFixed(1)}MB melebihi batas maksimal 2MB.`, { duration: 5000 });
+      e.target.value = ''; return;
+    }
     setIsUploading(true);
     try {
       const res = await api.storage.upload(file);
