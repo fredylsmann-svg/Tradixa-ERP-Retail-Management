@@ -186,8 +186,8 @@ export default function WarehouseTransfer({ store }) {
         subtitle="Perpindahan stok antar gudang/lokasi"
         icon={WarehouseTransferIcon}
         actions={
-          <div className="flex flex-wrap lg:flex-nowrap gap-2 items-center">
-            <div className="flex items-center gap-1.5 mr-2">
+          <div className="flex flex-col sm:flex-row sm:flex-nowrap gap-2 items-stretch sm:items-center">
+            <div className="flex items-center gap-1.5">
               <PremiumGate store={store} featureName="Print">
                 <Button variant="outline" size="sm" onClick={() => exportToPDF('Warehouse Transfer', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-warehouse-transfer')} className="gap-1.5 text-slate-600 border-slate-200 hover:bg-slate-50 text-xs h-11 px-3 rounded-xl">
                   <Printer className="w-4 h-4" /><span className="hidden sm:inline">Print</span>
@@ -205,7 +205,7 @@ export default function WarehouseTransfer({ store }) {
               </PremiumGate>
             </div>
             <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-bold rounded-xl text-white">
-              <Plus className="w-4 h-4 mr-2" /> Buat Transfer
+              <Plus className="w-4 h-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Buat Transfer</span><span className="sm:hidden">Transfer</span>
             </Button>
           </div>
         }

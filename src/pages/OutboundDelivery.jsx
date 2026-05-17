@@ -422,7 +422,7 @@ export default function OutboundDelivery({ store }) {
                 setIsCreateOpen(true);
               }}
             >
-              <Plus className="w-4 h-4 mr-2" /> Buat Pengiriman Manual
+              <Plus className="w-4 h-4 mr-1 sm:mr-2" /> <span className="hidden sm:inline">Buat Pengiriman Manual</span><span className="sm:hidden">Buat Pengiriman</span>
             </Button>
           </div>
         }
@@ -596,9 +596,9 @@ export default function OutboundDelivery({ store }) {
                       <Label>Nomor WhatsApp Kurir</Label>
                       <div className="group relative flex items-center">
                         <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
-                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 text-center shadow-xl">
+                        <div className="absolute bottom-full mb-2 right-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 w-56 sm:w-64 p-2 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 text-center shadow-xl">
                           Nomor ini akan menerima link portal khusus kurir untuk mengirimkan bukti foto barang diterima oleh customer secara real-time.
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                          <div className="absolute top-full right-3 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
                         </div>
                       </div>
                     </div>

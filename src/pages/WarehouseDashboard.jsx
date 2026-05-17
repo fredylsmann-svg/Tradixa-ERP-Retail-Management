@@ -126,7 +126,7 @@ export default function WarehouseDashboard({ store }) {
       </div>
 
       {/* Activity Today */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: 'Barang Masuk (GRN)', value: todayGRN, icon: TrendingUp, color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
           { label: 'Barang Keluar (Outbound)', value: todayOutbound, icon: TrendingDown, color: 'text-red-600 bg-red-50 border-red-100' },
@@ -134,11 +134,11 @@ export default function WarehouseDashboard({ store }) {
         ].map((item, idx) => (
           <Card key={idx} className={`border ${item.color}`}>
             <CardContent className="p-4 flex items-center gap-4">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.color}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${item.color}`}>
                 <item.icon className="w-5 h-5" />
               </div>
-              <div>
-                <p className="text-xs font-medium text-slate-500">{item.label}</p>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-slate-500 truncate">{item.label}</p>
                 <p className="text-xl font-black text-slate-800">{item.value}</p>
               </div>
             </CardContent>
@@ -183,8 +183,8 @@ export default function WarehouseDashboard({ store }) {
             {categoryData.length === 0 ? (
               <p className="text-center text-slate-400 py-8 italic">Belum ada data</p>
             ) : (
-              <div className="flex items-center gap-4">
-                <ResponsiveContainer width="50%" height={200}>
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <ResponsiveContainer width="100%" height={200} className="sm:!w-1/2">
                   <PieChart>
                     <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={40}>
                       {categoryData.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
@@ -192,12 +192,12 @@ export default function WarehouseDashboard({ store }) {
                     <Tooltip formatter={(v) => formatCurrency(v)} />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="flex-1 space-y-1.5">
+                <div className="flex-1 w-full space-y-1.5">
                   {categoryData.map((cat, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-xs">
                       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
                       <span className="text-slate-600 truncate">{cat.name}</span>
-                      <span className="ml-auto font-bold text-slate-800">{formatCurrency(cat.value)}</span>
+                      <span className="ml-auto font-bold text-slate-800 shrink-0">{formatCurrency(cat.value)}</span>
                     </div>
                   ))}
                 </div>
