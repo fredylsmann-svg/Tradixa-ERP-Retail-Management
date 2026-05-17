@@ -13,6 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [authTimedOut, setAuthTimedOut] = useState(false);
   const processingRef = useRef(false);
   const mountedRef = useRef(true);
+  const authResolvedRef = useRef(false);
 
   // Resolve user from Supabase Auth session user
   const resolveUser = useCallback(async (sessionUser, retryCount = 0) => {
@@ -135,6 +136,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       if (!isRetrying) {
         processingRef.current = false;
+        authResolvedRef.current = true;
         if (mountedRef.current) setIsLoadingAuth(false);
       }
     }
@@ -153,6 +155,7 @@ export const AuthProvider = ({ children }) => {
         if (session?.user) {
           await resolveUser(session.user);
         } else {
+          authResolvedRef.current = true;
           setIsLoadingAuth(false);
         }
       } else if (event === 'SIGNED_IN' && session?.user) {
@@ -169,6 +172,7 @@ export const AuthProvider = ({ children }) => {
         console.log('[Tradixa Auth] Event: SIGNED_OUT');
         setUser(null);
         setIsAuthenticated(false);
+        authResolvedRef.current = true;
         setIsLoadingAuth(false);
       } else if (event === 'TOKEN_REFRESHED') {
         // Keep current state, don't re-process
@@ -177,15 +181,16 @@ export const AuthProvider = ({ children }) => {
 
     // Fallback timeout: if INITIAL_SESSION never fires (edge case), stop loading
     const fallbackTimer = setTimeout(() => {
-      if (mountedRef.current && isLoadingAuth) {
+      if (mountedRef.current && !authResolvedRef.current) {
         console.warn('[Tradixa Auth] Fallback timeout reached (15s)');
+        authResolvedRef.current = true;
         setIsLoadingAuth(false);
       }
     }, 15000);
 
     // Hard recovery timeout: if still stuck after 20s, show recovery UI
     const hardTimer = setTimeout(() => {
-      if (mountedRef.current && isLoadingAuth) {
+      if (mountedRef.current && !authResolvedRef.current) {
         console.error('[Tradixa Auth] Hard timeout (20s) - showing recovery');
         setAuthTimedOut(true);
         setIsLoadingAuth(false);
