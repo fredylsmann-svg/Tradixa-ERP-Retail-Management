@@ -503,24 +503,6 @@
   animation: toast-progress linear forwards;
 }
 
-keyframes toast-progress {
-  from {
-    width: 100%;
-  }
-
-  to {
-    width: 0%;
-  }
-}
-
-.animate-shimmer {
-  animation: shimmer 2s infinite;
-}
-
-.animate-toast-progress {
-  animation: toast-progress linear forwards;
-}
-
 /* Fix Google Maps Autocomplete dropdown inside Radix/Shadcn Dialog */
 .pac-container {
   z-index: 100000 !important;
