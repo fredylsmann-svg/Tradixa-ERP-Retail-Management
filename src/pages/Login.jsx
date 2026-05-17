@@ -30,6 +30,12 @@ export default function Login() {
   const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef(null);
 
+  // Detect OAuth redirect return — skip heavy video to save memory on low-end phones
+  const isOAuthReturn = typeof window !== 'undefined' && (
+    window.location.search.includes('code=') ||
+    window.location.hash.includes('access_token')
+  );
+
   const phrases = [
     "Enter your credentials to access the enterprise dashboard",
     "Procurement end to end solutions",
@@ -171,21 +177,23 @@ export default function Login() {
       
       {/* Premium Video Background */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-[#020617]">
-        <video 
-          ref={videoRef}
-          autoPlay 
-          muted 
-          loop 
-          playsInline 
-          preload="auto"
-          fetchpriority="high"
-          disablePictureInPicture
-          onCanPlayThrough={() => setVideoReady(true)}
-          className="absolute w-full h-full object-cover scale-[1.02] transition-opacity duration-1000 ease-in-out pointer-events-none"
-          style={{ opacity: videoReady ? 1 : 0 }}
-        >
-          <source src="/assets/login-bg.mp4" type="video/mp4" />
-        </video>
+        {!isOAuthReturn && (
+          <video 
+            ref={videoRef}
+            autoPlay 
+            muted 
+            loop 
+            playsInline 
+            preload="auto"
+            fetchpriority="high"
+            disablePictureInPicture
+            onCanPlayThrough={() => setVideoReady(true)}
+            className="absolute w-full h-full object-cover scale-[1.02] transition-opacity duration-1000 ease-in-out pointer-events-none"
+            style={{ opacity: videoReady ? 1 : 0 }}
+          >
+            <source src="/assets/login-bg.mp4" type="video/mp4" />
+          </video>
+        )}
         {/* Deep Overlay for readability - Removed blur to keep video sharp */}
         <div className="absolute inset-0 bg-[#020617]/40 pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#020617]/60 via-transparent to-[#020617]/80 pointer-events-none" />

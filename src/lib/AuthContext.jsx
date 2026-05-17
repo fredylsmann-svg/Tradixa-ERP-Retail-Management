@@ -10,6 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [authError, setAuthError] = useState(null);
+  const [authTimedOut, setAuthTimedOut] = useState(false);
   const processingRef = useRef(false);
   const mountedRef = useRef(true);
 
@@ -177,14 +178,25 @@ export const AuthProvider = ({ children }) => {
     // Fallback timeout: if INITIAL_SESSION never fires (edge case), stop loading
     const fallbackTimer = setTimeout(() => {
       if (mountedRef.current && isLoadingAuth) {
+        console.warn('[Tradixa Auth] Fallback timeout reached (15s)');
         setIsLoadingAuth(false);
       }
-    }, 8000);
+    }, 15000);
+
+    // Hard recovery timeout: if still stuck after 20s, show recovery UI
+    const hardTimer = setTimeout(() => {
+      if (mountedRef.current && isLoadingAuth) {
+        console.error('[Tradixa Auth] Hard timeout (20s) - showing recovery');
+        setAuthTimedOut(true);
+        setIsLoadingAuth(false);
+      }
+    }, 20000);
 
     return () => {
       mountedRef.current = false;
       subscription?.unsubscribe();
       clearTimeout(fallbackTimer);
+      clearTimeout(hardTimer);
     };
   }, [resolveUser]);
 
@@ -245,6 +257,15 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
     setAuthError({ type: 'auth_required' });
+    // Clear Service Worker caches to prevent stale pages on re-login
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      } catch (e) {
+        // Ignore cache clear errors
+      }
+    }
     // Force redirect to login and clear any routing state
     window.location.href = '/login';
   };
@@ -255,6 +276,7 @@ export const AuthProvider = ({ children }) => {
       isAuthenticated, 
       isLoadingAuth,
       authError,
+      authTimedOut,
       login,
       loginWithGoogle,
       logout

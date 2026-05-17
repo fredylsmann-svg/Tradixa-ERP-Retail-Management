@@ -49,9 +49,37 @@ const LoadingFallback = () => (
   </div>
 );
 
+// Recovery UI when auth times out (prevents blank screen on low-end mobile)
+const RecoveryFallback = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
+    <div className="text-center px-6 max-w-sm">
+      <img src={tradixaLogo} alt="Tradixa" className="w-40 h-auto mx-auto mb-2 object-contain" />
+      <p className="text-slate-500 text-sm mb-6">
+        Koneksi memerlukan waktu lebih lama dari biasanya. Ini bisa terjadi karena koneksi internet lambat atau perangkat sedang sibuk.
+      </p>
+      <button
+        onClick={() => window.location.reload()}
+        className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors shadow-lg"
+      >
+        Muat Ulang Halaman
+      </button>
+      <button
+        onClick={() => { window.location.href = '/login'; }}
+        className="block mx-auto mt-3 text-sm text-blue-600 font-medium hover:underline"
+      >
+        Kembali ke Login
+      </button>
+    </div>
+  </div>
+);
+
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoadingAuth } = useAuth();
+  const { isAuthenticated, isLoadingAuth, authTimedOut } = useAuth();
+  
+  if (authTimedOut) {
+    return <RecoveryFallback />;
+  }
   
   if (isLoadingAuth) {
     return <LoadingFallback />;
