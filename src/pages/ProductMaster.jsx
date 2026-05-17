@@ -56,19 +56,17 @@ export default function ProductMaster({ store }) {
     if (step === '2') {
       const timer = setTimeout(() => setShowAddProductGuide(true), 1000);
       return () => clearTimeout(timer);
-    } else if (step === '3' && products.length > 0) {
+    } else if (step === '3' && products.length > 0 && !showForm) {
       const timer = setTimeout(() => setShowActionColumnGuide(true), 1000);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, products.length, store]);
+  }, [isLoading, products.length, store, showForm]);
 
   const dismissAddProductGuide = () => {
     setShowAddProductGuide(false);
     if (store?.id) {
       localStorage.setItem(`erp_tour_step_${store.id}`, '3');
-    }
-    if (products.length > 0) {
-      setTimeout(() => setShowActionColumnGuide(true), 500);
+      // Step 3 will be triggered by useEffect when conditions are met (e.g. form is closed)
     }
   };
 
@@ -331,7 +329,7 @@ export default function ProductMaster({ store }) {
                             side="bottom" 
                             align="end" 
                             sideOffset={12}
-                            className="z-[70] w-[320px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl border-slate-700/50 animate-in fade-in zoom-in-95 duration-300 pointer-events-auto"
+                            className="z-[70] w-[calc(100vw-2rem)] sm:w-[320px] max-w-[320px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl border-slate-700/50 animate-in fade-in zoom-in-95 duration-300 pointer-events-auto"
                             onPointerDownOutside={(e) => e.preventDefault()}
                           >
                             <div className="flex flex-col gap-3">
