@@ -107,21 +107,10 @@ export default function DesignStudio({ store }) {
       let finalLogoUrl = logoUrl;
       let finalSignatureUrl = signatureUrl;
 
-      // Jika ada file baru, unggah ke storage
+      // Jika ada file baru, unggah ke storage (melalui storageService → auto-compress)
       if (logoFile) {
-        const fileExt = logoFile.name.split('.').pop();
-        const fileName = `${store.id}/logo-${Math.random()}.${fileExt}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('logos')
-          .upload(fileName, logoFile, { upsert: true });
-
-        if (uploadError) throw uploadError;
-        
-        const { data: { publicUrl } } = supabase.storage
-          .from('logos')
-          .getPublicUrl(fileName);
-        
-        finalLogoUrl = publicUrl;
+        const { uploadFile } = await import('@/utils/storageService');
+        finalLogoUrl = await uploadFile(logoFile, 'logo');
       }
 
       // if finalSignatureUrl is a data URL (not uploaded yet), upload it
