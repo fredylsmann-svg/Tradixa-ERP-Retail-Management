@@ -4,17 +4,43 @@ import { Button } from '@/components/ui/button';
 import { Camera, X, Loader2, AlertCircle, Info } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
+// Daftar lengkap format barcode yang didukung
+const ALL_BARCODE_FORMATS = [
+  Html5QrcodeSupportedFormats.EAN_13,
+  Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.CODE_128,
+  Html5QrcodeSupportedFormats.CODE_39,
+  Html5QrcodeSupportedFormats.CODE_93,
+  Html5QrcodeSupportedFormats.UPC_A,
+  Html5QrcodeSupportedFormats.UPC_E,
+  Html5QrcodeSupportedFormats.ITF,
+  Html5QrcodeSupportedFormats.CODABAR,
+  Html5QrcodeSupportedFormats.QR_CODE,
+  Html5QrcodeSupportedFormats.DATA_MATRIX,
+  Html5QrcodeSupportedFormats.AZTEC,
+  Html5QrcodeSupportedFormats.PDF_417,
+];
+
 export default function BarcodeScanner({ open, onClose, onBarcodeScanned }) {
   const [error, setError] = useState(null);
   const [isScannerInitialized, setIsScannerInitialized] = useState(false);
+  const [scanElapsed, setScanElapsed] = useState(0);
   const scannerRef = useRef(null);
   const lastScanRef = useRef(0); // Debounce tracker
+  const timerRef = useRef(null);
 
   useEffect(() => {
     let html5QrCode;
 
     if (open) {
       setError(null);
+      setScanElapsed(0);
+
+      // Timer untuk elapsed seconds
+      timerRef.current = setInterval(() => {
+        setScanElapsed(prev => prev + 1);
+      }, 1000);
+
       // Small timeout to ensure DOM element 'reader' is rendered by the Dialog
       setTimeout(() => {
         html5QrCode = new Html5Qrcode("reader");
@@ -24,26 +50,18 @@ export default function BarcodeScanner({ open, onClose, onBarcodeScanned }) {
           { facingMode: "environment" },
           {
             fps: 30,
-            qrbox: { width: 280, height: 100 },
+            qrbox: { width: 350, height: 150 },
             aspectRatio: 1.7778,
             disableFlip: false,
             experimentalFeatures: {
               useBarCodeDetectorIfSupported: true
             },
-            formatsToSupport: [
-              Html5QrcodeSupportedFormats.EAN_13,
-              Html5QrcodeSupportedFormats.EAN_8,
-              Html5QrcodeSupportedFormats.CODE_128,
-              Html5QrcodeSupportedFormats.UPC_A,
-              Html5QrcodeSupportedFormats.QR_CODE,
-              Html5QrcodeSupportedFormats.CODE_39,
-              Html5QrcodeSupportedFormats.UPC_E,
-            ]
+            formatsToSupport: ALL_BARCODE_FORMATS
           },
           (decodedText, decodedResult) => {
-            // Debounce: ignore if scanned within 800ms
+            // Debounce: ignore if scanned within 500ms
             const now = Date.now();
-            if (now - lastScanRef.current < 800) return;
+            if (now - lastScanRef.current < 500) return;
             lastScanRef.current = now;
 
             // Beep feedback
@@ -77,7 +95,12 @@ export default function BarcodeScanner({ open, onClose, onBarcodeScanned }) {
     }
 
     return () => {
-      // Cleanup on unmount or when dialog closes
+      // Cleanup timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      // Cleanup scanner on unmount or when dialog closes
       if (scannerRef.current) {
         try {
           if (scannerRef.current.isScanning) {
@@ -90,6 +113,7 @@ export default function BarcodeScanner({ open, onClose, onBarcodeScanned }) {
         }
       }
       setIsScannerInitialized(false);
+      setScanElapsed(0);
     };
   }, [open]);
 
@@ -142,15 +166,21 @@ export default function BarcodeScanner({ open, onClose, onBarcodeScanned }) {
                   {/* Scanner overlay effect */}
                   <div className="absolute inset-0 pointer-events-none w-full h-full">
                     {/* Darkened edges, clear center */}
-                    <div className="absolute inset-x-8 inset-y-12 border-2 border-emerald-500/50 rounded-lg shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] transition-all"></div>
+                    <div className="absolute inset-x-4 inset-y-8 border-2 border-emerald-500/50 rounded-lg shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] transition-all"></div>
                     
                     {/* Animated Laser Line */}
-                    <div className="absolute left-10 right-10 h-0.5 bg-emerald-400 shadow-[0_0_8px_2px_rgba(52,211,153,0.8)] animate-scan-line"></div>
+                    <div className="absolute left-6 right-6 h-0.5 bg-emerald-400 shadow-[0_0_8px_2px_rgba(52,211,153,0.8)] animate-scan-line"></div>
                   </div>
                   
-                  {/* Helper Text Overlay */}
-                  <div className="absolute bottom-4 left-0 right-0 text-center animate-pulse z-20">
-                    <p className="text-white text-xs bg-black/60 inline-block py-1.5 px-4 rounded-full">Sejajarkan Barcode di dalam kotak</p>
+                  {/* Status Indicator */}
+                  <div className="absolute bottom-4 left-0 right-0 text-center z-20">
+                    <p className="text-white text-xs bg-black/60 inline-block py-1.5 px-4 rounded-full">
+                      {scanElapsed < 5
+                        ? 'Sejajarkan barcode di dalam kotak...'
+                        : scanElapsed < 15
+                          ? `Mendeteksi barcode... (${scanElapsed}s)`
+                          : '⚠️ Coba dekatkan / jauhkan kamera perlahan'}
+                    </p>
                   </div>
                 </>
               )}
@@ -166,7 +196,7 @@ export default function BarcodeScanner({ open, onClose, onBarcodeScanned }) {
 
           <div className="bg-slate-50 border border-slate-100 p-3 rounded-md flex gap-2">
             <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-slate-500 leading-relaxed">Pastikan ruangan cukup terang. Jika menggunakan <b>webcam Laptop/Desktop</b>, beri jarak ~15cm dan tahan barang bertenang agar fokus kamera dapat menyesuaikan sebelum memindai.</p>
+            <p className="text-xs text-slate-500 leading-relaxed">Mendukung <b>EAN-13, EAN-8, ISBN, UPC, CODE 128/39/93, ITF, CODABAR, QR Code</b>, dan lainnya. Pastikan ruangan cukup terang dan tahan barcode tetap stabil di depan kamera.</p>
           </div>
 
           <div className="flex gap-2 pt-2">

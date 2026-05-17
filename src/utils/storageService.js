@@ -1,7 +1,11 @@
 /**
  * TRADIXA - Unified Storage Service
  * Handles file uploads to Cloudflare R2, Cloudinary, or Supabase.
+ * 
+ * ENHANCED: Validasi ukuran 2MB + auto-compress gambar sebelum upload.
  */
+
+import { validateFileSize, compressImage } from './imageResize';
 
 const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`;
 
@@ -13,19 +17,33 @@ const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_C
 export const uploadFile = async (file, type = 'product') => {
   if (!file) return null;
 
-  console.log(`[Storage] Uploading ${file.name} as ${type}...`);
+  // === VALIDASI UKURAN FILE (MAX 2MB) ===
+  const validation = validateFileSize(file);
+  if (!validation.valid) {
+    throw new Error(validation.message);
+  }
+
+  // === AUTO-COMPRESS GAMBAR ===
+  let processedFile = file;
+  if (file.type.startsWith('image/')) {
+    console.log(`[Storage] Compressing ${file.name} (${(file.size / 1024).toFixed(0)}KB)...`);
+    processedFile = await compressImage(file, type);
+    console.log(`[Storage] Compressed to ${(processedFile.size / 1024).toFixed(0)}KB (${Math.round((1 - processedFile.size / file.size) * 100)}% smaller)`);
+  }
+
+  console.log(`[Storage] Uploading ${processedFile.name} as ${type}...`);
 
   try {
     if (type === 'profile' || type === 'logo') {
-      return await uploadToCloudinary(file, type);
+      return await uploadToCloudinary(processedFile, type);
     }
     
     if (type === 'product' || type === 'document') {
-      return await uploadToR2(file, type);
+      return await uploadToR2(processedFile, type);
     }
 
     // Default to Supabase for anything else
-    return await uploadToSupabase(file);
+    return await uploadToSupabase(processedFile);
   } catch (error) {
     console.error(`[Storage] ${type} upload failed:`, error);
     throw error;

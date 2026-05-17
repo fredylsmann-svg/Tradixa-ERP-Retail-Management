@@ -3,6 +3,23 @@ import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Camera, X, ScanLine, Keyboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+// Daftar lengkap format barcode yang didukung (sinkron dengan scanner utama)
+const ALL_BARCODE_FORMATS = [
+  Html5QrcodeSupportedFormats.EAN_13,
+  Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.CODE_128,
+  Html5QrcodeSupportedFormats.CODE_39,
+  Html5QrcodeSupportedFormats.CODE_93,
+  Html5QrcodeSupportedFormats.UPC_A,
+  Html5QrcodeSupportedFormats.UPC_E,
+  Html5QrcodeSupportedFormats.ITF,
+  Html5QrcodeSupportedFormats.CODABAR,
+  Html5QrcodeSupportedFormats.QR_CODE,
+  Html5QrcodeSupportedFormats.DATA_MATRIX,
+  Html5QrcodeSupportedFormats.AZTEC,
+  Html5QrcodeSupportedFormats.PDF_417,
+];
+
 export const playSound = (type) => {
   try {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -61,7 +78,6 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }) {
           e.preventDefault();
           const code = barcodeBuffer;
           barcodeBuffer = ''; // clear immediately
-          // playSound('success'); // Physical scanners usually have their own beep
           onScan(code);
         }
       } else if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
@@ -100,12 +116,13 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }) {
           await html5QrCode.current.start(
             backCamera.id,
             { 
-              fps: 15,
-              qrbox: { width: 280, height: 280 },
+              fps: 25,
+              qrbox: { width: 350, height: 200 },
               aspectRatio: 1.0,
               experimentalFeatures: {
                 useBarCodeDetectorIfSupported: true
-              }
+              },
+              formatsToSupport: ALL_BARCODE_FORMATS
             },
             (decodedText) => {
               const now = Date.now();
@@ -150,6 +167,9 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }) {
         <Keyboard className="w-5 h-5 text-emerald-500 shrink-0" />
         <span><strong className="text-emerald-600 dark:text-emerald-400">Scanner Fisik AKTIF</strong> (Siap menerima input otomatis)</span>
       </div>
+      <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center">
+        Format: EAN-13, EAN-8, ISBN, UPC, CODE 128/39/93, ITF, CODABAR, QR Code, Data Matrix
+      </p>
       
       {!isCameraActive ? (
         <Button 
