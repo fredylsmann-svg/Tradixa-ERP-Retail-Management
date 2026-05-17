@@ -77,6 +77,16 @@ export default function ProductMaster({ store }) {
     }
   };
 
+  useEffect(() => {
+    if (showActionColumnGuide) {
+      // Auto-scroll the table to the right on mobile so the Aksi column is visible
+      const tableContainer = document.getElementById('print-products');
+      if (tableContainer) {
+        tableContainer.scrollTo({ left: tableContainer.scrollWidth, behavior: 'smooth' });
+      }
+    }
+  }, [showActionColumnGuide]);
+
   const loadProducts = async () => {
     const data = await api.entities.Product.filter({ store_id: store.id });
     setProducts(data);
@@ -330,6 +340,7 @@ export default function ProductMaster({ store }) {
                             align="end" 
                             sideOffset={12}
                             className="z-[70] w-[calc(100vw-2rem)] sm:w-[320px] max-w-[320px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl border-slate-700/50 animate-in fade-in zoom-in-95 duration-300 pointer-events-auto"
+                            collisionPadding={16}
                             onPointerDownOutside={(e) => e.preventDefault()}
                           >
                             <div className="flex flex-col gap-3">
