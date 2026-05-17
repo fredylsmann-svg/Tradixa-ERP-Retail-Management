@@ -45,9 +45,16 @@ export default function SalesPerformance({ store }) {
   // Process Sales Performance by PIC
   const performanceData = employees.map(emp => {
     const empTxs = filteredTransactions.filter(tx => tx.sales_pic === emp.name);
+    // Sort transactions by created_at (assuming standard timestamp or wib) to get the latest
+    const sortedTxs = [...empTxs].sort((a, b) => new Date(b.created_at || b.timestamp_wib || 0) - new Date(a.created_at || a.timestamp_wib || 0));
+    
     const totalSales = empTxs.reduce((sum, tx) => sum + tx.total, 0);
     const totalTransactions = empTxs.length;
     const avgTransaction = totalTransactions > 0 ? totalSales / totalTransactions : 0;
+    
+    const lastTxWithCoords = sortedTxs.find(tx => tx.sale_coordinates && tx.sale_coordinates.trim() !== '');
+    const lastCoordinates = lastTxWithCoords ? lastTxWithCoords.sale_coordinates : null;
+    const lastLocationName = lastTxWithCoords?.sale_location || '-';
 
     return {
       id: emp.id,
@@ -55,7 +62,9 @@ export default function SalesPerformance({ store }) {
       photo_url: emp.photo_url,
       totalSales,
       totalTransactions,
-      avgTransaction
+      avgTransaction,
+      lastCoordinates,
+      lastLocationName
     };
   }).sort((a, b) => b.totalSales - a.totalSales);
 
@@ -242,12 +251,13 @@ export default function SalesPerformance({ store }) {
                 <TableHead className="text-center">Total Order</TableHead>
                 <TableHead className="text-right">Total Omset</TableHead>
                 <TableHead className="text-right">Rata-rata/Order</TableHead>
+                <TableHead className="text-right">Lokasi Terakhir (GPS)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {performanceData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12 text-slate-500">
+                  <TableCell colSpan={6} className="text-center py-12 text-slate-500">
                     Belum ada data transaksi untuk personil sales
                   </TableCell>
                 </TableRow>
@@ -274,6 +284,24 @@ export default function SalesPerformance({ store }) {
                     <TableCell className="text-center">{p.totalTransactions}</TableCell>
                     <TableCell className="text-right font-bold text-emerald-600">Rp {formatCurrency(p.totalSales)}</TableCell>
                     <TableCell className="text-right text-slate-500">Rp {formatCurrency(p.avgTransaction)}</TableCell>
+                    <TableCell className="text-right">
+                      {p.lastCoordinates ? (
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{p.lastLocationName}</span>
+                          <a 
+                            href={`https://www.google.com/maps/search/?api=1&query=${p.lastCoordinates.replace(' ', '')}`}
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-700 hover:underline bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-md"
+                          >
+                            <MapPin className="w-3 h-3" />
+                            {p.lastCoordinates}
+                          </a>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-400">-</span>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
