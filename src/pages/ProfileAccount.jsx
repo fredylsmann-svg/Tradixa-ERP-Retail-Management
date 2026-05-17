@@ -88,6 +88,33 @@ export default function ProfileAccount({ store }) {
     }
   };
 
+  const handleActivateTrial = async () => {
+    setIsProcessing(true);
+    try {
+      const now = new Date();
+      const expires = new Date();
+      expires.setDate(expires.getDate() + 14);
+
+      const { error } = await supabase.from('stores').update({
+        plan: 'pro',
+        has_used_trial: true,
+        plan_started_at: now.toISOString(),
+        plan_expires_at: expires.toISOString()
+      }).eq('id', store.id);
+
+      if (error) throw error;
+
+      sonnerToast.success('Trial Pro 14 Hari berhasil diaktifkan!');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to activate trial:', error);
+      sonnerToast.error('Gagal mengaktifkan trial.');
+      setIsProcessing(false);
+    }
+  };
+
   useEffect(() => {
     loadUser();
   }, [store]);
@@ -503,13 +530,25 @@ export default function ProfileAccount({ store }) {
 
                   {/* Action Buttons */}
                   {planId === 'free' ? (
-                    <Button 
-                      onClick={() => navigate('/PricingPage')}
-                      className={`w-full h-10 rounded-xl font-bold text-sm bg-gradient-to-r ${PLAN_TIERS.pro.gradient} text-white hover:opacity-90 shadow-md transition-all hover:scale-[1.02]`}
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Upgrade ke Pro
-                    </Button>
+                    <div className="space-y-2">
+                      {!store?.has_used_trial && (
+                        <Button 
+                          onClick={handleActivateTrial}
+                          disabled={isProcessing}
+                          className="w-full h-10 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:opacity-90 shadow-md transition-all hover:scale-[1.02]"
+                        >
+                          {isProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Clock className="w-4 h-4 mr-2" />}
+                          {isProcessing ? 'Memproses...' : 'Coba Trial Pro 14 Hari'}
+                        </Button>
+                      )}
+                      <Button 
+                        onClick={() => navigate('/PricingPage')}
+                        className={`w-full h-10 rounded-xl font-bold text-sm bg-gradient-to-r ${PLAN_TIERS.pro.gradient} text-white hover:opacity-90 shadow-md transition-all hover:scale-[1.02]`}
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Upgrade ke Pro
+                      </Button>
+                    </div>
                   ) : (isExpiringSoon || isGracePeriod) ? (
                     <Button 
                       onClick={() => navigate('/PricingPage')}

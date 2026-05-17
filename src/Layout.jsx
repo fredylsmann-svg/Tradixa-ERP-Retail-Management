@@ -149,6 +149,7 @@ export default function Layout({ children, currentPageName }) {
           setIsMobileOpen={setIsMobileOpen}
           storePlan={store?.plan || 'free'}
           userEmail={userEmail}
+          store={store}
         />
       </div>
       <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 print:ml-0 

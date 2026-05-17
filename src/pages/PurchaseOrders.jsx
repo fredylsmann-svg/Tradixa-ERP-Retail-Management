@@ -84,6 +84,26 @@ export default function PurchaseOrders({ store }) {
 
   const [negotiationItems, setNegotiationItems] = useState([]);
   const [signatureHistory, setSignatureHistory] = useState([]);
+  const [showPORefreshGuide, setShowPORefreshGuide] = useState(false);
+
+  useEffect(() => {
+    if (viewingOrder) {
+      const hasSeenPOGuide = localStorage.getItem('hasSeenPORefreshGuide');
+      if (!hasSeenPOGuide) {
+        const timer = setTimeout(() => {
+          setShowPORefreshGuide(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      setShowPORefreshGuide(false);
+    }
+  }, [viewingOrder]);
+
+  const dismissPORefreshGuide = () => {
+    setShowPORefreshGuide(false);
+    localStorage.setItem('hasSeenPORefreshGuide', 'true');
+  };
 
   useEffect(() => {
     if (viewingOrder) {
@@ -1291,31 +1311,69 @@ export default function PurchaseOrders({ store }) {
                     <FileText className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className={`flex items-center gap-2 relative ${showPORefreshGuide ? 'z-[110]' : ''}`}>
                       <h2 className="text-xl font-bold text-slate-800">Purchase Order {viewingOrder?.po_number}</h2>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            onClick={async () => {
-                              const refreshed = await api.entities.PurchaseOrder.get(viewingOrder.id);
-                              if (refreshed) setViewingOrder(refreshed);
-                              loadData();
-                            }}
-                            className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
-                          >
-                            <History className="w-4 h-4" />
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-64 p-3 rounded-xl border-slate-200 shadow-xl">
-                          <p className="text-xs font-bold text-slate-800 mb-1 flex items-center gap-2">
-                            <History className="w-3.5 h-3.5 text-blue-500" />
-                            Refresh Data
-                          </p>
-                          <p className="text-[10px] text-slate-500 leading-relaxed">
-                            Klik untuk mengambil data terbaru dari server, termasuk pembaruan tanda tangan digital dari supplier.
-                          </p>
-                        </PopoverContent>
-                      </Popover>
+                      
+                      {showPORefreshGuide && (
+                        <div 
+                          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] animate-in fade-in duration-300" 
+                          onClick={dismissPORefreshGuide}
+                          style={{ margin: 0 }}
+                        />
+                      )}
+                      
+                      <div className="relative">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              onClick={async () => {
+                                const refreshed = await api.entities.PurchaseOrder.get(viewingOrder.id);
+                                if (refreshed) setViewingOrder(refreshed);
+                                loadData();
+                              }}
+                              className={`p-1 transition-all relative ${showPORefreshGuide ? 'z-[110] bg-white text-slate-800 shadow-xl ring-4 ring-white/20 rounded-md' : 'text-slate-400 hover:text-blue-600'}`}
+                            >
+                              <History className="w-4 h-4" />
+                            </button>
+                          </PopoverTrigger>
+                          {!showPORefreshGuide && (
+                            <PopoverContent className="w-64 p-3 rounded-xl border-slate-200 shadow-xl">
+                              <p className="text-xs font-bold text-slate-800 mb-1 flex items-center gap-2">
+                                <History className="w-3.5 h-3.5 text-blue-500" />
+                                Refresh Data
+                              </p>
+                              <p className="text-[10px] text-slate-500 leading-relaxed">
+                                Klik untuk mengambil data terbaru dari server, termasuk pembaruan tanda tangan digital dari supplier.
+                              </p>
+                            </PopoverContent>
+                          )}
+                        </Popover>
+
+                        {showPORefreshGuide && (
+                          <div className="absolute top-full left-0 mt-4 w-[280px] md:w-[340px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl z-[110] cursor-default border border-slate-700/50 animate-in fade-in zoom-in-95 duration-300">
+                            <div className="absolute -top-1.5 left-[10px] w-3 h-3 bg-slate-900 border-t border-l border-slate-700/50 rotate-45" />
+                            <div className="flex flex-col gap-3">
+                              <div className="relative z-10 space-y-2">
+                                <h4 className="text-xs font-black text-white tracking-wider uppercase">Sinkronisasi Status PO</h4>
+                                <p className="text-[12px] text-slate-300 leading-relaxed font-medium">
+                                  Klik ikon Refresh ini secara berkala untuk menyinkronkan data PO terbaru.
+                                  <span className="block mt-2.5 text-slate-400 bg-slate-800/50 p-2.5 rounded-lg border border-slate-700/50 text-[11px] leading-relaxed">
+                                    <strong className="text-slate-200 font-bold">Penting:</strong> Jika status masih "Menunggu Persetujuan..." padahal supplier sudah menyetujui di portal, gunakan tombol ini untuk menarik data terbaru bahwa supplier telah setuju atau meminta negosiasi harga.
+                                  </span>
+                                </p>
+                              </div>
+                              <div className="flex justify-end mt-2 relative z-10 pt-2 border-t border-slate-800">
+                                <button 
+                                  onClick={dismissPORefreshGuide} 
+                                  className="text-[11px] font-bold bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20 active:scale-95"
+                                >
+                                  Mengerti & Lanjutkan
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <p className="text-sm text-slate-500">{viewingOrder?.timestamp_wib}</p>
                   </div>

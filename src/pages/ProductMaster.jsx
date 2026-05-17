@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Search, Eye, Pencil, Trash2, Package, Boxes, Printer } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Plus, Search, Eye, Pencil, Trash2, Package, Boxes, Printer, X, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import ProductForm from '@/components/products/ProductForm';
@@ -32,6 +33,9 @@ export default function ProductMaster({ store }) {
   const { selectedDate, formattedDate } = useGlobalDate();
   const { toast } = useToast();
 
+  const [showAddProductGuide, setShowAddProductGuide] = useState(false);
+  const [showActionColumnGuide, setShowActionColumnGuide] = useState(false);
+
   useEffect(() => {
     if (store?.id) loadProducts();
 
@@ -45,6 +49,35 @@ export default function ProductMaster({ store }) {
       window.removeEventListener('refresh_data', handleRefreshEvent);
     };
   }, [store]);
+
+  useEffect(() => {
+    if (isLoading || !store?.id) return;
+    const step = localStorage.getItem(`erp_tour_step_${store.id}`);
+    if (step === '2') {
+      const timer = setTimeout(() => setShowAddProductGuide(true), 1000);
+      return () => clearTimeout(timer);
+    } else if (step === '3' && products.length > 0) {
+      const timer = setTimeout(() => setShowActionColumnGuide(true), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, products.length]);
+
+  const dismissAddProductGuide = () => {
+    setShowAddProductGuide(false);
+    if (store?.id) {
+      localStorage.setItem(`erp_tour_step_${store.id}`, '3');
+    }
+    if (products.length > 0) {
+      setTimeout(() => setShowActionColumnGuide(true), 500);
+    }
+  };
+
+  const dismissActionGuide = () => {
+    setShowActionColumnGuide(false);
+    if (store?.id) {
+      localStorage.setItem(`erp_tour_step_${store.id}`, 'completed');
+    }
+  };
 
   const loadProducts = async () => {
     const data = await api.entities.Product.filter({ store_id: store.id });
@@ -118,24 +151,57 @@ export default function ProductMaster({ store }) {
                 Cetak {selectedProductIds.length} Barcode
               </Button>
             )}
-            <Button
-              onClick={() => {
-                const limits = getEffectiveLimits(store);
-                if (limits.maxProducts !== Infinity && products.length >= limits.maxProducts) {
-                  toast({
-                    title: "Batas Produk Tercapai",
-                    description: `Paket ${store?.plan || 'Free'} maksimal ${limits.maxProducts} produk. Silakan upgrade paket Anda.`,
-                    variant: "destructive"
-                  });
-                  return;
-                }
-                setShowForm(true);
-              }}
-              className="bg-blue-600 hover:bg-blue-700 h-11 rounded-xl font-bold"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Tambah Produk
-            </Button>
+            
+            <div className={`relative ${showAddProductGuide ? 'z-[60]' : ''}`}>
+              {showAddProductGuide && (
+                <div 
+                  className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] animate-in fade-in duration-300" 
+                  onClick={dismissAddProductGuide}
+                  style={{ margin: 0 }}
+                />
+              )}
+              <Button
+                onClick={() => {
+                  if (showAddProductGuide) dismissAddProductGuide();
+                  const limits = getEffectiveLimits(store);
+                  if (limits.maxProducts !== Infinity && products.length >= limits.maxProducts) {
+                    toast({
+                      title: "Batas Produk Tercapai",
+                      description: `Paket ${store?.plan || 'Free'} maksimal ${limits.maxProducts} produk. Silakan upgrade paket Anda.`,
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  setShowForm(true);
+                }}
+                className={`h-11 rounded-xl font-bold relative transition-all ${showAddProductGuide ? 'z-[60] bg-white text-blue-600 shadow-xl ring-4 ring-white/20 hover:bg-slate-50' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Tambah Produk
+              </Button>
+
+              {showAddProductGuide && (
+                <div className="absolute top-full right-0 mt-4 w-[300px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl z-[60] cursor-default border border-slate-700/50 animate-in fade-in zoom-in-95 duration-300 text-left">
+                  <div className="absolute -top-1.5 right-[20px] w-3 h-3 bg-slate-900 border-t border-l border-slate-700/50 rotate-45" />
+                  <div className="flex flex-col gap-3">
+                    <div className="relative z-10 space-y-2">
+                      <h4 className="text-xs font-black text-white tracking-wider uppercase">Input Data Master</h4>
+                      <p className="text-[12px] text-slate-300 leading-relaxed font-medium">
+                        Tombol ini digunakan untuk membuat atau menginput data master baru di sistem. Silakan klik tombol ini untuk mulai menambahkan produk Anda.
+                      </p>
+                    </div>
+                    <div className="flex justify-end mt-2 relative z-10 pt-2 border-t border-slate-800">
+                      <button 
+                        onClick={dismissAddProductGuide} 
+                        className="text-[11px] font-bold bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20 active:scale-95"
+                      >
+                        Mengerti <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </>
         }
       />
@@ -155,7 +221,7 @@ export default function ProductMaster({ store }) {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto" id="print-products">
+          <div className={showActionColumnGuide ? "" : "overflow-x-auto"} id="print-products">
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50 dark:bg-slate-800/50">
@@ -195,8 +261,11 @@ export default function ProductMaster({ store }) {
                   </TableRow>
                 ) : (
                   filteredProducts.map((product, idx) => (
-                    <TableRow key={product.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <TableRow key={product.id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 ${showActionColumnGuide && idx === 0 ? "relative z-[60] bg-white dark:bg-slate-900 shadow-[0_0_20px_rgba(0,0,0,0.15)] ring-2 ring-blue-500/20" : ""}`}>
                       <TableCell>
+                        {showActionColumnGuide && idx === 0 && (
+                          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] animate-in fade-in duration-300" onClick={dismissActionGuide} style={{margin: 0}} />
+                        )}
                         <Checkbox 
                           checked={selectedProductIds.includes(product.id)}
                           onCheckedChange={() => toggleSelectProduct(product.id)}
@@ -241,20 +310,53 @@ export default function ProductMaster({ store }) {
                       <TableCell>{getStatusBadge(product.status)}</TableCell>
                       <TableCell className="text-xs text-slate-500 dark:text-slate-400">{product.timestamp_wib || product.created_at?.split('T')[0] || '-'}</TableCell>
                       <TableCell>
-                        <div className="flex items-center justify-center gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => setPrintProducts([product])} title="Cetak Barcode">
-                            <Printer className="w-4 h-4 text-blue-500" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setViewingProduct(product)}>
-                            <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => { setEditingProduct(product); setShowForm(true); }}>
-                            <Pencil className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setDeleteProduct(product)}>
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </Button>
-                        </div>
+                        <Popover open={showActionColumnGuide && idx === 0}>
+                          <PopoverTrigger asChild>
+                            <div className="flex items-center justify-center gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => setPrintProducts([product])} title="Cetak Barcode">
+                                <Printer className="w-4 h-4 text-blue-500" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => setViewingProduct(product)}>
+                                <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => { setEditingProduct(product); setShowForm(true); }}>
+                                <Pencil className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => setDeleteProduct(product)}>
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </PopoverTrigger>
+                          <PopoverContent 
+                            side="bottom" 
+                            align="end" 
+                            sideOffset={12}
+                            className="z-[70] w-[320px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl border-slate-700/50 animate-in fade-in zoom-in-95 duration-300 pointer-events-auto"
+                            onPointerDownOutside={(e) => e.preventDefault()}
+                          >
+                            <div className="flex flex-col gap-3">
+                              <div className="relative z-10 space-y-2">
+                                <h4 className="text-xs font-black text-white tracking-wider uppercase">Tindakan Lanjutan (Aksi)</h4>
+                                <p className="text-[12px] text-slate-300 leading-relaxed font-medium">
+                                  Setelah data tersimpan, Anda dapat mengelolanya langsung di tabel ini.
+                                  <span className="block mt-2.5 space-y-2 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                                    <span className="flex items-center gap-2.5 text-[11px]"><Eye className="w-3.5 h-3.5 text-blue-400"/> Melihat detail / pengisian data lanjutan</span>
+                                    <span className="flex items-center gap-2.5 text-[11px]"><Pencil className="w-3.5 h-3.5 text-emerald-400"/> Merubah data langsung (Edit)</span>
+                                    <span className="flex items-center gap-2.5 text-[11px]"><Trash2 className="w-3.5 h-3.5 text-red-400"/> Menghapus data (Hanya modul tertentu)</span>
+                                  </span>
+                                </p>
+                              </div>
+                              <div className="flex justify-end mt-2 relative z-10 pt-2 border-t border-slate-800">
+                                <button 
+                                  onClick={dismissActionGuide} 
+                                  className="text-[11px] font-bold bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20 active:scale-95"
+                                >
+                                  Mengerti & Selesai
+                                </button>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       </TableCell>
                     </TableRow>
                   ))
