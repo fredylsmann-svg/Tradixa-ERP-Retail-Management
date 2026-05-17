@@ -58,6 +58,10 @@ export default function ProductMaster({ store }) {
       const timer = setTimeout(() => setShowAddProductGuide(true), 1000);
       return () => clearTimeout(timer);
     } else if (step === '3' && products.length > 0 && !showForm) {
+      if (window.innerWidth < 768) {
+        localStorage.setItem(`erp_tour_step_${store.id}`, 'completed');
+        return;
+      }
       const timer = setTimeout(() => setReadyForActionGuide(true), 1000);
       return () => clearTimeout(timer);
     }
