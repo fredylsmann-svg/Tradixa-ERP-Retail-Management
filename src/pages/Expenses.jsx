@@ -145,7 +145,6 @@ export default function Expenses({ store }) {
       await api.entities.JournalLine.create({
         journal_id: journal.id,
         account_name: 'Beban ' + formData.category,
-        account_type: 'Biaya',
         description: `Pembayaran Beban ${formData.category} - ${formData.notes || ''}`,
         debit: amountNumeric,
         credit: 0
@@ -154,7 +153,6 @@ export default function Expenses({ store }) {
       await api.entities.JournalLine.create({
         journal_id: journal.id,
         account_name: selectedBank?.bank_name || 'Kas',
-        account_type: 'Aset',
         description: `Beban ${formData.category} - Pembayaran via ${selectedBank?.bank_name || 'Kas'}`,
         debit: 0,
         credit: amountNumeric
