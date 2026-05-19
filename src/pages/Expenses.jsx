@@ -135,7 +135,11 @@ export default function Expenses({ store }) {
         account_type: 'Biaya',
         debit: amountNumeric,
         credit: 0,
-        description: `Beban ${formData.category} - ${formData.notes || 'Pembayaran via ' + (selectedBank?.bank_name || 'Kas')}`
+        total_debit: amountNumeric,
+        total_credit: 0,
+        type: 'Manual',
+        status: 'Draft',
+        description: `Pembayaran Beban ${formData.category} - ${formData.notes || ''}`
       });
 
       await api.entities.JournalEntry.create({
@@ -145,7 +149,11 @@ export default function Expenses({ store }) {
         account_type: 'Aset',
         debit: 0,
         credit: amountNumeric,
-        description: `Pembayaran Beban ${formData.category} - ${formData.notes || ''}`
+        total_debit: 0,
+        total_credit: amountNumeric,
+        type: 'Manual',
+        status: 'Draft',
+        description: `Beban ${formData.category} - Pembayaran via ${selectedBank?.bank_name || 'Kas'}`
       });
 
       // 3. Bank Transaction & Balance Update
