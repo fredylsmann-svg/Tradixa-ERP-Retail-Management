@@ -113,12 +113,14 @@ export default function InventoryGRN({ store }) {
 
   const [locations, setLocations] = useState([]);
   const [isManualLocation, setIsManualLocation] = useState(false);
+  const [allProducts, setAllProducts] = useState([]);
 
   useEffect(() => {
     if (store?.id) {
       loadHistory();
       loadProcurementGrns();
       loadLocations();
+      loadAllProducts();
 
       const saved = localStorage.getItem(`signatures_${store.id}_manager`);
       if (saved) setSignatureHistory(JSON.parse(saved));
@@ -131,6 +133,15 @@ export default function InventoryGRN({ store }) {
       setLocations(data);
     } catch (err) {
       console.error("Failed to load locations", err);
+    }
+  };
+
+  const loadAllProducts = async () => {
+    try {
+      const data = await api.entities.Product.filter({ store_id: store.id });
+      setAllProducts(data);
+    } catch (e) {
+      console.error('Failed to load products for putaway suggestion', e);
     }
   };
 
@@ -1119,7 +1130,7 @@ export default function InventoryGRN({ store }) {
                           // Find category of first item
                           const firstItemCategory = items[0]?.category || '';
                           // Find rack where products of same category are stored
-                          const productsAll = products || [];
+                          const productsAll = allProducts || [];
                           const sameCatProducts = productsAll.filter(p => p.category && p.category === firstItemCategory && p.location_name);
                           let suggestedRack = null;
                           if (sameCatProducts.length > 0) {
