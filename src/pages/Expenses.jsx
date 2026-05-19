@@ -125,35 +125,39 @@ export default function Expenses({ store }) {
         reference: trxId
       });
 
-      // 2. Journal Entries
+      // 2. Journal Entry (1 Header + 2 Lines — Double Entry Accounting)
       const selectedBank = bankAccounts.find(b => b.id === formData.bank_account_id);
       
-      await api.entities.JournalEntry.create({
+      // Create single journal header
+      const journal = await api.entities.JournalEntry.create({
+        store_id: store?.id,
         transaction_id: trxId,
         date: formData.date,
-        account_name: 'Beban ' + formData.category,
-        account_type: 'Biaya',
-        debit: amountNumeric,
-        credit: 0,
-        total_debit: amountNumeric,
-        total_credit: 0,
+        description: `Beban ${formData.category} - Pembayaran via ${selectedBank?.bank_name || 'Kas'}`,
         type: 'Manual',
         status: 'Draft',
-        description: `Pembayaran Beban ${formData.category} - ${formData.notes || ''}`
+        total_debit: amountNumeric,
+        total_credit: amountNumeric,
+        created_by: 'System'
       });
 
-      await api.entities.JournalEntry.create({
-        transaction_id: trxId,
-        date: formData.date,
+      // Create journal lines (double entry)
+      await api.entities.JournalLine.create({
+        journal_id: journal.id,
+        account_name: 'Beban ' + formData.category,
+        account_type: 'Biaya',
+        description: `Pembayaran Beban ${formData.category} - ${formData.notes || ''}`,
+        debit: amountNumeric,
+        credit: 0
+      });
+
+      await api.entities.JournalLine.create({
+        journal_id: journal.id,
         account_name: selectedBank?.bank_name || 'Kas',
         account_type: 'Aset',
+        description: `Beban ${formData.category} - Pembayaran via ${selectedBank?.bank_name || 'Kas'}`,
         debit: 0,
-        credit: amountNumeric,
-        total_debit: 0,
-        total_credit: amountNumeric,
-        type: 'Manual',
-        status: 'Draft',
-        description: `Beban ${formData.category} - Pembayaran via ${selectedBank?.bank_name || 'Kas'}`
+        credit: amountNumeric
       });
 
       // 3. Bank Transaction & Balance Update
