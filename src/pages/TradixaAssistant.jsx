@@ -357,7 +357,14 @@ export default function TradixaAssistant({ store }) {
                   : 'hover:bg-slate-50'
               }`}
             >
-              <p className="font-medium text-sm text-slate-800 truncate">
+              <p 
+                className="font-medium text-sm text-slate-800"
+                style={{ 
+                  whiteSpace: 'normal', 
+                  wordBreak: 'break-word',
+                  overflowWrap: 'anywhere'
+                }}
+              >
                 {convo.metadata?.name || 'Percakapan'}
               </p>
               <p className="text-xs text-slate-500 mt-1">
