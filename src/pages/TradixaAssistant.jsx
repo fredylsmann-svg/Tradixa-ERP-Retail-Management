@@ -60,7 +60,7 @@ export default function TradixaAssistant({ store }) {
       console.error('Failed to parse AI action JSON:', e);
     }
 
-    const actionStatus = executedActions[msgIdx] || 'idle';
+    const actionStatus = msg.executed ? 'success' : (executedActions[msgIdx] || 'idle');
 
     const handleExecuteAction = async () => {
       if (!actionData || actionStatus !== 'idle') return;
@@ -87,6 +87,17 @@ export default function TradixaAssistant({ store }) {
         if (api.entities[entity]) {
           await api.entities[entity].create(payload, { via_ai: true });
           setExecutedActions(prev => ({ ...prev, [msgIdx]: 'success' }));
+          
+          // Persist the executed status in localStorage so it remains executed when returning to chat
+          if (currentConversation?.id) {
+            const chatKey = `chat_${currentConversation.id}`;
+            const storedMessages = JSON.parse(localStorage.getItem(chatKey) || '[]');
+            if (storedMessages[msgIdx]) {
+              storedMessages[msgIdx].executed = true;
+              localStorage.setItem(chatKey, JSON.stringify(storedMessages));
+              setMessages(storedMessages);
+            }
+          }
           
           sonnerToast.success(`Aksi AI Berhasil: Data ${entity} berhasil dibuat di database!`, {
             description: `Tercatat di Audit Log: 'Created new ${entity} (via Tradixa AI Assistant)'.`,
