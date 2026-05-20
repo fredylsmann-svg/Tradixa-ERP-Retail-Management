@@ -193,7 +193,9 @@ export default function TaxManagement({ store }) {
             storeAddress={store?.address}
             storeLogoUrl={store?.logo_url}
             contentId="print-taxes-detailed"
-          />
+          
+          store={store}
+        />
         }
       />
 

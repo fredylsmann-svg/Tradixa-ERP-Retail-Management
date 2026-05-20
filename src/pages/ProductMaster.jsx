@@ -157,7 +157,9 @@ export default function ProductMaster({ store }) {
               storeAddress={store?.address}
               storeLogoUrl={store?.logo_url}
               contentId="print-products-detailed"
-            />
+            
+            store={store}
+          />
             {selectedProductIds.length > 0 && (
               <Button 
                 variant="outline" 

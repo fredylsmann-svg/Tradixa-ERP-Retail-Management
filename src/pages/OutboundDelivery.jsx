@@ -410,7 +410,9 @@ export default function OutboundDelivery({ store }) {
               storeAddress={store?.address} 
               storeLogoUrl={store?.logo_url} 
               contentId="print-outbound-deliveries" 
-            />
+            
+            store={store}
+          />
             <Button 
               className="bg-blue-600 hover:bg-blue-700 h-11 rounded-xl" 
               onClick={() => {

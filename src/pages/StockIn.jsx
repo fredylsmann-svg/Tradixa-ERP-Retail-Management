@@ -70,7 +70,9 @@ export default function StockIn({ store }) {
               storeAddress={store?.address}
               storeLogoUrl={store?.logo_url}
               contentId="print-stock-in-detailed"
-            />
+            
+            store={store}
+          />
             <Button onClick={handleOpenForm} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold rounded-xl text-white">
               <Plus className="w-4 h-4 mr-2" />
               Tambah Stok Masuk

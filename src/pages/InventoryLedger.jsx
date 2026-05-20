@@ -225,7 +225,9 @@ export default function InventoryLedger({ store }) {
               storeAddress={store?.address}
               storeLogoUrl={store?.logo_url}
               contentId="print-ledger"
-            />
+            
+            store={store}
+          />
           </div>
         </CardHeader>
         <CardContent className="p-0">

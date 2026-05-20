@@ -124,7 +124,9 @@ export default function ReceivableInvoices({ store }) {
             storeAddress={store?.address} 
             storeLogoUrl={store?.logo_url} 
             contentId="print-receivables-detailed" 
-          />
+          
+          store={store}
+        />
         }
       />
       <PageDatePicker />

@@ -161,7 +161,9 @@ export default function CustomerProfile({ store }) {
           storeAddress={store?.address} 
           storeLogoUrl={store?.logo_url} 
           contentId="print-customer-detailed" 
-        />
+        
+        store={store}
+      />
       </div>
 
       <Card>

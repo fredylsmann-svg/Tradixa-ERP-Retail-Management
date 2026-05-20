@@ -757,7 +757,9 @@ export default function InventoryGRN({ store }) {
                 date={moment().format('DD/MM/YYYY')}
                 storeName={store?.store_name}
                 contentId="print-igrn-history"
-              />
+              
+              store={store}
+            />
               <Button
                 onClick={() => setView('create')}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 flex items-center gap-2 transition-all active:scale-95 rounded-xl"

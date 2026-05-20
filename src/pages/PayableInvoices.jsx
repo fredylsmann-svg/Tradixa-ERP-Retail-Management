@@ -126,7 +126,9 @@ export default function PayableInvoices({ store }) {
             storeAddress={store?.address} 
             storeLogoUrl={store?.logo_url} 
             contentId="print-payables-detailed" 
-          />
+          
+          store={store}
+        />
         }
       />
       <PageDatePicker />

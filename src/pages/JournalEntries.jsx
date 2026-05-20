@@ -415,7 +415,9 @@ export default function JournalEntries({ store }) {
               storeAddress={store?.address}
               storeLogoUrl={store?.logo_url}
               contentId="print-journal"
-            />
+            
+            store={store}
+          />
             <Button onClick={handleAcceptAll} className="bg-emerald-600 hover:bg-emerald-700 h-11 px-6 rounded-xl font-bold text-white transition-all">
               <CheckCircle2 className="w-4 h-4 mr-2" />
               Accept All

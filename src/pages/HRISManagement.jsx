@@ -171,7 +171,9 @@ export default function HRISManagement({ store }) {
               storeAddress={store?.address} 
               storeLogoUrl={store?.logo_url} 
               contentId="print-hris-detailed" 
-            />
+            
+            store={store}
+          />
             <Button onClick={() => { setEditingEmployee(null); setFormData({ employee_id: '', name: '', position: '', department: '', phone: '', email: '', address: '', join_date: '', salary: 0, status: 'Active', photo_url: '' }); setShowForm(true); }} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold rounded-xl text-white">
               <Plus className="w-4 h-4 mr-2" />
               Tambah Karyawan

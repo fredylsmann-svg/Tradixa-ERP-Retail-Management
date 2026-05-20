@@ -261,7 +261,9 @@ export default function Suppliers({ store }) {
               storeAddress={store?.address}
               storeLogoUrl={store?.logo_url}
               contentId="print-suppliers-detailed"
-            />
+            
+            store={store}
+          />
             <Button onClick={() => {
               setEditingSupplier(null);
               setImageFile(null);

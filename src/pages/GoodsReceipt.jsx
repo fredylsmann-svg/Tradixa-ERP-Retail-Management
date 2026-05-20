@@ -593,7 +593,9 @@ export default function GoodsReceipt({ store }) {
               storeAddress={store?.address}
               storeLogoUrl={store?.logo_url}
               contentId="print-gr-detailed"
-            />
+            
+            store={store}
+          />
             <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 rounded-xl">
               <Plus className="w-4 h-4 mr-2" />
               Penerimaan Baru

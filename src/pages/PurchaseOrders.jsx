@@ -614,7 +614,9 @@ export default function PurchaseOrders({ store }) {
               storeAddress={store?.address}
               storeLogoUrl={store?.logo_url}
               contentId="print-po-detailed"
-            />
+            
+            store={store}
+          />
             <Button variant="outline" onClick={() => setShowPrDialog(true)} className="border-blue-200 text-blue-600 hover:bg-blue-50 h-11 px-6 font-semibold rounded-xl">
               <ClipboardList className="w-4 h-4 mr-2" />
               Ambil dari PR
