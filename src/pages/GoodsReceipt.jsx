@@ -88,11 +88,11 @@ export default function GoodsReceipt({ store }) {
   const [confirmedDateSnapshot, setConfirmedDateSnapshot] = useState('');
 
   const [grForm, setGrForm] = useState({
-    surat_jalan: localStorage.getItem('last_gr_surat_jalan') || '',
-    vehicle_no: localStorage.getItem('last_gr_vehicle_no') || '',
-    driver_name: localStorage.getItem('last_gr_driver_name') || '',
-    driver_phone: localStorage.getItem('last_gr_driver_phone') || '',
-    storage_location: localStorage.getItem('last_gr_storage_location') || '',
+    surat_jalan: '',
+    vehicle_no: '',
+    driver_name: '',
+    driver_phone: '',
+    storage_location: '',
     delivery_method: '',
     courier_name: '',
     ship_via: '',
@@ -104,7 +104,17 @@ export default function GoodsReceipt({ store }) {
   const [signerRole, setSignerRole] = useState('');
 
   useEffect(() => {
-    if (store?.id) loadData();
+    if (store?.id) {
+      loadData();
+      setGrForm(prev => ({
+        ...prev,
+        surat_jalan: localStorage.getItem(`last_gr_surat_jalan_${store.id}`) || '',
+        vehicle_no: localStorage.getItem(`last_gr_vehicle_no_${store.id}`) || '',
+        driver_name: localStorage.getItem(`last_gr_driver_name_${store.id}`) || '',
+        driver_phone: localStorage.getItem(`last_gr_driver_phone_${store.id}`) || '',
+        storage_location: localStorage.getItem(`last_gr_storage_location_${store.id}`) || '',
+      }));
+    }
   }, [store]);
 
   // REALTIME: Auto-update GRN detail when driver signs from public portal
@@ -216,11 +226,11 @@ export default function GoodsReceipt({ store }) {
     setSelectedPO(null);
     setReceivedItems([]);
     setGrForm({
-      surat_jalan: localStorage.getItem('last_gr_surat_jalan') || '',
-      vehicle_no: localStorage.getItem('last_gr_vehicle_no') || '',
-      driver_name: localStorage.getItem('last_gr_driver_name') || '',
-      driver_phone: localStorage.getItem('last_gr_driver_phone') || '',
-      storage_location: localStorage.getItem('last_gr_storage_location') || '',
+      surat_jalan: localStorage.getItem(`last_gr_surat_jalan_${store?.id}`) || '',
+      vehicle_no: localStorage.getItem(`last_gr_vehicle_no_${store?.id}`) || '',
+      driver_name: localStorage.getItem(`last_gr_driver_name_${store?.id}`) || '',
+      driver_phone: localStorage.getItem(`last_gr_driver_phone_${store?.id}`) || '',
+      storage_location: localStorage.getItem(`last_gr_storage_location_${store?.id}`) || '',
       notes: ''
     });
   };
@@ -333,11 +343,13 @@ export default function GoodsReceipt({ store }) {
       });
 
       // Save to localStorage so it autofills next time
-      localStorage.setItem('last_gr_surat_jalan', grForm.surat_jalan);
-      localStorage.setItem('last_gr_vehicle_no', grForm.vehicle_no);
-      localStorage.setItem('last_gr_driver_name', grForm.driver_name);
-      localStorage.setItem('last_gr_driver_phone', grForm.driver_phone);
-      localStorage.setItem('last_gr_storage_location', grForm.storage_location);
+      if (store?.id) {
+        localStorage.setItem(`last_gr_surat_jalan_${store.id}`, grForm.surat_jalan);
+        localStorage.setItem(`last_gr_vehicle_no_${store.id}`, grForm.vehicle_no);
+        localStorage.setItem(`last_gr_driver_name_${store.id}`, grForm.driver_name);
+        localStorage.setItem(`last_gr_driver_phone_${store.id}`, grForm.driver_phone);
+        localStorage.setItem(`last_gr_storage_location_${store.id}`, grForm.storage_location);
+      }
 
       setShowForm(false);
       setSelectedPO(null);
@@ -454,6 +466,9 @@ export default function GoodsReceipt({ store }) {
         warehouse_manager_signature: signatureData,
         warehouse_manager_name: managerSignerName || 'Warehouse Manager'
       }));
+      if (store?.id) {
+        localStorage.setItem(`last_manager_signature_${store.id}`, signatureData);
+      }
       loadData();
     } catch (error) {
       console.error("Manager signature save failed", error);
@@ -1553,7 +1568,7 @@ export default function GoodsReceipt({ store }) {
               <SignaturePad
                 onSave={handleManagerSign}
                 title="Warehouse Manager Approval"
-                initialSignature={localStorage.getItem('last_manager_signature')}
+                initialSignature={localStorage.getItem(`last_manager_signature_${store?.id}`)}
               />
             </div>
             <p className="text-[10px] text-center text-slate-400 font-bold italic">

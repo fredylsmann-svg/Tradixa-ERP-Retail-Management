@@ -226,7 +226,7 @@ export default function TradixaAssistant({ store }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isCrudActive, setIsCrudActive] = useState(true);
+  const [isCrudActive, setIsCrudActive] = useState(false);
   const [executedActions, setExecutedActions] = useState({});
 
   useEffect(() => {
