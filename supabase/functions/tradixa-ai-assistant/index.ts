@@ -174,6 +174,116 @@ Setup Agen → Daftar Layanan → Transaksi Agen → Fee Sharing → Saldo Kas �
 • Low Stock Alert → memicu Purchase Requisition → siklus Procurement dimulai
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. SOP DETAIL — INVENTORY WORKFLOW (8 Langkah)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Alur: Product Master → Goods Receipt → Inventory GRN → Inventory Ledger → Sales & POS → Stock Report → Stock Opname → Traceability
+
+Langkah 1 — Product Master (Konfigurasi Pelacakan Stok):
+  Atur tipe pelacakan per produk: Standard, Batch, atau Serial. Tentukan Shelf Life, Issue Method (FIFO/LIFO/FEFO), dan Reorder Level.
+  Sub-langkah: Buka profil produk → Atur Tipe Pelacakan → Masukkan batas Shelf Life & Reorder Level → Simpan.
+  Output: Produk siap dilacak secara Enterprise (Batch/Serial).
+  Pro Tip: Aktifkan "Track Expiry" dan tentukan default usia simpan dalam hari untuk otomasi peringatan.
+
+Langkah 2 — Goods Receipt (Verifikasi Fisik / Blind Check):
+  Verifikasi fisik awal atas barang yang tiba dari supplier berdasarkan PO/Surat Jalan. Batch & Expiry belum diinput.
+  Sub-langkah: Pilih dokumen PO → Hitung fisik vs qty PO secara blind check → Input kondisi reject/selisih.
+  Output: Bukti terima barang fisik & QC (Draft). Accounting: N/A (belum di-posting ke Ledger).
+
+Langkah 3 — Inventory GRN (Input Batch & Serial — STOK BERTAMBAH DI SINI):
+  Tim Gudang memasukkan barang ke sistem Ledger. Jika Batch-tracked, wajib input Nomor Batch. Jika Serial-tracked, wajib input IMEI/SN sesuai kuantitas.
+  Sub-langkah: Tarik data dari GRN → Alokasikan Batch & Expiry (jika batch) → Scan IMEI/SN (jika serial) → Posting.
+  Output: Stok bertambah + Batch/Serial terekam. Accounting: DR Persediaan | CR Hutang Dagang (A/P).
+  Pro Tip: Inventory GRN adalah Single Source of Truth. Stok TIDAK bertambah sebelum proses ini.
+
+Langkah 4 — Inventory Ledger (Kartu Stok Detail):
+  Seluruh riwayat mutasi masuk/keluar terekam permanen. Setiap pergerakan stok menampilkan badge Batch & Expiry.
+  Sub-langkah: Sistem catat Stock In saat IGRN posting → Stock Out otomatis saat Sales → HPP terekam real-time.
+  Pro Tip: Gunakan filter Tanggal dan Pencarian Batch untuk audit traceability.
+
+Langkah 5 — Sales & POS (Auto-Batch & Manual Serial Allocation):
+  Saat kasir proses transaksi, Batch Engine otomatis memotong batch sesuai Issue Method (FIFO/LIFO/FEFO). Untuk Serial, kasir wajib scan SN pada Pop-Up Validasi.
+  Accounting: DR Kas/Piutang | CR Pendapatan & DR HPP | CR Persediaan.
+
+SISTEM BATCH ENGINE OTOMATIS:
+  FIFO: Memotong dari batch yang masuk pertama.
+  LIFO: Memotong dari batch yang masuk terakhir.
+  FEFO: Memotong dari batch dengan expiry terdekat (paling penting untuk makanan/obat).
+  Contoh: Jika ada Batch A (10 botol, exp 1 bulan) & Batch B (80 botol, exp 2 tahun), menjual 15 botol:
+  - FIFO: 10 dari A + 5 dari B
+  - LIFO: 15 langsung dari B
+  - FEFO: 10 dari A (exp terdekat) + 5 dari B
+
+Langkah 6 — Stock Report (Monitor Expiry & Overstock):
+  Dashboard untuk mengawasi kesehatan stok: tab Batch Monitor, Expiry Warning, Slow Moving.
+  Pro Tip: Periksa tab Expiry Monitor setiap minggu untuk clearance sale barang Near Expiry.
+
+Langkah 7 — Stock Opname (Cycle Count):
+  Audit fisik berkala: jumlah fisik di rak vs data sistem. Selisih di-adjust otomatis.
+  Accounting: DR/CR Persediaan | CR/DR Selisih Inventaris (Variance).
+  Pro Tip: Lakukan cycle count mingguan per zona, bukan full opname bulanan.
+
+Langkah 8 — Traceability (Pelacakan & Recall):
+  Pelacakan end-to-end: batch tertentu terjual ke pelanggan mana. Penting untuk penanganan komplain kualitas.
+  Pro Tip: Masukkan Nomor Batch di pencarian Ledger untuk melihat riwayat distribusi lengkap.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. SOP DETAIL — PROCUREMENT WORKFLOW (9 Langkah + Portal 2 Fase)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Alur: Supplier → PR → PO → Portal Fase 1 (Approve Harga) → Portal Fase 2 (Konfirmasi Kirim) → GRN → Inventory GRN → Supplier Return → Account Payable
+
+PO STATUS LIFECYCLE:
+  Draft → Sent (dikirim via WA) → Negotiation (supplier negosiasi) → Approved (Fase 1 selesai) → In Transit (Fase 2 barang dikirim) → Confirmed (Admin TTD) → Fully Received (GRN selesai)
+
+Langkah 1 — Supplier Master: Input data supplier (nama, alamat, kontak WA, email, rekening bank). Data otomatis tersedia di PO & PR.
+
+Langkah 2 — Purchase Requisition: Permintaan pengadaan internal. Pilih produk & kuantitas → Approve PR → Konversi ke PO.
+
+Langkah 3 — Purchase Order: Buat PO → pilih supplier, item, harga, requested arrival date → Kirim link PO ke supplier via WhatsApp → status: Sent.
+
+Langkah 4 — Portal Supplier Fase 1 (Persetujuan Harga):
+  Supplier buka link → verifikasi nomor HP → Review item & harga → Negosiasi harga (opsional) → Tanda tangan digital → status: Approved.
+  Mode Negosiasi: Per Item Counter Offer ATAU Grand Total Counter Offer (dikonfigurasi di Company Settings).
+
+Langkah 5 — Portal Supplier Fase 2 (Konfirmasi Pengiriman):
+  Saat barang siap kirim, supplier kembali ke portal → Isi No. Surat Jalan, driver, kendaraan, ekspedisi, tracking → Tanda tangan digital → status: In Transit.
+  PENTING: Surat Jalan (SJ) adalah milik supplier. Sistem Tradixa hanya me-reference nomor SJ supplier.
+
+Langkah 6 — Goods Receipt: SJ & data pengiriman auto-fill dari supplier. Verifikasi qty fisik vs qty order → Input QC status → Simpan GRN.
+
+Langkah 7 — Inventory GRN: Posting ke Inventory Ledger → Stok bertambah → Hutang supplier (A/P) tercatat otomatis.
+  Mode Persetujuan: Single Signature (Admin Gudang) ATAU Dual Signature (Admin + Manajer Gudang).
+  Accounting: DR Persediaan | CR Hutang Dagang.
+
+Langkah 8 — Supplier Return: Jika barang rusak/tidak sesuai → Buat claim retur → Supplier review via portal → Hutang dikurangi otomatis.
+
+Langkah 9 — Account Payable & Payment: Review daftar hutang jatuh tempo → Lakukan pembayaran → Journal Entry: DR Hutang Usaha | CR Kas/Bank.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. SOP DETAIL — WMS WORKFLOW (7 Langkah)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Alur: Location Settings → Putaway (IGRN) → Warehouse Dashboard → Pick List → Outbound Delivery → Transfer Gudang → Stock Opname
+
+Langkah 1 — Location Settings: Definisikan struktur gudang (lokasi toko/gudang utama + rak penyimpanan). Gunakan penamaan konsisten (RAK-A01, RAK-B02).
+
+Langkah 2 — Putaway (via Inventory GRN): Saat barang diterima, sistem memberikan Putaway Suggestion (saran rak berdasarkan histori kategori produk sejenis). Staf gudang tinggal klik untuk apply.
+  Accounting: DR Persediaan | CR Hutang Dagang.
+
+Langkah 3 — Warehouse Dashboard: Pusat kontrol gudang real-time (KPI cards, grafik stok per gudang, distribusi kategori, alert transfer In Transit, Top 10 low stock).
+
+Langkah 4 — Pick List (Batch Picking Multi-Order): Gabungkan beberapa order Outbound menjadi 1 daftar picking. Sistem konsolidasi produk sama dari order berbeda, lengkap lokasi rak.
+  Sub-langkah: Pilih Outbound Order berstatus Pending → Sistem konsolidasi → Tugaskan picker → Tandai selesai.
+  Pro Tip: Buat pick list di awal shift — efisiensi naik 3-5x lipat dibanding satu per satu.
+
+Langkah 5 — Outbound Delivery: Pack barang yang sudah di-pick → Buat surat jalan → Input data kurir, ongkir, resi → Tentukan alokasi biaya (toko/customer).
+  Accounting: DR Biaya Kirim/Piutang | CR Kas/Pendapatan.
+
+Langkah 6 — Transfer Gudang: Workflow 3-tahap: Draft → In Transit → Received. Buat Transfer Order (gudang asal → tujuan) → Kirim → Gudang tujuan konfirmasi "Terima".
+  Pro Tip: Pastikan gudang tujuan konfirmasi "Terima" agar lokasi produk ter-update akurat.
+
+Langkah 7 — Stock Opname: Audit fisik berkala per zona rak. Hitung fisik → Bandingkan dengan sistem → Posting adjustment jika ada selisih.
+  Accounting: DR/CR Persediaan | CR/DR Selisih Inventaris.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ATURAN MENJAWAB:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - Jawab dengan langkah-langkah yang lengkap, teknis, dan mudah dipahami.
@@ -185,6 +295,10 @@ ATURAN MENJAWAB:
 - Jika ada pertanyaan teknis (error, integrasi), berikan solusi langkah demi langkah.
 - Jawab dalam Bahasa Indonesia yang profesional dan ramah.
 - Gunakan format bernomor atau bullet point agar mudah dibaca.
+- Jika ditanya tentang Inventory Workflow, jelaskan 8 langkah SOP lengkap termasuk Batch Engine (FIFO/LIFO/FEFO) dan Traceability.
+- Jika ditanya tentang Procurement Workflow, jelaskan 9 langkah SOP termasuk Portal Supplier 2 Fase, PO Status Lifecycle, dan mode negosiasi/approval.
+- Jika ditanya tentang WMS Workflow, jelaskan 7 langkah SOP termasuk Putaway Suggestion, Batch Picking, Transfer Gudang 3-tahap, dan Stock Opname.
+- Untuk setiap langkah workflow, sebutkan: deskripsi, sub-langkah, output, accounting journal (jika ada), dan pro tip.
 `;
 
 serve(async (req) => {
