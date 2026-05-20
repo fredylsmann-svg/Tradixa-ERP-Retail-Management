@@ -25,6 +25,7 @@ const PublicReturnReview = lazy(() => import('./pages/PublicReturnReview'));
 const PublicInvoice = lazy(() => import('./pages/PublicInvoice'));
 const PublicCourierPortal = lazy(() => import('./pages/PublicCourierPortal'));
 const ProcurementWorkflow = lazy(() => import('./pages/ProcurementWorkflow'));
+const SalesWorkflow = lazy(() => import('./pages/SalesWorkflow'));
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -173,6 +174,15 @@ function App() {
               <ProtectedRoute>
                 <LayoutWrapper currentPageName="ProcurementWorkflow">
                   <ProcurementWorkflow />
+                </LayoutWrapper>
+              </ProtectedRoute>
+            } />
+
+            {/* Explicit Sales Workflow Route */}
+            <Route path="/SalesWorkflow" element={
+              <ProtectedRoute>
+                <LayoutWrapper currentPageName="SalesWorkflow">
+                  <SalesWorkflow />
                 </LayoutWrapper>
               </ProtectedRoute>
             } />

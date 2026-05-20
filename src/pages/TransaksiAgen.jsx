@@ -13,8 +13,10 @@ import { Plus, ArrowRightLeft, Loader2, Download, FileText, Printer } from 'luci
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/layout/PageHeader';
 import PremiumGate from '@/components/ui/PremiumGate';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export default function TransaksiAgen({ store }) {
+  const { settings } = useSettings();
   const [transactions, setTransactions] = useState([]);
   const [agents, setAgents] = useState([]);
   const [services, setServices] = useState([]);
@@ -22,8 +24,26 @@ export default function TransaksiAgen({ store }) {
   const [showForm, setShowForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
-    agent_id: '', transaction_type: 'Deposit', service_type: '', amount: '', notes: ''
+    agent_id: '', 
+    transaction_type: 'Deposit', 
+    service_type: '', 
+    amount: '', 
+    notes: '',
+    payment_mode: 'Cash',
+    trace_number: ''
   });
+
+  // EDC states
+  const [showEdcDialog, setShowEdcDialog] = useState(false);
+  const [edcStatus, setEdcStatus] = useState('idle'); // idle | connecting | processing | success | failed
+  const [edcErrorMessage, setEdcErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (showForm) {
+      const defaultMode = settings?.defaultEdcIntegration === 'Local' ? 'EDC_Local' : 'EDC_Manual';
+      setFormData(prev => ({ ...prev, payment_mode: defaultMode }));
+    }
+  }, [showForm, settings?.defaultEdcIntegration]);
 
   useEffect(() => {
     if (store?.id) loadData();
@@ -51,10 +71,7 @@ export default function TransaksiAgen({ store }) {
     return `${String(wibTime.getDate()).padStart(2, '0')}/${String(wibTime.getMonth() + 1).padStart(2, '0')}/${wibTime.getFullYear()} ${String(wibTime.getHours()).padStart(2, '0')}:${String(wibTime.getMinutes()).padStart(2, '0')} WIB`;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSaving(true);
-    
+  const saveTransactionRecord = async (traceOrRef) => {
     const agent = agents.find(a => a.id === formData.agent_id);
     const service = services.find(s => s.name === formData.service_type);
     const amount = Number(formData.amount);
@@ -68,6 +85,17 @@ export default function TransaksiAgen({ store }) {
       newBalance -= amount;
     }
 
+    let finalRef = `AGT-${Date.now()}`;
+    let addedNotes = formData.notes;
+
+    if (formData.payment_mode === 'EDC_Local') {
+      finalRef = `EDC-LOC-${traceOrRef}`;
+      addedNotes = `[EDC Local Bridge Trace: ${traceOrRef}] ${formData.notes}`.trim();
+    } else if (formData.payment_mode === 'EDC_Manual') {
+      finalRef = `EDC-MAN-${traceOrRef || 'UNKNOWN'}`;
+      addedNotes = `[EDC Manual Trace: ${traceOrRef || 'UNKNOWN'}] ${formData.notes}`.trim();
+    }
+
     await api.entities.AgentTransaction.create({
       store_id: store.id,
       agent_id: formData.agent_id,
@@ -78,17 +106,88 @@ export default function TransaksiAgen({ store }) {
       fee,
       commission,
       balance_after: newBalance,
-      reference: `AGT-${Date.now()}`,
-      notes: formData.notes,
+      reference: finalRef,
+      notes: addedNotes,
       timestamp_wib: getWIBTimestamp()
     });
 
     await api.entities.Agent.update(formData.agent_id, { balance: newBalance });
-
-    setIsSaving(false);
-    setShowForm(false);
-    setFormData({ agent_id: '', transaction_type: 'Deposit', service_type: '', amount: '', notes: '' });
     loadData();
+  };
+
+  const handleEdcConnection = (amount) => {
+    setEdcStatus('connecting');
+    setEdcErrorMessage('');
+    setShowEdcDialog(true);
+
+    const ws = new WebSocket('ws://localhost:9000');
+    let hasResponded = false;
+
+    const connectionTimeout = setTimeout(() => {
+      if (!hasResponded) {
+        ws.close();
+        setEdcStatus('failed');
+        setEdcErrorMessage('Gagal terhubung ke ECR local bridge di localhost:9000. Pastikan service local bridge aktif.');
+      }
+    }, 5000);
+
+    ws.onopen = () => {
+      clearTimeout(connectionTimeout);
+      setEdcStatus('processing');
+      ws.send(JSON.stringify({
+        command: 'purchase',
+        amount: Number(amount),
+        reference: `EDC-${Date.now()}`
+      }));
+    };
+
+    ws.onmessage = (event) => {
+      hasResponded = true;
+      try {
+        const data = JSON.parse(event.data);
+        if (data.status === 'success') {
+          setEdcStatus('success');
+          saveTransactionRecord(data.trace_number || `EDC-${Date.now()}`);
+          ws.close();
+          setShowForm(false);
+          const defaultMode = settings?.defaultEdcIntegration === 'Local' ? 'EDC_Local' : 'EDC_Manual';
+          setFormData({ agent_id: '', transaction_type: 'Deposit', service_type: '', amount: '', notes: '', payment_mode: defaultMode, trace_number: '' });
+        } else {
+          setEdcStatus('failed');
+          setEdcErrorMessage(data.message || 'Transaksi ditolak oleh mesin EDC.');
+          ws.close();
+        }
+      } catch (err) {
+        setEdcStatus('failed');
+        setEdcErrorMessage('Format respon dari local bridge tidak valid.');
+        ws.close();
+      }
+    };
+
+    ws.onerror = () => {
+      hasResponded = true;
+      clearTimeout(connectionTimeout);
+      setEdcStatus('failed');
+      setEdcErrorMessage('Tidak dapat membuka koneksi. Silakan periksa apakah ECR Local Bridge service sudah berjalan.');
+    };
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const amount = Number(formData.amount);
+    if (!amount || amount <= 0) return;
+
+    if (formData.payment_mode === 'EDC_Local') {
+      handleEdcConnection(amount);
+    } else {
+      setIsSaving(true);
+      const trace = formData.payment_mode === 'EDC_Manual' ? formData.trace_number : null;
+      await saveTransactionRecord(trace);
+      setIsSaving(false);
+      setShowForm(false);
+      const defaultMode = settings?.defaultEdcIntegration === 'Local' ? 'EDC_Local' : 'EDC_Manual';
+      setFormData({ agent_id: '', transaction_type: 'Deposit', service_type: '', amount: '', notes: '', payment_mode: defaultMode, trace_number: '' });
+    }
   };
 
   const getTypeBadge = (type) => {
@@ -241,6 +340,29 @@ export default function TransaksiAgen({ store }) {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Metode Pembayaran</Label>
+              <Select value={formData.payment_mode} onValueChange={(v) => setFormData({...formData, payment_mode: v})}>
+                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cash">Tunai (Cash)</SelectItem>
+                  <SelectItem value="EDC_Local">EDC Local Bridge (WebSocket)</SelectItem>
+                  <SelectItem value="EDC_Manual">EDC Manual (Input Trace No)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {formData.payment_mode === 'EDC_Manual' && (
+              <div>
+                <Label>Trace Number / Approval Code *</Label>
+                <Input 
+                  value={formData.trace_number} 
+                  onChange={(e) => setFormData({...formData, trace_number: e.target.value})} 
+                  className="mt-1.5" 
+                  placeholder="Contoh: 123456"
+                  required 
+                />
+              </div>
+            )}
             <div><Label>Jumlah *</Label><NumberInput value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} className="mt-1.5" required /></div>
             <div><Label>Catatan</Label><Input value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="mt-1.5" /></div>
             <DialogFooter>
@@ -248,6 +370,72 @@ export default function TransaksiAgen({ store }) {
               <Button type="submit" disabled={isSaving || !formData.agent_id}>{isSaving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Simpan</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Progress EDC */}
+      <Dialog open={showEdcDialog} onOpenChange={(open) => {
+        if (edcStatus === 'processing' || edcStatus === 'connecting') return;
+        setShowEdcDialog(open);
+      }}>
+        <DialogContent className="max-w-md p-6 rounded-2xl bg-white border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-center font-bold text-lg">
+              {edcStatus === 'connecting' && 'Menghubungkan ke EDC...'}
+              {edcStatus === 'processing' && 'Memproses Transaksi Kartu...'}
+              {edcStatus === 'success' && 'Pembayaran Berhasil!'}
+              {edcStatus === 'failed' && 'Pembayaran Gagal'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center p-6 space-y-4">
+            {(edcStatus === 'connecting' || edcStatus === 'processing') && (
+              <div className="relative flex items-center justify-center">
+                <Loader2 className="w-16 h-16 animate-spin text-blue-600" />
+                <span className="absolute text-xs font-semibold text-blue-600">EDC</span>
+              </div>
+            )}
+            {edcStatus === 'success' && (
+              <div className="w-16 h-16 rounded-full bg-emerald-50 border-4 border-emerald-100 flex items-center justify-center animate-bounce">
+                <svg className="w-8 h-8 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            )}
+            {edcStatus === 'failed' && (
+              <div className="w-16 h-16 rounded-full bg-red-50 border-4 border-red-100 flex items-center justify-center animate-shake">
+                <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+            )}
+
+            <p className="text-center text-sm font-semibold text-slate-500 mt-2">
+              {edcStatus === 'connecting' && 'Sedang menghubungkan ke Tradixa ECR Bridge (ws://localhost:9000)...'}
+              {edcStatus === 'processing' && 'Silakan gesek/masukkan kartu ATM/Kredit pada mesin EDC dan masukkan PIN Anda.'}
+              {edcStatus === 'success' && 'Transaksi berhasil diproses oleh mesin EDC.'}
+              {edcStatus === 'failed' && (edcErrorMessage || 'Koneksi terputus atau transaksi ditolak oleh mesin EDC.')}
+            </p>
+          </div>
+          <DialogFooter className="flex gap-2 justify-center">
+            {edcStatus === 'failed' && (
+              <>
+                <Button onClick={() => {
+                  setShowEdcDialog(false);
+                  setFormData(prev => ({ ...prev, payment_mode: 'EDC_Manual' }));
+                }} variant="outline" className="w-full">
+                  Ganti ke EDC Manual
+                </Button>
+                <Button onClick={() => handleEdcConnection(formData.amount)} className="bg-blue-600 text-white hover:bg-blue-700 w-full">
+                  Coba Lagi
+                </Button>
+              </>
+            )}
+            {edcStatus === 'success' && (
+              <Button onClick={() => setShowEdcDialog(false)} className="bg-emerald-600 text-white hover:bg-emerald-700 w-full">
+                Selesai
+              </Button>
+            )}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

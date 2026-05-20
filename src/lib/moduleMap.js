@@ -52,6 +52,7 @@ export const PAGE_TO_MODULE = {
   'LoyaltyProgram': 'Loyalty Program',
 
   // Sales
+  'SalesWorkflow': 'Sales Workflow',
   'SalesTransaction': 'Sales Transaction',
   'SalesInvoices': 'Sales Invoices',
   'RevenueReports': 'Revenue Reports',

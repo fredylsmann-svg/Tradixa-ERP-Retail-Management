@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { Search, ShoppingCart, Plus, Minus, Trash2, Loader2, Upload, X, Package, ShieldCheck, CheckCircle2, Info, Receipt, CreditCard, Truck } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, Loader2, Upload, X, Package, ShieldCheck, CheckCircle2, Info, Receipt, CreditCard, Truck, AlertTriangle, QrCode } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { NumberInput } from '@/components/ui/number-input';
 import { formatNumber } from '@/components/utils/currencyFormatter';
@@ -24,12 +24,15 @@ import { allocateBatches, deductBatches } from '@/utils/fefoEngine';
 import { supabase } from '@/lib/supabase';
 import { useTaxRate } from '@/hooks/useTaxRate';
 import { getEffectiveLimits } from '@/planConfig';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export default function SalesTransactionForm({ open, onClose, store, onSuccess }) {
   const { toast } = useToast();
+  const { settings } = useSettings();
   const storeId = store?.id;
   const { ppnRate, ppnLabel, ppnDecimal } = useTaxRate(storeId);
   const [completedTransaction, setCompletedTransaction] = useState(null);
+  const [activeStore, setActiveStore] = useState(store);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -70,10 +73,42 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
   const [serialAssignments, setSerialAssignments] = useState({});
   const [serialTrackedItemsInCart, setSerialTrackedItemsInCart] = useState([]);
   const [deliveryCount, setDeliveryCount] = useState(0);
+  
+  // EDC Integration States
+  const [edcIntegrationType, setEdcIntegrationType] = useState(settings?.defaultEdcIntegration || 'Manual'); // Manual | Local
+  const [traceNumber, setTraceNumber] = useState('');
+  const [showEdcDialog, setShowEdcDialog] = useState(false);
+  const [edcStatus, setEdcStatus] = useState('idle'); // idle | connecting | processing | success | failed
+  const [edcErrorMessage, setEdcErrorMessage] = useState('');
+
+  // Static QRIS States
+  const [isStaticQris, setIsStaticQris] = useState(false);
+  const [qrisRrn, setQrisRrn] = useState('');
+
+  useEffect(() => {
+    if (open && settings?.defaultEdcIntegration) {
+      setEdcIntegrationType(settings.defaultEdcIntegration);
+    }
+  }, [open, settings?.defaultEdcIntegration]);
+
   const containerRef = React.useRef(null);
 
   useEffect(() => {
+    setActiveStore(store);
+  }, [store]);
+
+  useEffect(() => {
     if (open && storeId) {
+      // Fetch fresh store settings to capture new QRIS image upload / api keys
+      api.entities.Store.get(storeId)
+        .then(data => {
+          if (data) {
+            console.log('[POS] Loaded fresh store config:', data);
+            setActiveStore(data);
+          }
+        })
+        .catch(err => console.error('[POS] Failed to fetch fresh store:', err));
+
       loadProducts();
       loadBankAccounts();
       loadCustomers();
@@ -365,7 +400,64 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
     return `${day}/${month}/${year} ${hours}:${minutes} WIB`;
   };
 
-  const handleSubmit = async () => {
+  const handleEdcConnection = () => {
+    setEdcStatus('connecting');
+    setEdcErrorMessage('');
+    setShowEdcDialog(true);
+
+    const ws = new WebSocket('ws://localhost:9000');
+    let hasResponded = false;
+
+    const connectionTimeout = setTimeout(() => {
+      if (!hasResponded) {
+        ws.close();
+        setEdcStatus('failed');
+        setEdcErrorMessage('Gagal terhubung ke ECR local bridge di localhost:9000. Pastikan service local bridge aktif.');
+      }
+    }, 5000);
+
+    ws.onopen = () => {
+      clearTimeout(connectionTimeout);
+      setEdcStatus('processing');
+      ws.send(JSON.stringify({
+        command: 'purchase',
+        amount: Number(total),
+        reference: `POS-${Date.now()}`
+      }));
+    };
+
+    ws.onmessage = (event) => {
+      hasResponded = true;
+      try {
+        const data = JSON.parse(event.data);
+        if (data.status === 'success') {
+          setEdcStatus('success');
+          setTraceNumber(data.trace_number || '');
+          ws.close();
+          setShowEdcDialog(false);
+          handleSubmit(data.trace_number || `LOC-${Date.now()}`);
+        } else {
+          setEdcStatus('failed');
+          setEdcErrorMessage(data.message || 'Transaksi ditolak oleh mesin EDC.');
+          ws.close();
+        }
+      } catch (err) {
+        setEdcStatus('failed');
+        setEdcErrorMessage('Format respon dari local bridge tidak valid.');
+        ws.close();
+      }
+    };
+
+    ws.onerror = () => {
+      hasResponded = true;
+      clearTimeout(connectionTimeout);
+      setEdcStatus('failed');
+      setEdcErrorMessage('Tidak dapat membuka koneksi. Silakan periksa apakah ECR Local Bridge service sudah berjalan.');
+    };
+  };
+
+  const handleSubmit = async (bypassEdcTrace = null) => {
+    const cleanBypassTrace = typeof bypassEdcTrace === 'string' ? bypassEdcTrace : null;
     if (cart.length === 0) return;
 
     if (paymentMethod === 'Piutang / Termin') {
@@ -385,6 +477,22 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
         });
         return;
       }
+    }
+
+    // Check trace number for EDC Manual
+    if ((paymentMethod === 'Credit Card' || paymentMethod === 'Debit Card') && edcIntegrationType === 'Manual' && !traceNumber) {
+      toast({
+        variant: "destructive",
+        title: "Trace Number Kosong",
+        description: "Silakan masukkan Trace Number / Approval Code struk EDC."
+      });
+      return;
+    }
+
+    // Intercept EDC Local Bridge
+    if ((paymentMethod === 'Credit Card' || paymentMethod === 'Debit Card') && edcIntegrationType === 'Local' && !cleanBypassTrace) {
+      handleEdcConnection();
+      return;
     }
 
     // --- SERIAL TRACKING INTERCEPT ---
@@ -425,73 +533,85 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
     const invoiceNumber = `INV-${Date.now()}`;
     let proofUrl = '';
 
-    // 1. Generate Mayar QRIS Link FIRST before creating transaction
     let generatedPaymentLink = '';
+    let usingStaticQris = false;
     if (paymentMethod === 'QRIS') {
-      if (!store.mayar_api_key) {
+      if (!activeStore?.mayar_api_key && activeStore?.qris_static_url) {
+        // Mode C: Static QRIS dari Bank/GPN Offline
+        console.log('[Tradixa] Using Static GPN QRIS mode. Bypassing Mayar integration.');
+        usingStaticQris = true;
+        setIsStaticQris(true);
+      } else if (activeStore?.mayar_api_key) {
+        // Mode A / B: Dynamic QRIS via Mayar API
+        if (total < 500) {
+          toast({ title: 'Gagal Memproses QRIS', description: 'Total transaksi untuk metode QRIS/E-Wallet minimal Rp 500.', variant: 'destructive' });
+          setIsLoading(false);
+          return;
+        }
+
+        try {
+          setIsGeneratingLink(true);
+          console.log('[Tradixa] Calling mayar-create-link Edge Function with storeId:', storeId);
+          // For walk-in customers, use store info to avoid Mayar rejection
+          const effectiveName = (customerName && customerName !== 'Walk-in Customer') ? customerName : (activeStore?.store_name || 'Pelanggan');
+          const effectiveEmail = customerEmail || activeStore?.email || 'pos@tradixa.com';
+          const effectivePhone = customerPhone || activeStore?.phone || '6281000000000';
+          
+          const { data, error } = await api.client.functions.invoke('mayar-create-link', {
+            body: {
+              store_id: storeId,
+              receivable_id: invoiceNumber, // used as reference
+              amount: total,
+              customer_name: effectiveName,
+              customer_email: effectiveEmail,
+              customer_phone: effectivePhone,
+              description: `Pembayaran Penjualan ${invoiceNumber}`
+            }
+          });
+
+          console.log('[Tradixa] Edge Function Response:', { data, error });
+
+          if (error) throw new Error(error.message);
+          if (data && !data.success) throw new Error(data.error);
+
+          if (data?.link) {
+            console.log('[Tradixa] Payment Link received:', data.link);
+            generatedPaymentLink = data.link;
+            setPaymentLink(data.link);
+            proofUrl = data.link;
+            // Set real QRIS image from Mayar if available
+            if (data.qris_image) {
+              console.log('[Tradixa] QRIS Image received:', data.qris_image);
+              setQrisImage(data.qris_image);
+            }
+          } else {
+            throw new Error('Payment Link is empty or undefined in data object.');
+          }
+        } catch (err) {
+          console.error('[Tradixa] Error generating Mayar link:', err);
+          toast({ title: 'Gagal Membuat Link QRIS', description: err.message || JSON.stringify(err), variant: 'destructive' });
+          setIsGeneratingLink(false);
+          setIsLoading(false);
+          return; // Abort transaction creation if QRIS fails
+        }
+      } else {
         toast({ 
           title: 'Konfigurasi Belum Lengkap', 
-          description: 'Anda belum memasukkan Mayar API Key di menu Settings. Silakan atur terlebih dahulu untuk menggunakan QRIS.', 
+          description: 'Anda belum memasukkan Mayar API Key atau mengunggah QRIS Statis di menu Settings. Silakan atur terlebih dahulu untuk menggunakan QRIS.', 
           variant: 'destructive' 
         });
         setIsLoading(false);
         return;
       }
-
-      if (total < 500) {
-        toast({ title: 'Gagal Memproses QRIS', description: 'Total transaksi untuk metode QRIS/E-Wallet minimal Rp 500.', variant: 'destructive' });
-        return;
-      }
-
-      try {
-        setIsGeneratingLink(true);
-        console.log('[Tradixa] Calling mayar-create-link Edge Function with storeId:', storeId);
-        // For walk-in customers, use store info to avoid Mayar rejection
-        const effectiveName = (customerName && customerName !== 'Walk-in Customer') ? customerName : (store?.store_name || 'Pelanggan');
-        const effectiveEmail = customerEmail || store?.email || 'pos@tradixa.com';
-        const effectivePhone = customerPhone || store?.phone || '6281000000000';
-        
-        const { data, error } = await api.client.functions.invoke('mayar-create-link', {
-          body: {
-            store_id: storeId,
-            receivable_id: invoiceNumber, // used as reference
-            amount: total,
-            customer_name: effectiveName,
-            customer_email: effectiveEmail,
-            customer_phone: effectivePhone,
-            description: `Pembayaran Penjualan ${invoiceNumber}`
-          }
-        });
-
-        console.log('[Tradixa] Edge Function Response:', { data, error });
-
-        if (error) throw new Error(error.message);
-        if (data && !data.success) throw new Error(data.error);
-
-        if (data?.link) {
-          console.log('[Tradixa] Payment Link received:', data.link);
-          generatedPaymentLink = data.link;
-          setPaymentLink(data.link);
-          proofUrl = data.link;
-          // Set real QRIS image from Mayar if available
-          if (data.qris_image) {
-            console.log('[Tradixa] QRIS Image received:', data.qris_image);
-            setQrisImage(data.qris_image);
-          }
-        } else {
-          throw new Error('Payment Link is empty or undefined in data object.');
-        }
-      } catch (err) {
-        console.error('[Tradixa] Error generating Mayar link:', err);
-        toast({ title: 'Gagal Membuat Link QRIS', description: err.message || JSON.stringify(err), variant: 'destructive' });
-        setIsGeneratingLink(false);
-        setIsLoading(false);
-        return; // Abort transaction creation if QRIS fails
-      }
     } else if (proofFile && paymentMethod !== 'Cash') {
       const _uploadRes = await api.storage.upload(proofFile);
       const file_url = _uploadRes.url;
       proofUrl = file_url;
+    }
+
+    const actualTrace = cleanBypassTrace || (((paymentMethod === 'Credit Card' || paymentMethod === 'Debit Card') && edcIntegrationType === 'Manual') ? traceNumber : '');
+    if (actualTrace && !proofUrl) {
+      proofUrl = `EDC Trace: ${actualTrace}`;
     }
 
     const numDownPayment = Number(downPayment) || 0;
@@ -584,7 +704,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
       store_id: storeId,
       transaction_id: reference,
       date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD format in local time
-      description: `Penjualan - ${customerName} (${invoiceNumber})`,
+      description: `Penjualan - ${customerName} (${invoiceNumber}${actualTrace ? ` - Trace ${actualTrace}` : ''})`,
       type: 'Sales',
       status: 'Draft',
       total_debit: total + totalHPP,
@@ -783,7 +903,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
           bank_name: bankAccount.bank_name,
           transaction_type: 'Credit',
           amount: txAmount,
-          description: `Penjualan ${invoiceNumber} - ${customerName}`,
+          description: `Penjualan ${invoiceNumber} - ${customerName}${actualTrace ? ` (EDC Trace: ${actualTrace})` : ''}`,
           reference: invoiceNumber,
           balance_after: bankAccount.balance,
           status: 'Pending',
@@ -859,15 +979,90 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
       }
     }
 
-    toast({
-      title: "Transaksi Berhasil",
-      description: `Invoice ${invoiceNumber} telah dibuat.`
-    });
-
     setIsGeneratingLink(false);
     setIsLoading(false);
-    onSuccess();
     setCompletedTransaction(salesTransaction);
+    onSuccess();
+
+    // Only show success toast for non-QRIS (QRIS shows its own confirmation UI)
+    if (!usingStaticQris && !generatedPaymentLink) {
+      toast({
+        title: "Transaksi Berhasil",
+        description: `Invoice ${invoiceNumber} telah dibuat.`
+      });
+    }
+  };
+
+  const handleConfirmStaticQris = async () => {
+    if (!completedTransaction) return;
+    if (!qrisRrn.trim()) {
+      toast({
+        title: "RRN Wajib Diisi",
+        description: "Silakan masukkan Nomor Referensi / ID Transaksi terlebih dahulu.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Update Sales Transaction
+      const updatedTx = await api.entities.SalesTransaction.update(completedTransaction.id, {
+        payment_status: 'Paid',
+        paid_amount: completedTransaction.total,
+        payment_proof_url: `RRN: ${qrisRrn.trim()}`
+      });
+
+      // Update Bank Transaction if it exists, otherwise create it
+      const bankTxData = await api.entities.BankTransaction.filter({ store_id: storeId, sales_transaction_id: completedTransaction.id });
+      if (bankTxData && bankTxData.length > 0) {
+        await api.entities.BankTransaction.update(bankTxData[0].id, {
+          status: 'Cleared',
+          description: `${bankTxData[0].description} (RRN: ${qrisRrn.trim()})`,
+          payment_proof_url: `RRN: ${qrisRrn.trim()}`
+        });
+      } else if (bankAccounts && bankAccounts.length > 0) {
+        const primaryBank = bankAccounts[0];
+        await api.entities.BankTransaction.create({
+          store_id: storeId,
+          bank_account_id: primaryBank.id,
+          bank_name: primaryBank.bank_name,
+          transaction_type: 'Credit',
+          amount: completedTransaction.total,
+          description: `Pembayaran QRIS ${completedTransaction.invoice_number} (RRN: ${qrisRrn.trim()})`,
+          reference: completedTransaction.invoice_number,
+          balance_after: primaryBank.balance || 0,
+          status: 'Cleared',
+          sales_transaction_id: completedTransaction.id,
+          payment_proof_url: `RRN: ${qrisRrn.trim()}`
+        });
+      }
+
+      // Update Journal Entry if it exists
+      const journalData = await api.entities.JournalEntry.filter({ store_id: storeId, transaction_id: completedTransaction.invoice_number });
+      if (journalData && journalData.length > 0) {
+        await api.entities.JournalEntry.update(journalData[0].id, {
+          status: 'Posted',
+          description: `${journalData[0].description} (RRN: ${qrisRrn.trim()})`
+        });
+      }
+
+      toast({
+        title: "Pembayaran QRIS Dikonfirmasi",
+        description: `Transaksi ${completedTransaction.invoice_number} berhasil lunas dengan RRN ${qrisRrn}.`
+      });
+
+      // Keep updated tx in memory but trigger parent success reload
+      setCompletedTransaction(updatedTx);
+      setIsStaticQris(false); // Done with inputting RRN
+      onSuccess();
+    } catch (err) {
+      console.error("[POS] Confirm Static QRIS failed:", err);
+      toast({ title: "Gagal Mengonfirmasi", description: err.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleResetAfterSuccess = () => {
@@ -891,6 +1086,14 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
     setPaymentLink('');
     setQrisImage('');
     setCompletedTransaction(null);
+    setIsStaticQris(false);
+    setQrisRrn('');
+    // EDC Reset
+    setEdcIntegrationType('Manual');
+    setTraceNumber('');
+    setEdcStatus('idle');
+    setEdcErrorMessage('');
+    setShowEdcDialog(false);
     if (!stayOnPage) {
       onClose();
     }
@@ -1050,8 +1253,63 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
               className="bg-slate-50/50 h-auto min-h-[50vh] lg:h-full lg:w-auto w-full shrink-0 lg:shrink"
             >
               {completedTransaction ? (
-                <div className="flex flex-col items-center justify-center p-10 h-full min-h-[60vh] space-y-6 text-center">
-                  {paymentLink ? (
+                <div className="flex flex-col items-center justify-center p-10 h-full min-h-[60vh] space-y-6 text-center animate-in fade-in duration-200">
+                  {isStaticQris ? (
+                    <>
+                      <div className="w-16 h-16 bg-violet-100 dark:bg-violet-900/30 rounded-full flex items-center justify-center mb-2 mt-6 animate-pulse">
+                        <QrCode className="w-9 h-9 text-violet-600 dark:text-violet-400" />
+                      </div>
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800 rounded-full">
+                        <span className="w-2 h-2 bg-violet-500 rounded-full animate-pulse" />
+                        <span className="text-xs font-bold text-violet-700 dark:text-violet-400 uppercase tracking-wider">Menunggu Pembayaran GPN</span>
+                      </div>
+                      <p className="text-sm text-slate-500 max-w-xs">Minta pelanggan scan QRIS Statis di bawah untuk membayar.</p>
+                      
+                      {/* Static GPN QRIS Standee */}
+                      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 w-full max-w-xs mx-auto">
+                        <img
+                          src={activeStore?.qris_static_url}
+                          alt="QRIS Statis Toko"
+                          className="w-52 h-52 mx-auto object-contain"
+                        />
+                        <p className="text-[10px] text-slate-400 mt-3">
+                          QRIS Statis GPN resmi Toko Anda
+                        </p>
+                      </div>
+
+                      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-250 dark:border-slate-850 w-full max-w-sm">
+                        <p className="text-sm text-slate-500 mb-1">Total Pembayaran</p>
+                        <p className="text-3xl font-bold text-blue-600">Rp {formatCurrency(completedTransaction.total)}</p>
+                      </div>
+
+                      {/* RRN Input Field */}
+                      <div className="w-full max-w-sm space-y-2 mt-2 text-left">
+                        <Label className="text-xs font-bold text-slate-700 dark:text-slate-350 pl-0.5">
+                          Nomor Referensi (RRN) / ID Transaksi
+                        </Label>
+                        <Input
+                          value={qrisRrn}
+                          onChange={(e) => setQrisRrn(e.target.value)}
+                          placeholder="Masukkan RRN dari bukti bayar..."
+                          className="h-11 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-sm font-medium focus:ring-2 focus:ring-blue-500/20"
+                        />
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 pl-0.5 leading-normal">
+                          Minta pembeli menunjukkan bukti transaksi sukses di HP mereka, lalu ketik RRN/ID mutasi di atas untuk rekonsiliasi.
+                        </p>
+                      </div>
+
+                      <div className="w-full max-w-sm pt-2">
+                        <Button
+                          onClick={handleConfirmStaticQris}
+                          disabled={!qrisRrn.trim() || isLoading}
+                          className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-md shadow-emerald-600/10 transition-all"
+                        >
+                          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                          Konfirmasi Pembayaran Lunas
+                        </Button>
+                      </div>
+                    </>
+                  ) : paymentLink ? (
                     <>
                       <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-2 mt-6 animate-pulse">
                         <CreditCard className="w-9 h-9 text-amber-600" />
@@ -1073,6 +1331,30 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                           {qrisImage ? 'QRIS resmi — scan dengan e-wallet / mobile banking' : 'Scan untuk buka halaman pembayaran'}
                         </p>
                       </div>
+
+                      <div className="bg-white p-6 rounded-2xl shadow-sm border w-full max-w-sm">
+                        <p className="text-sm text-slate-500 mb-1">Total Pembayaran</p>
+                        <p className="text-3xl font-bold text-blue-600">Rp {formatCurrency(completedTransaction.total)}</p>
+                      </div>
+
+                      <div className="w-full max-w-sm space-y-2 mt-2">
+                        <Button
+                          onClick={() => window.open(paymentLink, '_blank')}
+                          className="w-full h-11 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-2"
+                        >
+                          <CheckCircle2 className="w-5 h-5" /> Buka Tautan di HP
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(paymentLink);
+                            toast({ title: "Tautan Disalin", description: "Tautan pembayaran berhasil disalin ke clipboard." });
+                          }}
+                          className="w-full h-11 font-bold rounded-xl border-slate-200"
+                        >
+                          Salin Tautan (Kirim WA Pelanggan)
+                        </Button>
+                      </div>
                     </>
                   ) : (
                     <>
@@ -1080,51 +1362,33 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                         <CheckCircle2 className="w-12 h-12 text-emerald-600" />
                       </div>
                       <h2 className="text-2xl font-bold text-slate-800">Transaksi Berhasil!</h2>
+
+                      <p className="text-slate-500">Invoice: <span className="font-semibold text-slate-700">{completedTransaction.invoice_number}</span></p>
+                      <div className="bg-white p-6 rounded-2xl shadow-sm border w-full max-w-sm">
+                        <p className="text-sm text-slate-500 mb-1">Total Pembayaran</p>
+                        <p className="text-3xl font-bold text-blue-600">Rp {formatCurrency(completedTransaction.total)}</p>
+                      </div>
                     </>
                   )}
-                  <p className="text-slate-500">Invoice: <span className="font-semibold text-slate-700">{completedTransaction.invoice_number}</span></p>
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border w-full max-w-sm">
-                    <p className="text-sm text-slate-500 mb-1">Total Pembayaran</p>
-                    <p className="text-3xl font-bold text-blue-600">Rp {formatCurrency(completedTransaction.total)}</p>
-                  </div>
 
-                  {paymentLink && (
-                    <div className="w-full max-w-sm space-y-2 mt-2">
+                  {!isStaticQris && (
+                    <div className="flex flex-col gap-3 pt-4 w-full max-w-sm">
                       <Button
-                        onClick={() => window.open(paymentLink, '_blank')}
-                        className="w-full h-11 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-2"
+                        onClick={() => setShowPrintPreview(true)}
+                        className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 shadow-lg text-base text-white rounded-xl"
                       >
-                        <CheckCircle2 className="w-5 h-5" /> Buka Tautan di HP
+                        <Receipt className="w-5 h-5 mr-2" />
+                        Cetak Struk
                       </Button>
                       <Button
+                        onClick={handleResetAfterSuccess}
                         variant="outline"
-                        onClick={() => {
-                          navigator.clipboard.writeText(paymentLink);
-                          toast({ title: "Tautan Disalin", description: "Tautan pembayaran berhasil disalin ke clipboard." });
-                        }}
-                        className="w-full h-11 font-bold rounded-xl border-slate-200"
+                        className="w-full h-12 text-base rounded-xl"
                       >
-                        Salin Tautan (Kirim WA Pelanggan)
+                        Transaksi Baru
                       </Button>
                     </div>
                   )}
-
-                  <div className="flex flex-col gap-3 pt-4 w-full max-w-sm">
-                    <Button
-                      onClick={() => setShowPrintPreview(true)}
-                      className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 shadow-lg text-base text-white rounded-xl"
-                    >
-                      <Receipt className="w-5 h-5 mr-2" />
-                      Cetak Struk
-                    </Button>
-                    <Button
-                      onClick={handleResetAfterSuccess}
-                      variant="outline"
-                      className="w-full h-12 text-base rounded-xl"
-                    >
-                      Transaksi Baru
-                    </Button>
-                  </div>
                 </div>
               ) : (
                 <div className="p-6 flex flex-col gap-6">
@@ -1326,8 +1590,8 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                         <SelectContent>
                           <SelectItem value="Cash">Cash / Tunai</SelectItem>
                           <SelectItem value="Transfer">Bank Transfer</SelectItem>
-                          <SelectItem value="QRIS" disabled={!store?.mayar_api_key}>
-                            QRIS / E-Wallet {!store?.mayar_api_key && '(Belum Aktif)'}
+                          <SelectItem value="QRIS" disabled={!activeStore?.mayar_api_key && !activeStore?.qris_static_url}>
+                            QRIS / E-Wallet {(!activeStore?.mayar_api_key && !activeStore?.qris_static_url) && '(Belum Aktif)'}
                           </SelectItem>
                           <SelectItem value="Credit Card">Credit Card</SelectItem>
                           <SelectItem value="Debit Card">Debit Card</SelectItem>
@@ -1337,7 +1601,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                     </div>
 
                     {/* Bank Account Selection (Conditional) */}
-                    {paymentMethod !== 'Cash' && paymentMethod !== 'QRIS / E-Wallet' && (
+                    {paymentMethod !== 'Cash' && paymentMethod !== 'QRIS' && (
                       <div className="col-span-2 space-y-1.5 pt-2 animate-in fade-in slide-in-from-top-2">
                         <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pilih Bank Tujuan</Label>
                         <Select value={selectedBank} onValueChange={setSelectedBank}>
@@ -1352,6 +1616,56 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+                    )}
+
+                    {/* EDC Integration Type & Trace Number (Conditional) */}
+                    {(paymentMethod === 'Credit Card' || paymentMethod === 'Debit Card') && (
+                      <div className="col-span-2 grid grid-cols-2 gap-3 pt-2 animate-in fade-in slide-in-from-top-2">
+                        <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                          <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Tipe Integrasi EDC</Label>
+                          <Select value={edcIntegrationType} onValueChange={setEdcIntegrationType}>
+                            <SelectTrigger className="h-12 border-slate-100 bg-slate-50 rounded-2xl font-bold">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Manual">EDC Manual (Input Trace No)</SelectItem>
+                              <SelectItem value="Local">EDC Local Bridge (WebSocket)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {edcIntegrationType === 'Manual' ? (
+                          <div className="space-y-1.5 col-span-2 sm:col-span-1">
+                            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 flex items-center gap-1">
+                              Trace Number / Approval Code *
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button type="button" className="p-0.5 hover:bg-slate-100 rounded-full transition-colors outline-none">
+                                    <Info className="w-3.5 h-3.5 text-blue-500 cursor-pointer" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent side="top" className="w-[260px] p-3 bg-slate-900 text-white border-none rounded-xl shadow-2xl z-[100] animate-in fade-in zoom-in duration-200">
+                                  <p className="text-[10px] font-bold leading-relaxed text-left normal-case">
+                                    Silakan masukkan 6 digit <strong>Trace Number</strong> atau <strong>Approval Code</strong> yang tercetak pada kertas struk slip dari mesin EDC setelah transaksi berhasil.
+                                  </p>
+                                </PopoverContent>
+                              </Popover>
+                            </Label>
+                            <Input
+                              value={traceNumber}
+                              onChange={(e) => setTraceNumber(e.target.value)}
+                              placeholder="Contoh: 123456"
+                              className="h-12 rounded-2xl border-slate-100 bg-slate-50 font-bold"
+                              required
+                            />
+                          </div>
+                        ) : (
+                          <div className="col-span-2 sm:col-span-1 space-y-1.5 flex flex-col justify-end">
+                            <p className="text-[10px] font-bold text-slate-500 bg-slate-50 p-3 rounded-2xl border border-slate-100 leading-normal">
+                              Transaksi akan dipicu via WebSocket lokal (ws://localhost:9000). Pastikan aplikasi Bridge aktif.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1635,6 +1949,96 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                 Konfirmasi & Bayar
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* EDC TRANSACTION MODAL */}
+      <Dialog open={showEdcDialog} onOpenChange={(val) => { if (!val && edcStatus !== 'processing') setShowEdcDialog(false); }}>
+        <DialogContent className="max-w-md p-0 overflow-hidden rounded-[32px] bg-white border-none shadow-2xl">
+          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-8 text-white relative">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-3">
+                <CreditCard className="w-6 h-6 animate-pulse" />
+                Integrasi EDC Tradixa Link
+              </DialogTitle>
+              <p className="text-blue-100 text-xs font-medium opacity-80 mt-1">
+                Koneksi langsung ke Terminal EDC pembayaran non-tunai.
+              </p>
+            </DialogHeader>
+          </div>
+          <div className="p-8 space-y-6 text-center">
+            {edcStatus === 'connecting' && (
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-base">Menghubungkan ke Mesin EDC...</h3>
+                  <p className="text-xs text-slate-500 mt-1">Membuka WebSocket local bridge di port 9000...</p>
+                </div>
+              </div>
+            )}
+
+            {edcStatus === 'processing' && (
+              <div className="space-y-4">
+                <div className="flex justify-center relative">
+                  <div className="absolute inset-0 bg-blue-100 rounded-full scale-125 animate-ping opacity-20 w-12 h-12 mx-auto" />
+                  <CreditCard className="w-12 h-12 text-blue-600 animate-bounce relative z-10" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-base">Silakan Gesek / Dip Kartu Anda</h3>
+                  <p className="text-xs text-slate-500 mt-1">Mesin EDC sedang memproses pembayaran sebesar:</p>
+                  <p className="text-xl font-black text-blue-600 mt-2">Rp {formatNumber(total)}</p>
+                </div>
+              </div>
+            )}
+
+            {edcStatus === 'success' && (
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  <div className="p-3 bg-emerald-100 rounded-full text-emerald-600">
+                    <CheckCircle2 className="w-12 h-12" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-base text-emerald-600">Pembayaran Sukses!</h3>
+                  <p className="text-xs text-slate-500 mt-1">Trace Number: <span className="font-mono font-bold text-slate-800">{traceNumber}</span></p>
+                </div>
+              </div>
+            )}
+
+            {edcStatus === 'failed' && (
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  <div className="p-3 bg-rose-100 rounded-full text-rose-600">
+                    <AlertTriangle className="w-12 h-12" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-base text-rose-600">Pembayaran Gagal</h3>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed px-4">{edcErrorMessage}</p>
+                </div>
+                <div className="flex gap-3 justify-center pt-2">
+                  <Button
+                    variant="outline"
+                    className="rounded-xl"
+                    onClick={() => {
+                      setShowEdcDialog(false);
+                      setEdcStatus('idle');
+                    }}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                    onClick={handleEdcConnection}
+                  >
+                    Coba Lagi
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

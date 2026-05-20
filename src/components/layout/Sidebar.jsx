@@ -86,6 +86,7 @@ const getFilteredMenuGroups = (isOwner) => {
     {
       title: 'Sales',
       items: [
+        { name: 'Sales Workflow', icon: Workflow, page: 'SalesWorkflow' },
         { name: 'Sales Transaction', icon: ShoppingCart, page: 'SalesTransaction' },
         { name: 'Sales Invoices', icon: Receipt, page: 'SalesInvoices' },
         { name: 'Revenue Reports', icon: BarChart3, page: 'RevenueReports' }

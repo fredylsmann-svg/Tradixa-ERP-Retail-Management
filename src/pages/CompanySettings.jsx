@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Store, Upload, Phone, Mail, FileText, Loader2, Save, Building2, User, Settings, Info, CreditCard, Key, ShieldCheck, CheckCircle2, ExternalLink, Zap, ArrowRight, Lock } from 'lucide-react';
+import { Store, Upload, Phone, Mail, FileText, Loader2, Save, Building2, User, Settings, Info, CreditCard, Key, ShieldCheck, CheckCircle2, ExternalLink, Zap, ArrowRight, Lock, ChevronDown, ChevronUp, Download, QrCode } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PageHeader from '@/components/layout/PageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -79,9 +80,13 @@ export default function CompanySettings({ store }) {
     owner_phone: store?.owner_phone || '',
     bank_name: store?.bank_name || '',
     bank_account_number: store?.bank_account_number || '',
-    mayar_api_key: store?.mayar_api_key || ''
+    mayar_api_key: store?.mayar_api_key || '',
+    qris_static_url: store?.qris_static_url || ''
   });
   const [saved, setSaved] = useState(false);
+  const [showEdcGuide, setShowEdcGuide] = useState(false);
+  const [qrisFile, setQrisFile] = useState(null);
+  const [qrisPreview, setQrisPreview] = useState(store?.qris_static_url || null);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -117,9 +122,11 @@ export default function CompanySettings({ store }) {
         owner_phone: store.owner_phone || '',
         bank_name: store.bank_name || '',
         bank_account_number: store.bank_account_number || '',
-        mayar_api_key: store.mayar_api_key || ''
+        mayar_api_key: store.mayar_api_key || '',
+        qris_static_url: store.qris_static_url || ''
       });
       setLogoPreview(store.logo_url || null);
+      setQrisPreview(store.qris_static_url || null);
     }
   }, [store?.id]);
 
@@ -145,6 +152,27 @@ export default function CompanySettings({ store }) {
     }
   };
 
+  const handleQrisChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({ title: 'File Terlalu Besar', description: `Ukuran file ${(file.size / (1024 * 1024)).toFixed(1)}MB melebihi batas maksimal 2MB.`, variant: 'destructive' });
+        e.target.value = '';
+        return;
+      }
+      setQrisFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setQrisPreview(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveQris = () => {
+    setQrisFile(null);
+    setQrisPreview(null);
+    setFormData(prev => ({ ...prev, qris_static_url: '' }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -156,9 +184,22 @@ export default function CompanySettings({ store }) {
       logoUrl = file_url;
     }
 
+    // Upload QRIS statis ke Cloudflare R2 jika ada file baru
+    let qrisStaticUrl = formData.qris_static_url || store?.qris_static_url || '';
+    if (qrisFile) {
+      try {
+        const { uploadFile } = await import('@/utils/storageService');
+        qrisStaticUrl = await uploadFile(qrisFile, 'document');
+      } catch (err) {
+        console.error('[Storage] QRIS upload failed:', err);
+        toast({ title: 'Gagal Upload QRIS', description: err.message, variant: 'destructive' });
+      }
+    }
+
     await api.entities.Store.update(store.id, {
       ...formData,
-      logo_url: logoUrl
+      logo_url: logoUrl,
+      qris_static_url: qrisStaticUrl
     });
 
     // Increment logo upload counter if a new logo was uploaded
@@ -471,6 +512,215 @@ export default function CompanySettings({ store }) {
                 <b>Testing?</b> Gunakan <a href="https://web.mayar.club/api-keys" target="_blank" rel="noopener noreferrer" className="underline font-bold">Sandbox Mayar (mayar.club)</a> untuk menguji pembayaran tanpa uang asli.
               </p>
             </div>
+
+            {/* Static QRIS Upload Section */}
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-6 mt-6 space-y-4">
+              <div>
+                <Label className="flex items-center gap-2 font-bold text-slate-850 dark:text-slate-200">
+                  <QrCode className="w-4 h-4 text-violet-500" />
+                  QRIS Statis Toko (GPN Standee)
+                  <InfoTooltip text="Upload file QRIS Statis GPN Anda. Pelanggan di kasir POS akan bisa scan kode QR ini untuk membayar secara instan." />
+                </Label>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Direkomendasikan mengunduh file QRIS statis dari Dashboard Mayar Anda agar <b>Webhook Auto-Settlement</b> tetap berfungsi otomatis, atau gunakan QRIS dari bank manapun (BCA, Mandiri, dll.) untuk verifikasi RRN manual.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-6 items-start">
+                <div className="flex-shrink-0 w-40 h-40 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl flex items-center justify-center overflow-hidden relative group">
+                  {qrisPreview ? (
+                    <img src={qrisPreview} alt="Preview QRIS" className="w-full h-full object-contain p-2" />
+                  ) : (
+                    <div className="text-center p-3 text-slate-400 dark:text-slate-500">
+                      <QrCode className="w-8 h-8 mx-auto mb-1.5 opacity-60" />
+                      <span className="text-[10px] font-medium leading-tight block">Belum Ada Gambar QRIS</span>
+                    </div>
+                  )}
+                  {qrisPreview && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveQris}
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold"
+                    >
+                      Hapus Gambar
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex-grow space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="qris-static-upload"
+                      onChange={handleQrisChange}
+                      className="hidden"
+                    />
+                    <Label
+                      htmlFor="qris-static-upload"
+                      className="inline-flex items-center justify-center h-10 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer text-xs font-bold transition-all shadow-sm"
+                    >
+                      <Upload className="w-4 h-4 mr-2 text-violet-500" />
+                      {qrisPreview ? 'Ganti Gambar' : 'Pilih Gambar QRIS'}
+                    </Label>
+                  </div>
+                  <div className="text-[10px] text-slate-450 dark:text-slate-500 leading-normal space-y-1.5">
+                    <p>• Maksimal ukuran file: <b>2 MB</b></p>
+                    <p>• Format yang didukung: <b>PNG, JPG, JPEG, WEBP</b></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* EDC Integration & Guide Card */}
+        <Card className="border-blue-100 dark:border-blue-900/50 shadow-sm bg-white dark:bg-slate-900">
+          <CardHeader className="bg-blue-50/50 dark:bg-blue-900/10 rounded-t-xl border-b border-blue-100 dark:border-blue-900/50">
+            <CardTitle className="flex items-center justify-between text-blue-800 dark:text-blue-400">
+              <span className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                Integrasi & Panduan Mesin EDC (Tradixa Link)
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowEdcGuide(!showEdcGuide)}
+                className="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-bold flex items-center gap-1.5"
+              >
+                {showEdcGuide ? 'Tutup Panduan' : 'Buka Panduan & Download'}
+                {showEdcGuide ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+            </CardTitle>
+            <CardDescription className="text-blue-600/80 dark:text-blue-400/80 mt-1">
+              Atur tipe integrasi EDC default untuk POS/Kasir & Transaksi Agen, serta unduh aplikasi bridge dan panduan Bluetooth.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-6">
+            {/* Default Integration Setting */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+              <div>
+                <Label className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-300">
+                  Default Tipe Integrasi EDC
+                  <InfoTooltip text="Pilihan default tipe integrasi EDC yang akan aktif pertama kali di layar checkout Kasir POS dan form Transaksi Agen." />
+                </Label>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Pilih tipe integrasi default untuk seluruh device kasir.
+                </p>
+              </div>
+              <div>
+                <Select
+                  value={settings.defaultEdcIntegration || 'Manual'}
+                  onValueChange={(val) => updateSetting('defaultEdcIntegration', val)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Manual">EDC Manual (Input Trace No)</SelectItem>
+                    <SelectItem value="Local">EDC Local Bridge (WebSocket)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Collapsible Guide and Downloads */}
+            <AnimatePresence>
+              {showEdcGuide && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden space-y-6 pt-4 border-t border-slate-100 dark:border-slate-800"
+                >
+                  {/* Download Bridge Apps */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                      1. Download Tradixa Link Bridge Agent
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Instal aplikasi agen ini pada komputer kasir (Desktop) untuk menghubungkan browser web dengan mesin EDC fisik.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                      <a
+                        href="https://github.com/fredylsmann-svg/tradixa-link-bridge-ERC/releases/download/v2.0.0/TradixaLinkBridge.2.exe"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-4 border border-blue-200 dark:border-blue-800 bg-blue-50/20 dark:bg-blue-900/10 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600">
+                            <Download className="w-5 h-5" />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Windows Agent (.exe)</p>
+                            <p className="text-[10px] text-slate-400">Windows 10 / 11 (64-bit)</p>
+                          </div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                      </a>
+
+                      <a
+                        href="https://github.com/fredylsmann-svg/tradixa-link-bridge-ERC/releases/download/v2.0.0/TradixaLinkBridge-v2-macos"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-4 border border-blue-200 dark:border-blue-800 bg-blue-50/20 dark:bg-blue-900/10 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600">
+                            <Download className="w-5 h-5" />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">macOS Agent (.dmg)</p>
+                            <p className="text-[10px] text-slate-400">macOS Big Sur atau lebih baru</p>
+                          </div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Connection Guides */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                      2. Panduan Koneksi Perangkat
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* USB Connection */}
+                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Metode A: Koneksi Kabel USB</span>
+                        </div>
+                        <ol className="list-decimal list-inside text-[11px] text-slate-600 dark:text-slate-400 space-y-2 leading-relaxed">
+                          <li>Colokkan kabel USB mesin EDC ke port USB kosong di komputer kasir.</li>
+                          <li>Buka aplikasi <b>Tradixa Link Bridge</b> yang sudah diinstal.</li>
+                          <li>Aplikasi akan secara otomatis mendeteksi koneksi dan mengubah ikon tray menjadi hijau (Aktif).</li>
+                          <li>Saat checkout di POS, pilih <b>EDC Local Bridge (WebSocket)</b> dan transaksi akan langsung dikirim ke EDC.</li>
+                        </ol>
+                      </div>
+
+                      {/* Bluetooth Connection */}
+                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Metode B: Koneksi Nirkabel Bluetooth</span>
+                        </div>
+                        <ol className="list-decimal list-inside text-[11px] text-slate-600 dark:text-slate-400 space-y-2 leading-relaxed">
+                          <li>Aktifkan Bluetooth pada mesin EDC dan PC Kasir/Laptop.</li>
+                          <li>Buka menu <b>Bluetooth Settings</b> pada komputer kasir, lalu klik <b>Add Device</b> dan pasangkan (pair) ke mesin EDC.</li>
+                          <li>Sistem Operasi akan secara otomatis membuat port virtual (<b>Virtual COM Port</b>) untuk EDC Bluetooth tersebut.</li>
+                          <li>Jalankan <b>Tradixa Link Bridge</b>; aplikasi akan mendeteksi port virtual tersebut dan memproses transaksi secara nirkabel.</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </CardContent>
         </Card>
 
