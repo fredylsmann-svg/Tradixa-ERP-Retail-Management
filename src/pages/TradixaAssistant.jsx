@@ -90,7 +90,7 @@ export default function TradixaAssistant({ store }) {
           
           // Persist the executed status in localStorage so it remains executed when returning to chat
           if (currentConversation?.id) {
-            const chatKey = `chat_${currentConversation.id}`;
+            const chatKey = `chat_${store?.id || 'default'}_${currentConversation.id}`;
             const storedMessages = JSON.parse(localStorage.getItem(chatKey) || '[]');
             if (storedMessages[msgIdx]) {
               storedMessages[msgIdx].executed = true;
@@ -230,8 +230,10 @@ export default function TradixaAssistant({ store }) {
   const [executedActions, setExecutedActions] = useState({});
 
   useEffect(() => {
-    loadConversations();
-  }, []);
+    if (store?.id) {
+      loadConversations();
+    }
+  }, [store?.id]);
 
   useEffect(() => {
     if (currentConversation) {
@@ -260,10 +262,12 @@ export default function TradixaAssistant({ store }) {
   }, [currentConversation]);
 
   const loadConversations = async () => {
+    if (!store?.id) return;
     setIsLoading(true);
     try {
       const convos = await api.agents.listConversations({
-        agent_name: 'tradixa_assistant'
+        agent_name: 'tradixa_assistant',
+        storeId: store.id
       });
       setConversations(convos);
       if (convos.length > 0) {
@@ -276,8 +280,9 @@ export default function TradixaAssistant({ store }) {
   };
 
   const loadConversation = async (conversationId) => {
+    if (!store?.id) return;
     try {
-      const convo = await api.agents.getConversation(conversationId);
+      const convo = await api.agents.getConversation(conversationId, { storeId: store.id });
       setCurrentConversation(convo);
       setMessages(convo.messages || []);
       setIsSheetOpen(false);
@@ -287,9 +292,11 @@ export default function TradixaAssistant({ store }) {
   };
 
   const createNewConversation = async () => {
+    if (!store?.id) return;
     try {
       const convo = await api.agents.createConversation({
         agent_name: 'tradixa_assistant',
+        storeId: store.id,
         metadata: {
           name: `Chat ${new Date().toLocaleString('id-ID')}`,
           description: 'Percakapan dengan Tradixa Assistant'
@@ -369,7 +376,7 @@ export default function TradixaAssistant({ store }) {
       await api.agents.addMessage(currentConversation, {
         role: 'user',
         content: userMessage
-      }, { isCrudActive, financialContext });
+      }, { isCrudActive, financialContext, storeId: store.id });
     } catch (error) {
       console.error('Error sending message:', error);
     }

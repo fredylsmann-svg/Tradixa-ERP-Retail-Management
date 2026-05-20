@@ -356,16 +356,20 @@ const entityProxy = new Proxy({}, {
 });
 
 const agentsModule = {
-  async listConversations() {
-    let convos = JSON.parse(localStorage.getItem('chat_conversations') || '[]');
+  async listConversations(options = {}) {
+    const storeId = options.storeId || 'default';
+    const storageKey = `chat_conversations_${storeId}`;
+    let convos = JSON.parse(localStorage.getItem(storageKey) || '[]');
     if (convos.length === 0) {
       convos = [{ id: 'default', metadata: { name: 'Chat Utama' }, created_date: new Date().toISOString() }];
-      localStorage.setItem('chat_conversations', JSON.stringify(convos));
+      localStorage.setItem(storageKey, JSON.stringify(convos));
     }
     return convos;
   },
-  async getConversation(id) {
-    return { id, messages: JSON.parse(localStorage.getItem(`chat_${id}`) || '[]') };
+  async getConversation(id, options = {}) {
+    const storeId = options.storeId || 'default';
+    const chatKey = `chat_${storeId}_${id}`;
+    return { id, messages: JSON.parse(localStorage.getItem(chatKey) || '[]') };
   },
   async createConversation(options = {}) {
     const id = Math.random().toString(36).substring(7);
@@ -377,15 +381,20 @@ const agentsModule = {
       created_date: new Date().toISOString() 
     };
     
-    const convos = JSON.parse(localStorage.getItem('chat_conversations') || '[]');
+    const storeId = options.storeId || 'default';
+    const storageKey = `chat_conversations_${storeId}`;
+    
+    const convos = JSON.parse(localStorage.getItem(storageKey) || '[]');
     if (!convos.some(c => c.id === id)) {
       convos.unshift(convo);
-      localStorage.setItem('chat_conversations', JSON.stringify(convos));
+      localStorage.setItem(storageKey, JSON.stringify(convos));
     }
     return convo;
   },
   async addMessage(conversation, message, options = {}) {
-    const chatKey = `chat_${conversation.id}`;
+    const storeId = options.storeId || 'default';
+    const chatKey = `chat_${storeId}_${conversation.id}`;
+    const storageKey = `chat_conversations_${storeId}`;
     const messages = JSON.parse(localStorage.getItem(chatKey) || '[]');
     
     // 1. Add User Message
@@ -410,14 +419,14 @@ const agentsModule = {
 
       // 3. Update Conversation Title if returned from AI
       if (data.title) {
-        let convos = JSON.parse(localStorage.getItem('chat_conversations') || '[]');
+        let convos = JSON.parse(localStorage.getItem(storageKey) || '[]');
         convos = convos.map(c => {
           if (c.id === conversation.id) {
             return { ...c, metadata: { ...c.metadata, name: data.title } };
           }
           return c;
         });
-        localStorage.setItem('chat_conversations', JSON.stringify(convos));
+        localStorage.setItem(storageKey, JSON.stringify(convos));
         // Trigger event to refresh sidebar/list
         window.dispatchEvent(new CustomEvent('conversations_update', { detail: { conversations: convos } }));
       }
