@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { MessageCircle, Send, Bot, User, Loader2, Plus, Menu, Lock, Sparkles } from 'lucide-react';
+import { MessageCircle, Send, Bot, User, Loader2, Plus, Menu, Lock, Sparkles, Zap, CheckCircle2, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast as sonnerToast } from 'sonner';
 
 export default function TradixaAssistant({ store }) {
   const navigate = useNavigate();
@@ -29,6 +30,177 @@ export default function TradixaAssistant({ store }) {
     });
   };
   
+  const renderMessageContentWithActions = (msg, msgIdx) => {
+    if (msg.role === 'user') {
+      return (
+        <div className="text-xs lg:text-[13.5px] leading-relaxed" style={{ whiteSpace: 'pre-wrap' }}>
+          {renderMessageContent(msg.content, true)}
+        </div>
+      );
+    }
+
+    const actionStart = msg.content.indexOf('---AI_ACTION_START---');
+    const actionEnd = msg.content.indexOf('---AI_ACTION_END---');
+
+    if (actionStart === -1 || actionEnd === -1) {
+      return (
+        <div className="text-xs lg:text-[13.5px] leading-relaxed" style={{ whiteSpace: 'pre-wrap' }}>
+          {renderMessageContent(msg.content, false)}
+        </div>
+      );
+    }
+
+    const mainText = msg.content.substring(0, actionStart).trim();
+    const jsonStr = msg.content.substring(actionStart + '---AI_ACTION_START---'.length, actionEnd).trim();
+
+    let actionData = null;
+    try {
+      actionData = JSON.parse(jsonStr);
+    } catch (e) {
+      console.error('Failed to parse AI action JSON:', e);
+    }
+
+    const actionStatus = executedActions[msgIdx] || 'idle';
+
+    const handleExecuteAction = async () => {
+      if (!actionData || actionStatus !== 'idle') return;
+      
+      setExecutedActions(prev => ({ ...prev, [msgIdx]: 'loading' }));
+      try {
+        const entity = actionData.entity;
+        const payload = actionData.payload;
+        
+        // Calculate subtotal and tax amounts dynamically for PR
+        if (entity === 'PurchaseRequisition') {
+          const subtotal = payload.items?.reduce((sum, item) => sum + (Number(item.qty || 1) * Number(item.price || 0)), 0) || 0;
+          const tax_amount = payload.include_tax ? subtotal * 0.11 : 0; 
+          
+          payload.subtotal = subtotal;
+          payload.tax_amount = tax_amount;
+          payload.total_amount = subtotal + tax_amount;
+          payload.status = 'Draft';
+          payload.pr_number = `PR-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).substring(7).toUpperCase()}`;
+          payload.timestamp_wib = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+          payload.requester = store?.owner_name || 'Administrator';
+        }
+
+        if (api.entities[entity]) {
+          await api.entities[entity].create(payload, { via_ai: true });
+          setExecutedActions(prev => ({ ...prev, [msgIdx]: 'success' }));
+          
+          sonnerToast.success(`Aksi AI Berhasil: Data ${entity} berhasil dibuat di database!`, {
+            description: `Tercatat di Audit Log: 'Created new ${entity} (via Tradixa AI Assistant)'.`,
+            duration: 6000
+          });
+        } else {
+          throw new Error(`Entitas ${entity} tidak ditemukan di API.`);
+        }
+      } catch (err) {
+        console.error('Failed to execute AI action:', err);
+        setExecutedActions(prev => ({ ...prev, [msgIdx]: 'error' }));
+        sonnerToast.error('Gagal mengeksekusi aksi AI. Silakan coba lagi.');
+      }
+    };
+
+    return (
+      <div className="space-y-4">
+        {mainText && (
+          <div className="text-xs lg:text-[13.5px] leading-relaxed" style={{ whiteSpace: 'pre-wrap' }}>
+            {renderMessageContent(mainText, false)}
+          </div>
+        )}
+        
+        {actionData && (
+          <div className="mt-3 p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 shadow-xl overflow-hidden relative">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="relative flex h-2.5 w-2.5">
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${actionStatus === 'success' ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+                  <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${actionStatus === 'success' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                </div>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">🤖 TRADIXA AI SUGGESTED ACTION</span>
+              </div>
+              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${actionStatus === 'success' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                {actionStatus === 'success' ? 'Executed' : 'Pending Review'}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                {actionData.title || `Buat Rekor ${actionData.entity}`}
+              </h4>
+
+              <div className="bg-slate-950/60 rounded-xl p-3 border border-slate-800/80 space-y-1.5 text-[11px] leading-relaxed font-mono">
+                {Object.entries(actionData.payload || {}).map(([key, val]) => {
+                  if (key === 'items' && Array.isArray(val)) {
+                    return (
+                      <div key={key} className="border-t border-slate-900 pt-1.5 mt-1.5">
+                        <span className="text-emerald-400 font-bold">items:</span>
+                        <div className="pl-3 mt-1 space-y-1 text-[10px] text-slate-300">
+                          {val.map((item, idx) => (
+                            <div key={idx} className="bg-slate-900 p-1.5 rounded border border-slate-800/50">
+                              • <span className="font-bold text-slate-100">{item.description}</span> - {item.qty} {item.unit} @ Rp {new Intl.NumberFormat('id-ID').format(item.price || 0)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={key} className="flex justify-between gap-2">
+                      <span className="text-slate-400">{key}:</span>
+                      <span className="text-slate-200 text-right truncate max-w-[200px]" title={String(val)}>
+                        {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {actionStatus === 'success' ? (
+                <div className="mt-3 bg-emerald-950/80 border border-emerald-800 text-emerald-200 p-3 rounded-xl flex items-start gap-2 text-[11px]">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-emerald-300">Aksi Sukses Dieksekusi!</p>
+                    <p className="text-slate-300 mt-0.5">Data telah aman dimasukkan ke database Supabase dan tercatat di Audit Trail ERP.</p>
+                  </div>
+                </div>
+              ) : actionStatus === 'error' ? (
+                <div className="mt-3 bg-red-950/80 border border-red-900 text-red-200 p-3 rounded-xl flex items-start gap-2 text-[11px]">
+                  <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-red-300">Eksekusi Aksi Gagal</p>
+                    <p className="text-slate-300 mt-0.5">Terjadi kendala jaringan. Silakan coba klik Eksekusi kembali.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    onClick={handleExecuteAction}
+                    disabled={!isCrudActive || actionStatus === 'loading'}
+                    className={`flex-1 h-9 text-xs font-bold rounded-xl shadow-md transition-all ${
+                      isCrudActive 
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-[1.01]' 
+                        : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                    }`}
+                  >
+                    {actionStatus === 'loading' ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+                    ) : (
+                      <Zap className="w-4 h-4 mr-1.5 text-emerald-300" />
+                    )}
+                    {isCrudActive ? 'Konfirmasi & Eksekusi (Draft)' : 'Aktifkan AI Actions'}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
   // Premium gating logic
   const isTrial = store?.plan === 'pro' && store?.has_used_trial;
   const isFree = !store?.plan || store?.plan === 'free';
@@ -42,6 +214,7 @@ export default function TradixaAssistant({ store }) {
   const [isSending, setIsSending] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isCrudActive, setIsCrudActive] = useState(true);
+  const [executedActions, setExecutedActions] = useState({});
 
   useEffect(() => {
     loadConversations();
@@ -358,7 +531,7 @@ export default function TradixaAssistant({ store }) {
                               whiteSpace: 'pre-wrap'
                             }}
                           >
-                            {renderMessageContent(msg.content, msg.role === 'user')}
+                            {renderMessageContentWithActions(msg, idx)}
                           </div>
                           {msg.created_date && (
                             <p className={`text-[10px] mt-1.5 lg:mt-2 opacity-70 ${msg.role === 'user' ? 'text-blue-50' : 'text-slate-500'}`}>

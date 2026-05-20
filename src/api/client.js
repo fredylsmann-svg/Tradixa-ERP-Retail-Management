@@ -114,7 +114,7 @@ function createEntityProxy(entityName) {
       return data;
     },
 
-    async create(record) {
+    async create(record, options = {}) {
       const now = new Date();
       const payload = { ...record };
       const skipDateEntities = ['WarehouseTransfer', 'PickList'];
@@ -146,14 +146,16 @@ function createEntityProxy(entityName) {
         entity_name: entityName,
         entity_id: data.id,
         action_type: 'create',
-        description: `Created new ${entityName} record`,
+        description: options.via_ai 
+          ? `Created new ${entityName} record (via Tradixa AI Assistant)` 
+          : `Created new ${entityName} record`,
         new_data: data
       });
 
       return data;
     },
 
-    async update(id, updates) {
+    async update(id, updates, options = {}) {
       // OPTIMIZED: No longer fetching old_data before update (saves 1 full select('*') per update)
       const payload = { ...updates };
       const skipDateEntities = ['WarehouseTransfer', 'PickList'];
@@ -172,7 +174,9 @@ function createEntityProxy(entityName) {
         entity_name: entityName,
         entity_id: id,
         action_type: 'update',
-        description: `Updated ${entityName} record`,
+        description: options.via_ai 
+          ? `Updated ${entityName} record (via Tradixa AI Assistant)` 
+          : `Updated ${entityName} record`,
         old_data: { _optimized: true, changed_fields: Object.keys(updates) },
         new_data: data
       });

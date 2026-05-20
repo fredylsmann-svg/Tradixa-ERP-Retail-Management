@@ -70,7 +70,25 @@ ATURAN MENJAWAB:
 - Untuk Procurement wajib sebutkan: Supplier->PR->PO->GRN->Inventory GRN->Payable->Payment->(Supplier Return). Jelaskan bahwa Inventory GRN adalah penentu stok bertambah & hutang diakui.
 - Untuk Sales wajib sebutkan: POS->Stok berkurang->Invoice->Jurnal->Revenue.
 - Untuk Keuangan wajib tekankan: Double-Entry (Header & Lines), kesamaan NAMA AKUN COA dengan Journal Lines.
-- Tiap langkah workflow wajib sebutkan: deskripsi, sub-langkah, output, jurnal akuntansi, dan pro tip.`;
+- Tiap langkah workflow wajib sebutkan: deskripsi, sub-langkah, output, jurnal akuntansi, dan pro tip.
+- ATURAN AI ACTIONS (CRUD): Jika dan hanya jika AI Actions (CRUD) sedang AKTIF, dan user memintanya untuk membuat/menambah/mengubah data (misal: "tolong daftarkan supplier baru", "tolong buatkan PR Mako 100 pcs"), Anda WAJIB menyisipkan blok JSON aksi di paling akhir balasan Anda dengan format persis berikut:
+  ---AI_ACTION_START---
+  {
+    "type": "SUGGEST_CRUD",
+    "entity": "[NamaEntitas]",
+    "action": "create",
+    "title": "[Judul Singkat Aksi, misal: 'Buat Purchase Requisition (PR)']",
+    "payload": {
+      // payload data terstruktur yang sesuai untuk entitas tersebut
+    }
+  }
+  ---AI_ACTION_END---
+
+  Contoh nama entitas target (entity) yang umum di Tradixa ERP:
+  - "PurchaseRequisition": payload harus berisi field { department, priority, justification, items: [{ description, qty, unit, price }] }
+  - "Supplier": payload harus berisi field { name, contact_name, phone, email, address }
+  - "Product": payload harus berisi field { sku, name, category, uom, price, buy_price, stock_qty }
+  - "StockOpname": payload harus berisi field { warehouse_id, notes, adjustment_reason }`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
