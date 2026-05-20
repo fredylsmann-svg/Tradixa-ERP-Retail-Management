@@ -338,6 +338,15 @@ export default function TradixaAssistant({ store }) {
             expenseByCategory[cat] = (expenseByCategory[cat] || 0) + (e.amount || 0);
           });
 
+          // Build detailed expense records (max 30 to avoid token overflow)
+          const expenseDetails = expenses.slice(0, 30).map(e => ({
+            ref: e.reference || '-',
+            date: e.date || e.created_date || '-',
+            category: e.category || '-',
+            notes: e.notes || '-',
+            amount: e.amount || 0
+          }));
+
           financialContext = {
             storeName: store?.store_name || store?.name || 'Toko Anda',
             totalProductsCount: products.length,
@@ -349,7 +358,8 @@ export default function TradixaAssistant({ store }) {
             receivablesAmount: totalReceivables,
             totalExpenses,
             expenseCount: expenses.length,
-            expenseByCategory
+            expenseByCategory,
+            expenseDetails
           };
         } catch (err) {
           console.error("Failed to load context for AI Assistant:", err);

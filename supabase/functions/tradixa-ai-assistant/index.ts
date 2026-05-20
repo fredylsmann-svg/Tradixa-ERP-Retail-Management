@@ -118,6 +118,14 @@ serve(async (req) => {
         }
       }
 
+      let expenseDetailLines = '';
+      if (financial_context.expenseDetails && financial_context.expenseDetails.length > 0) {
+        expenseDetailLines = '\n\n[DETAIL TRANSAKSI BIAYA OPERASIONAL (Sumber: Modul Operational Expenses)]:';
+        financial_context.expenseDetails.forEach((e, i) => {
+          expenseDetailLines += `\n  ${i+1}. Ref: ${e.ref} | Tanggal: ${e.date} | Kategori: ${e.category} | Keterangan: ${e.notes} | Jumlah: Rp ${new Intl.NumberFormat('id-ID').format(e.amount)}`;
+        });
+      }
+
       dynamicSystemPrompt += `\n\n[INFORMASI KEUANGAN & OPERASIONAL REAL-TIME TOKO SAAT INI]:
 - Nama Toko: ${financial_context.storeName}
 - Total Jenis Produk: ${financial_context.totalProductsCount} produk
@@ -127,9 +135,9 @@ serve(async (req) => {
 - Jumlah Produk Menipis (Low Stock): ${financial_context.lowStockCount} produk
 - Total Hutang Usaha (Payables): Rp ${new Intl.NumberFormat('id-ID').format(financial_context.payablesAmount)}
 - Total Piutang Usaha (Receivables): Rp ${new Intl.NumberFormat('id-ID').format(financial_context.receivablesAmount)}
-- Total Biaya Operasional (OPEX): Rp ${new Intl.NumberFormat('id-ID').format(financial_context.totalExpenses || 0)} (${financial_context.expenseCount || 0} transaksi)${expenseBreakdown}
+- Total Biaya Operasional (OPEX): Rp ${new Intl.NumberFormat('id-ID').format(financial_context.totalExpenses || 0)} (${financial_context.expenseCount || 0} transaksi)${expenseBreakdown}${expenseDetailLines}
 
-Gunakan data ini secara cerdas, konkret, dan akurat untuk menjawab pertanyaan analisis keuangan, omset, profit, biaya operasional, stok menipis, atau hutang/piutang jika ditanya oleh user. Jangan katakan Anda tidak memiliki akses ke data toko!`;
+Gunakan data ini secara cerdas, konkret, dan akurat untuk menjawab pertanyaan analisis keuangan, omset, profit, biaya operasional, stok menipis, atau hutang/piutang jika ditanya oleh user. Saat menyebutkan data, selalu cantumkan referensi transaksi (Ref), tanggal, dan sumber modul (misal: Modul Operational Expenses). Jangan katakan Anda tidak memiliki akses ke data toko!`;
     }
 
     if (is_crud_active === false) {
