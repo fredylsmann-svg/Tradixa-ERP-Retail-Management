@@ -71,7 +71,8 @@ ATURAN MENJAWAB:
 - Untuk Sales wajib sebutkan: POS->Stok berkurang->Invoice->Jurnal->Revenue.
 - Untuk Keuangan wajib tekankan: Double-Entry (Header & Lines), kesamaan NAMA AKUN COA dengan Journal Lines.
 - Tiap langkah workflow wajib sebutkan: deskripsi, sub-langkah, output, jurnal akuntansi, dan pro tip.
-- ATURAN AI ACTIONS (CRUD): Jika dan hanya jika AI Actions (CRUD) sedang AKTIF, dan user memintanya untuk membuat/menambah/mengubah data (misal: "tolong daftarkan supplier baru", "tolong buatkan PR Mako 100 pcs"), Anda WAJIB menyisipkan blok JSON aksi di paling akhir balasan Anda dengan format persis berikut:
+- ATURAN AI ACTIONS (CRUD): Jika dan hanya jika AI Actions (CRUD) sedang AKTIF, dan user memintanya untuk membuat/menambah/mengubah data (misal: "tolong daftarkan supplier baru", "tolong buatkan PR Mako 100 pcs"), Anda WAJIB menyisipkan blok JSON aksi di paling akhir balasan Anda dengan format persis berikut.
+  PENTING: DILARANG KERAS menyisipkan blok JSON aksi (---AI_ACTION_START---) jika pengguna hanya meminta analisis, saran, rekomendasi, penjelasan laporan keuangan, pencarian data, penjelasan alur, atau pertanyaan informasional/tanya-jawab biasa. Hanya gunakan blok JSON aksi jika ada entitas riil yang perlu disimpan/dibuat di database (seperti PurchaseRequisition, Supplier, Product, StockOpname).
   ---AI_ACTION_START---
   {
     "type": "SUGGEST_CRUD",
@@ -96,7 +97,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, is_crud_active } = await req.json()
+    const { messages, is_crud_active, financial_context } = await req.json()
     const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY')
 
     if (!GROQ_API_KEY) {
@@ -107,6 +108,21 @@ serve(async (req) => {
     }
 
     let dynamicSystemPrompt = SYSTEM_PROMPT;
+
+    if (financial_context) {
+      dynamicSystemPrompt += `\n\n[INFORMASI KEUANGAN & OPERASIONAL REAL-TIME TOKO SAAT INI]:
+- Nama Toko: ${financial_context.storeName}
+- Total Jenis Produk: ${financial_context.totalProductsCount} produk
+- Total Transaksi Penjualan: ${financial_context.totalTransactionsCount} kali
+- Total Pendapatan/Omset: Rp ${new Intl.NumberFormat('id-ID').format(financial_context.revenue)}
+- Total Laba Bersih/Profit: Rp ${new Intl.NumberFormat('id-ID').format(financial_context.netProfit)}
+- Jumlah Produk Menipis (Low Stock): ${financial_context.lowStockCount} produk
+- Total Hutang Usaha (Payables): Rp ${new Intl.NumberFormat('id-ID').format(financial_context.payablesAmount)}
+- Total Piutang Usaha (Receivables): Rp ${new Intl.NumberFormat('id-ID').format(financial_context.receivablesAmount)}
+
+Gunakan data ini secara cerdas, konkret, dan akurat untuk menjawab pertanyaan analisis keuangan, omset, profit, stok menipis, atau hutang/piutang jika ditanya oleh user. Jangan katakan Anda tidak memiliki akses ke data toko!`;
+    }
+
     if (is_crud_active === false) {
       dynamicSystemPrompt += `\n\n[PENTING] AI ACTIONS (CRUD) SEDANG DINONAKTIFKAN OLEH USER. 
 Anda DILARANG keras menyarankan atau membuat data transaksi otomatis/CRUD (Create, Read, Update, Delete). 

@@ -312,10 +312,42 @@ export default function TradixaAssistant({ store }) {
     setInput('');
 
     try {
+      // Fetch summary metrics to provide real-time context to the AI assistant
+      let financialContext = null;
+      if (store?.id) {
+        try {
+          const [products, sales, payables, receivables] = await Promise.all([
+            api.entities.Product.filter({ store_id: store.id }),
+            api.entities.SalesTransaction.filter({ store_id: store.id }),
+            api.entities.Payable.filter({ store_id: store.id, status: 'Pending' }),
+            api.entities.Receivable.filter({ store_id: store.id, status: 'Pending' })
+          ]);
+
+          const lowStockCount = products.filter(p => p.stock <= p.reorder_level && p.stock > 0).length;
+          const totalRevenue = sales.reduce((sum, s) => sum + (s.total || 0), 0);
+          const totalProfit = sales.reduce((sum, s) => sum + (s.profit || 0), 0);
+          const totalPayables = payables.reduce((sum, p) => sum + (p.remaining_amount || p.amount || 0), 0);
+          const totalReceivables = receivables.reduce((sum, r) => sum + (r.remaining_amount || r.amount || 0), 0);
+
+          financialContext = {
+            storeName: store.name || 'Toko Tradixa',
+            totalProductsCount: products.length,
+            totalTransactionsCount: sales.length,
+            revenue: totalRevenue,
+            netProfit: totalProfit,
+            lowStockCount,
+            payablesAmount: totalPayables,
+            receivablesAmount: totalReceivables
+          };
+        } catch (err) {
+          console.error("Failed to load context for AI Assistant:", err);
+        }
+      }
+
       await api.agents.addMessage(currentConversation, {
         role: 'user',
         content: userMessage
-      }, { isCrudActive });
+      }, { isCrudActive, financialContext });
     } catch (error) {
       console.error('Error sending message:', error);
     }

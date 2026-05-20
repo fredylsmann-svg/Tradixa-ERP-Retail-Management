@@ -401,7 +401,8 @@ const agentsModule = {
       const { data, error } = await supabase.functions.invoke('tradixa-ai-assistant', {
         body: { 
           messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
-          is_crud_active: options.isCrudActive !== false
+          is_crud_active: options.isCrudActive !== false,
+          financial_context: options.financialContext || null
         }
       });
 
