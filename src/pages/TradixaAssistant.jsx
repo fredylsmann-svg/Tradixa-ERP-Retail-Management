@@ -330,7 +330,7 @@ export default function TradixaAssistant({ store }) {
           const totalReceivables = receivables.reduce((sum, r) => sum + (r.remaining_amount || r.amount || 0), 0);
 
           financialContext = {
-            storeName: store.name || 'Toko Tradixa',
+            storeName: store?.store_name || store?.name || 'Toko Anda',
             totalProductsCount: products.length,
             totalTransactionsCount: sales.length,
             revenue: totalRevenue,
