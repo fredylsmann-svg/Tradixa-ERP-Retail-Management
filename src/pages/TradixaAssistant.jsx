@@ -10,6 +10,24 @@ import { useNavigate } from 'react-router-dom';
 
 export default function TradixaAssistant({ store }) {
   const navigate = useNavigate();
+
+  const renderMessageContent = (content, isUser) => {
+    if (!content) return null;
+    const parts = content.split('**');
+    return parts.map((part, index) => {
+      if (index % 2 === 1) {
+        return (
+          <strong 
+            key={index} 
+            className={`font-black tracking-wide ${isUser ? 'text-blue-100 font-extrabold' : 'text-blue-700 font-bold'}`}
+          >
+            {part}
+          </strong>
+        );
+      }
+      return part;
+    });
+  };
   
   // Premium gating logic
   const isTrial = store?.plan === 'pro' && store?.has_used_trial;
@@ -290,7 +308,7 @@ export default function TradixaAssistant({ store }) {
                               whiteSpace: 'pre-wrap'
                             }}
                           >
-                            {msg.content}
+                            {renderMessageContent(msg.content, msg.role === 'user')}
                           </div>
                           {msg.created_date && (
                             <p className={`text-[10px] mt-1.5 lg:mt-2 opacity-70 ${msg.role === 'user' ? 'text-blue-50' : 'text-slate-500'}`}>
