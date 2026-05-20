@@ -353,17 +353,31 @@ const entityProxy = new Proxy({}, {
 
 const agentsModule = {
   async listConversations() {
-    // In a real multi-tenant app, you'd filter by store_id and user_id
-    // For now, let's use a local storage or a dedicated table if exists
-    // Fallback: Return a default conversation if no table exists
-    return [{ id: 'default', metadata: { name: 'Chat Utama' }, created_date: new Date().toISOString() }];
+    let convos = JSON.parse(localStorage.getItem('chat_conversations') || '[]');
+    if (convos.length === 0) {
+      convos = [{ id: 'default', metadata: { name: 'Chat Utama' }, created_date: new Date().toISOString() }];
+      localStorage.setItem('chat_conversations', JSON.stringify(convos));
+    }
+    return convos;
   },
   async getConversation(id) {
     return { id, messages: JSON.parse(localStorage.getItem(`chat_${id}`) || '[]') };
   },
-  async createConversation() {
+  async createConversation(options = {}) {
     const id = Math.random().toString(36).substring(7);
-    const convo = { id, metadata: { name: `Chat ${new Date().toLocaleTimeString()}` }, created_date: new Date().toISOString() };
+    const convo = { 
+      id, 
+      metadata: { 
+        name: options.metadata?.name || `Chat Baru ${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}` 
+      }, 
+      created_date: new Date().toISOString() 
+    };
+    
+    const convos = JSON.parse(localStorage.getItem('chat_conversations') || '[]');
+    if (!convos.some(c => c.id === id)) {
+      convos.unshift(convo);
+      localStorage.setItem('chat_conversations', JSON.stringify(convos));
+    }
     return convo;
   },
   async addMessage(conversation, message, options = {}) {
@@ -374,6 +388,9 @@ const agentsModule = {
     const newMessage = { ...message, created_date: new Date().toISOString() };
     const updatedMessages = [...messages, newMessage];
     localStorage.setItem(chatKey, JSON.stringify(updatedMessages));
+
+    // Dispatch event to show user message immediately in chat window
+    window.dispatchEvent(new CustomEvent(`chat_update_${conversation.id}`, { detail: { messages: updatedMessages } }));
 
     // 2. Call AI Edge Function
     try {
@@ -386,7 +403,21 @@ const agentsModule = {
 
       if (error) throw error;
 
-      // 3. Add AI Response
+      // 3. Update Conversation Title if returned from AI
+      if (data.title) {
+        let convos = JSON.parse(localStorage.getItem('chat_conversations') || '[]');
+        convos = convos.map(c => {
+          if (c.id === conversation.id) {
+            return { ...c, metadata: { ...c.metadata, name: data.title } };
+          }
+          return c;
+        });
+        localStorage.setItem('chat_conversations', JSON.stringify(convos));
+        // Trigger event to refresh sidebar/list
+        window.dispatchEvent(new CustomEvent('conversations_update', { detail: { conversations: convos } }));
+      }
+
+      // 4. Add AI Response
       const aiMessage = { role: 'assistant', content: data.reply, created_date: new Date().toISOString() };
       const finalMessages = [...updatedMessages, aiMessage];
       localStorage.setItem(chatKey, JSON.stringify(finalMessages));

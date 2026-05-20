@@ -59,6 +59,20 @@ export default function TradixaAssistant({ store }) {
     }
   }, [currentConversation]);
 
+  useEffect(() => {
+    const handler = (e) => {
+      setConversations(e.detail.conversations || []);
+      if (currentConversation) {
+        const updatedCurrent = e.detail.conversations.find(c => c.id === currentConversation.id);
+        if (updatedCurrent) {
+          setCurrentConversation(updatedCurrent);
+        }
+      }
+    };
+    window.addEventListener('conversations_update', handler);
+    return () => window.removeEventListener('conversations_update', handler);
+  }, [currentConversation]);
+
   const loadConversations = async () => {
     setIsLoading(true);
     try {

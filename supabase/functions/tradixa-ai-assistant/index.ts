@@ -124,8 +124,39 @@ Anda sangat diperbolehkan dan didorong untuk membantu menyarankan aksi CRUD (sep
 
     const reply = data.choices[0].message.content
 
+    let title = null;
+    if (messages && messages.length === 1) {
+      try {
+        const titleResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama-3.1-8b-instant',
+            messages: [
+              { 
+                role: 'system', 
+                content: 'Buatkan judul singkat (2-4 kata saja) dalam Bahasa Indonesia tanpa tanda kutip yang merangkum pertanyaan atau topik chat dari user berikut.' 
+              },
+              { role: 'user', content: messages[0].content }
+            ],
+            temperature: 0.5,
+            max_tokens: 15,
+          }),
+        });
+        const titleData = await titleResponse.json();
+        if (titleData.choices && titleData.choices[0]) {
+          title = titleData.choices[0].message.content.trim().replace(/^["']|["']$/g, '');
+        }
+      } catch (e) {
+        console.error('Failed to generate title:', e);
+      }
+    }
+
     return new Response(
-      JSON.stringify({ reply }),
+      JSON.stringify({ reply, title }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
   } catch (error) {
