@@ -366,7 +366,7 @@ const agentsModule = {
     const convo = { id, metadata: { name: `Chat ${new Date().toLocaleTimeString()}` }, created_date: new Date().toISOString() };
     return convo;
   },
-  async addMessage(conversation, message) {
+  async addMessage(conversation, message, options = {}) {
     const chatKey = `chat_${conversation.id}`;
     const messages = JSON.parse(localStorage.getItem(chatKey) || '[]');
     
@@ -378,7 +378,10 @@ const agentsModule = {
     // 2. Call AI Edge Function
     try {
       const { data, error } = await supabase.functions.invoke('tradixa-ai-assistant', {
-        body: { messages: updatedMessages.map(m => ({ role: m.role, content: m.content })) }
+        body: { 
+          messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
+          is_crud_active: options.isCrudActive !== false
+        }
       });
 
       if (error) throw error;
@@ -393,7 +396,9 @@ const agentsModule = {
     } catch (err) {
       console.error('[AI] Assistant error:', err);
       const errorMessage = { role: 'assistant', content: 'Maaf, saya sedang mengalami gangguan koneksi. Mohon coba lagi nanti.', created_date: new Date().toISOString() };
-      localStorage.setItem(chatKey, JSON.stringify([...updatedMessages, errorMessage]));
+      const finalMessages = [...updatedMessages, errorMessage];
+      localStorage.setItem(chatKey, JSON.stringify(finalMessages));
+      window.dispatchEvent(new CustomEvent(`chat_update_${conversation.id}`, { detail: { messages: finalMessages } }));
     }
   },
   subscribeToConversation(id, callback) {

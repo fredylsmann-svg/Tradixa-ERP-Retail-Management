@@ -41,6 +41,7 @@ export default function TradixaAssistant({ store }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isCrudActive, setIsCrudActive] = useState(true);
 
   useEffect(() => {
     loadConversations();
@@ -114,7 +115,7 @@ export default function TradixaAssistant({ store }) {
       await api.agents.addMessage(currentConversation, {
         role: 'user',
         content: userMessage
-      });
+      }, { isCrudActive });
     } catch (error) {
       console.error('Error sending message:', error);
     }
@@ -253,6 +254,41 @@ export default function TradixaAssistant({ store }) {
             <div className="flex-1 min-w-0">
               <CardTitle className="text-base lg:text-lg truncate">Tradixa Assistant</CardTitle>
               <p className="text-xs lg:text-sm text-slate-500 truncate">AI Assistant untuk sistem retail</p>
+            </div>
+            
+            {/* AI Actions (CRUD) Toggle and InfoTooltip */}
+            <div className="flex items-center gap-2 border-l pl-3 ml-2 border-slate-200">
+              <div className="flex flex-col items-end">
+                <span className="text-[9px] lg:text-[10px] uppercase tracking-wider font-bold text-slate-400">AI Actions</span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className={`text-[9px] lg:text-[10px] font-semibold px-1.5 py-0.5 rounded-full transition-colors ${isCrudActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
+                    {isCrudActive ? 'Active' : 'Disabled'}
+                  </span>
+                  
+                  {/* Switch Toggle Button */}
+                  <button 
+                    onClick={() => setIsCrudActive(!isCrudActive)}
+                    className={`w-8 h-4 lg:w-9 lg:h-5 rounded-full p-0.5 transition-colors focus:outline-none relative flex items-center ${isCrudActive ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                  >
+                    <div className={`w-3 h-3 lg:w-4 lg:h-4 rounded-full bg-white transition-transform shadow-sm transform ${isCrudActive ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </button>
+
+                  {/* Info Tooltip Icon */}
+                  <div className="relative group cursor-pointer">
+                    <span className="flex items-center justify-center w-4 h-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 text-[10px] font-bold transition-all border border-slate-200">i</span>
+                    {/* Tooltip Content container */}
+                    <div className="absolute right-0 top-6 w-56 lg:w-64 p-3 bg-slate-900 text-white text-[11px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-xl border border-slate-800">
+                      <p className="font-bold text-emerald-400 mb-1 flex items-center gap-1">🤖 AI Actions (CRUD)</p>
+                      <p className="text-slate-200">
+                        {isCrudActive 
+                          ? 'Aktif: AI diizinkan menyarankan & mengisi formulir transaksi secara otomatis (PO, Stock Opname, Promosi, dll).' 
+                          : 'Nonaktif: AI hanya berjalan dalam mode diskusi/tanya jawab biasa (Tidak bisa memicu aksi CRUD).'}
+                      </p>
+                      <div className="absolute right-1.5 -top-1 w-2.5 h-2.5 bg-slate-900 rotate-45 border-l border-t border-slate-800" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </CardHeader>

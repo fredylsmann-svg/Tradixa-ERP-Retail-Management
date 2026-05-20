@@ -78,7 +78,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json()
+    const { messages, is_crud_active } = await req.json()
     const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY')
 
     if (!GROQ_API_KEY) {
@@ -86,6 +86,17 @@ serve(async (req) => {
         JSON.stringify({ error: 'GROQ_API_KEY belum dikonfigurasi di Supabase Secrets.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       )
+    }
+
+    let dynamicSystemPrompt = SYSTEM_PROMPT;
+    if (is_crud_active === false) {
+      dynamicSystemPrompt += `\n\n[PENTING] AI ACTIONS (CRUD) SEDANG DINONAKTIFKAN OLEH USER. 
+Anda DILARANG keras menyarankan atau membuat data transaksi otomatis/CRUD (Create, Read, Update, Delete). 
+Jika user meminta Anda membuat/mengubah/menghapus data (seperti membuat PO, membuat kampanye marketing, update stok), Anda harus menjawab secara sopan dan ramah:
+"Mohon maaf, fitur AI Actions (CRUD) sedang dinonaktifkan. Silakan aktifkan toggle 'AI Actions (CRUD)' di pojok kanan atas layar chat agar saya bisa membantu menginput atau mengubah data ini secara otomatis!"`;
+    } else {
+      dynamicSystemPrompt += `\n\n[PENTING] AI ACTIONS (CRUD) SEDANG AKTIF. 
+Anda sangat diperbolehkan dan didorong untuk membantu menyarankan aksi CRUD (seperti membuat PO, mengupdate stok, membuat kampanye promosi) dengan memberikan detail data yang siap dimasukkan ke formulir secara terstruktur.`;
     }
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -97,7 +108,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: dynamicSystemPrompt },
           ...messages
         ],
         temperature: 0.7,
