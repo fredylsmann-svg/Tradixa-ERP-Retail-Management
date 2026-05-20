@@ -85,7 +85,7 @@ ATURAN MENJAWAB:
   ---AI_ACTION_END---
 
   Contoh nama entitas target (entity) yang umum di Tradixa ERP:
-  - "PurchaseRequisition": payload harus berisi field { department, priority, justification, items: [{ description, qty, unit, price }] }
+  - "PurchaseRequisition": payload harus berisi field { department, priority, justification, status: "Diajukan", items: [{ description, qty, unit, price }] }
   - "Supplier": payload harus berisi field { name, contact_name, phone, email, address }
   - "Product": payload harus berisi field { sku, name, category, uom, price, buy_price, stock_qty }
   - "StockOpname": payload harus berisi field { warehouse_id, notes, adjustment_reason }`;

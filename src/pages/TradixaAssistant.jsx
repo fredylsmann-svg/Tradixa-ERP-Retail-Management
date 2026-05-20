@@ -78,7 +78,7 @@ export default function TradixaAssistant({ store }) {
           payload.subtotal = subtotal;
           payload.tax_amount = tax_amount;
           payload.total_amount = subtotal + tax_amount;
-          payload.status = 'Draft';
+          payload.status = payload.status || 'Diajukan';
           payload.pr_number = `PR-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).substring(7).toUpperCase()}`;
           payload.timestamp_wib = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
           payload.requester = store?.owner_name || 'Administrator';
@@ -101,6 +101,8 @@ export default function TradixaAssistant({ store }) {
         sonnerToast.error('Gagal mengeksekusi aksi AI. Silakan coba lagi.');
       }
     };
+
+    const isPrSubmitted = actionData?.entity === 'PurchaseRequisition' && (actionData?.payload?.status === 'Diajukan' || !actionData?.payload?.status);
 
     return (
       <div className="space-y-4">
@@ -185,12 +187,12 @@ export default function TradixaAssistant({ store }) {
                         : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
                     }`}
                   >
-                    {actionStatus === 'loading' ? (
+                    {actionStatus === 'loading' && (
                       <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
-                    ) : (
-                      <Zap className="w-4 h-4 mr-1.5 text-emerald-300" />
                     )}
-                    {isCrudActive ? 'Konfirmasi & Eksekusi (Draft)' : 'Aktifkan AI Actions'}
+                    {isCrudActive 
+                      ? `Konfirmasi & Eksekusi (${isPrSubmitted ? 'Diajukan' : 'Draft'})` 
+                      : 'Aktifkan AI Actions'}
                   </Button>
                 </div>
               )}
