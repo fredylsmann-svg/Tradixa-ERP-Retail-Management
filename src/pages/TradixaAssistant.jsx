@@ -316,11 +316,12 @@ export default function TradixaAssistant({ store }) {
       let financialContext = null;
       if (store?.id) {
         try {
-          const [products, sales, payables, receivables] = await Promise.all([
+          const [products, sales, payables, receivables, expenses] = await Promise.all([
             api.entities.Product.filter({ store_id: store.id }),
             api.entities.SalesTransaction.filter({ store_id: store.id }),
             api.entities.Payable.filter({ store_id: store.id, status: 'Pending' }),
-            api.entities.Receivable.filter({ store_id: store.id, status: 'Pending' })
+            api.entities.Receivable.filter({ store_id: store.id, status: 'Pending' }),
+            api.entities.Expense.filter({ store_id: store.id })
           ]);
 
           const lowStockCount = products.filter(p => p.stock <= p.reorder_level && p.stock > 0).length;
@@ -328,6 +329,14 @@ export default function TradixaAssistant({ store }) {
           const totalProfit = sales.reduce((sum, s) => sum + (s.profit || 0), 0);
           const totalPayables = payables.reduce((sum, p) => sum + (p.remaining_amount || p.amount || 0), 0);
           const totalReceivables = receivables.reduce((sum, r) => sum + (r.remaining_amount || r.amount || 0), 0);
+          const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+          // Build expense breakdown by category
+          const expenseByCategory = {};
+          expenses.forEach(e => {
+            const cat = e.category || 'Lainnya';
+            expenseByCategory[cat] = (expenseByCategory[cat] || 0) + (e.amount || 0);
+          });
 
           financialContext = {
             storeName: store?.store_name || store?.name || 'Toko Anda',
@@ -337,7 +346,10 @@ export default function TradixaAssistant({ store }) {
             netProfit: totalProfit,
             lowStockCount,
             payablesAmount: totalPayables,
-            receivablesAmount: totalReceivables
+            receivablesAmount: totalReceivables,
+            totalExpenses,
+            expenseCount: expenses.length,
+            expenseByCategory
           };
         } catch (err) {
           console.error("Failed to load context for AI Assistant:", err);

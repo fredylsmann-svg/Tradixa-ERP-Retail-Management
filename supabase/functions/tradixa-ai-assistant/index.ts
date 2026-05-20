@@ -110,6 +110,14 @@ serve(async (req) => {
     let dynamicSystemPrompt = SYSTEM_PROMPT;
 
     if (financial_context) {
+      let expenseBreakdown = '';
+      if (financial_context.expenseByCategory && Object.keys(financial_context.expenseByCategory).length > 0) {
+        expenseBreakdown = '\n  Rincian per kategori:';
+        for (const [cat, amount] of Object.entries(financial_context.expenseByCategory)) {
+          expenseBreakdown += `\n  • ${cat}: Rp ${new Intl.NumberFormat('id-ID').format(amount)}`;
+        }
+      }
+
       dynamicSystemPrompt += `\n\n[INFORMASI KEUANGAN & OPERASIONAL REAL-TIME TOKO SAAT INI]:
 - Nama Toko: ${financial_context.storeName}
 - Total Jenis Produk: ${financial_context.totalProductsCount} produk
@@ -119,8 +127,9 @@ serve(async (req) => {
 - Jumlah Produk Menipis (Low Stock): ${financial_context.lowStockCount} produk
 - Total Hutang Usaha (Payables): Rp ${new Intl.NumberFormat('id-ID').format(financial_context.payablesAmount)}
 - Total Piutang Usaha (Receivables): Rp ${new Intl.NumberFormat('id-ID').format(financial_context.receivablesAmount)}
+- Total Biaya Operasional (OPEX): Rp ${new Intl.NumberFormat('id-ID').format(financial_context.totalExpenses || 0)} (${financial_context.expenseCount || 0} transaksi)${expenseBreakdown}
 
-Gunakan data ini secara cerdas, konkret, dan akurat untuk menjawab pertanyaan analisis keuangan, omset, profit, stok menipis, atau hutang/piutang jika ditanya oleh user. Jangan katakan Anda tidak memiliki akses ke data toko!`;
+Gunakan data ini secara cerdas, konkret, dan akurat untuk menjawab pertanyaan analisis keuangan, omset, profit, biaya operasional, stok menipis, atau hutang/piutang jika ditanya oleh user. Jangan katakan Anda tidak memiliki akses ke data toko!`;
     }
 
     if (is_crud_active === false) {
