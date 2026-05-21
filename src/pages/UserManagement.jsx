@@ -119,7 +119,7 @@ export default function UserManagement({ store }) {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isOwner, setIsOwner] = useState(false);
-  
+
   // Invite Form State
   const [inviteForm, setInviteForm] = useState({
     name: '',
@@ -159,14 +159,14 @@ export default function UserManagement({ store }) {
     try {
       const user = await api.auth.me();
       setCurrentUser(user);
-      
+
       const storeData = await api.entities.Store.filter({ id: store.id });
       const currentStore = storeData[0];
-      
+
       const isSuperAdmin = user.email && DEV_EMAILS.includes(user.email.toLowerCase());
       const userIsOwner = currentStore?.owner_user_id === user.id || user.role === 'owner' || isSuperAdmin;
       setIsOwner(userIsOwner);
-      
+
       const allUsers = await api.entities.User.filter({ current_store_id: store.id });
       setUsers(allUsers);
 
@@ -174,7 +174,7 @@ export default function UserManagement({ store }) {
       try {
         const allEmployees = await api.entities.Employee.filter({ store_id: store.id });
         setEmployees(allEmployees);
-      } catch(e) { console.error('Employee load error:', e); }
+      } catch (e) { console.error('Employee load error:', e); }
 
       setIsLoading(false);
     } catch (error) {
@@ -186,7 +186,7 @@ export default function UserManagement({ store }) {
   const handleInviteUserWA = () => {
     const { name, position, customPosition, role, phone, modules } = inviteForm;
     const finalPosition = position === 'Custom' ? customPosition : position;
-    
+
     if (!name || !finalPosition || !phone) {
       toast({
         title: "Data Tidak Lengkap",
@@ -202,11 +202,11 @@ export default function UserManagement({ store }) {
     const discountParam = inviteForm.max_discount_limit || 0;
     const regLink = `${window.location.origin}/register?store_id=${store.id}&role=${role}&pos=${encodeURIComponent(finalPosition)}&modules=${modulesParam}&auths=${authoritiesParam}&limit=${limitParam}&discount=${discountParam}&name=${encodeURIComponent(name)}`;
     const message = `Halo ${name},\n\nAnda diundang oleh *${store.store_name}* untuk bergabung ke sistem *Tradixa ERP* dengan posisi sebagai *${finalPosition}*.\n\nSilakan klik tautan di bawah ini untuk menyelesaikan pendaftaran akun Anda:\n${regLink}\n\nSalam,\nManajemen ${store.store_name}`;
-    
+
     // Clean phone number (remove non-digits)
     const cleanPhone = phone.replace(/\D/g, '');
     const waUrl = `https://wa.me/${cleanPhone.startsWith('0') ? '62' + cleanPhone.substring(1) : cleanPhone}?text=${encodeURIComponent(message)}`;
-    
+
     window.open(waUrl, '_blank');
     setShowInviteDialog(false);
     setInviteForm({ name: '', email: '', position: '', role: 'staff', phone: '', modules: [] });
@@ -252,14 +252,14 @@ export default function UserManagement({ store }) {
           } catch (e) { console.error('Error syncing photo to HRIS:', e); }
         }
       }
-      
+
       // Only update Header avatar if editing the currently logged-in user's own profile
       if (currentUser && editingUser.id === currentUser.id && editingUser.photo_url) {
         window.dispatchEvent(new CustomEvent('avatar_updated', { detail: { avatarUrl: editingUser.photo_url } }));
         // Invalidate auth cache so next api.auth.me() fetches fresh data
         api.auth._currentUser = null;
       }
-      
+
       setShowEditDialog(false);
       setEditingUser(null);
       toast({ title: 'Berhasil', description: 'Data user berhasil diperbarui.' });
@@ -314,7 +314,7 @@ export default function UserManagement({ store }) {
     try {
       let linked = 0;
       for (const user of users) {
-        const matchedEmp = employees.find(e => 
+        const matchedEmp = employees.find(e =>
           e.name?.toLowerCase().trim() === (user.full_name || '').toLowerCase().trim()
         );
         if (matchedEmp && user.linked_employee_id !== matchedEmp.id) {
@@ -335,7 +335,7 @@ export default function UserManagement({ store }) {
       const byId = employees.find(e => e.id === user.linked_employee_id);
       if (byId) return byId;
     }
-    return employees.find(e => 
+    return employees.find(e =>
       e.name?.toLowerCase().trim() === (user.full_name || '').toLowerCase().trim()
     );
   };
@@ -350,7 +350,7 @@ export default function UserManagement({ store }) {
       setIsUploadingPhoto(true);
       try {
         const result = await api.storage.upload(file, 'profile');
-        setEditingUser({...editingUser, photo_url: result.url});
+        setEditingUser({ ...editingUser, photo_url: result.url });
       } catch (error) {
         toast({ title: 'Gagal Upload', description: 'Gagal mengunggah foto.', variant: 'destructive' });
       }
@@ -359,8 +359,8 @@ export default function UserManagement({ store }) {
   };
 
   const filteredUsers = users.filter(u => {
-    const matchesSearch = (u.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
-                          u.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (u.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'Semua Role' || u.role === roleFilter.toLowerCase();
     return matchesSearch && matchesRole;
   });
@@ -394,11 +394,11 @@ export default function UserManagement({ store }) {
             <Button variant="outline" size="sm" className="hidden md:flex items-center gap-2 h-11 px-4 rounded-xl border-slate-200" onClick={handleSyncPermissions} disabled={isSaving}>
               <Shield className={`w-4 h-4 ${isSaving ? 'animate-spin' : ''}`} /> Sync Permissions
             </Button>
-            <Button 
+            <Button
               onClick={() => {
                 const limits = getEffectiveLimits(store);
                 const isDev = currentUser?.email === 'dev@tradixa.com';
-                
+
                 if (!limits.userManagement && !isDev) {
                   toast({
                     title: "Akses Terbatas",
@@ -419,7 +419,7 @@ export default function UserManagement({ store }) {
                   return;
                 }
                 setShowInviteDialog(true);
-              }} 
+              }}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 px-6 rounded-xl"
             >
               <UserPlus className="w-4 h-4 mr-2" /> Undang User
@@ -431,9 +431,9 @@ export default function UserManagement({ store }) {
       <div className="flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input 
-            placeholder="Cari nama atau email..." 
-            className="pl-10" 
+          <Input
+            placeholder="Cari nama atau email..."
+            className="pl-10"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
@@ -508,36 +508,36 @@ export default function UserManagement({ store }) {
                         </div>
                       </TableCell>
                       <TableCell>
-                         <div className="flex items-center gap-2 px-2.5 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg w-fit">
-                            <Shield className="w-3.5 h-3.5 text-indigo-500" />
-                            <span className="text-xs font-bold text-indigo-700 capitalize">{user.role || 'User'}</span>
-                         </div>
+                        <div className="flex items-center gap-2 px-2.5 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg w-fit">
+                          <Shield className="w-3.5 h-3.5 text-indigo-500" />
+                          <span className="text-xs font-bold text-indigo-700 capitalize">{user.role || 'User'}</span>
+                        </div>
                       </TableCell>
                       <TableCell>
-                         <div className="flex items-center gap-2 px-2.5 py-1.5 bg-amber-50 border border-amber-100 rounded-lg w-fit">
-                            <Briefcase className="w-3.5 h-3.5 text-amber-500" />
-                            <span className="text-xs font-bold text-amber-700 capitalize">{user.position || (store?.owner_user_id === user.id ? 'Owner' : 'Staff')}</span>
-                         </div>
+                        <div className="flex items-center gap-2 px-2.5 py-1.5 bg-amber-50 border border-amber-100 rounded-lg w-fit">
+                          <Briefcase className="w-3.5 h-3.5 text-amber-500" />
+                          <span className="text-xs font-bold text-amber-700 capitalize">{user.position || (store?.owner_user_id === user.id ? 'Owner' : 'Staff')}</span>
+                        </div>
                       </TableCell>
                       <TableCell>
-                          <div className="flex items-center gap-1.5 text-slate-400">
-                             <span className="text-xs font-bold text-slate-600">
-                               {user.role === 'admin' || store?.owner_user_id === user.id ? 'Full Access' : `${user.modules?.length || 0} modul`}
-                             </span>
-                          </div>
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                          <span className="text-xs font-bold text-slate-600">
+                            {user.role === 'admin' || store?.owner_user_id === user.id ? 'Full Access' : `${user.modules?.length || 0} modul`}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
-                         {(() => {
-                           const linkedEmp = getLinkedEmployee(user);
-                           return linkedEmp ? (
-                             <div className="flex flex-col">
-                                <span className="text-xs font-bold text-emerald-600 cursor-pointer hover:underline">{linkedEmp.name}</span>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{linkedEmp.position || user.role?.toUpperCase() || 'STAFF'}</span>
-                             </div>
-                           ) : (
-                             <span className="text-xs text-slate-300 italic">No Employee Found</span>
-                           );
-                         })()}
+                        {(() => {
+                          const linkedEmp = getLinkedEmployee(user);
+                          return linkedEmp ? (
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-emerald-600 cursor-pointer hover:underline">{linkedEmp.name}</span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{linkedEmp.position || user.role?.toUpperCase() || 'STAFF'}</span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-300 italic">No Employee Found</span>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         <Badge className="bg-slate-100 text-slate-600 border-none px-2 py-0.5 text-[10px] font-bold">Aktif</Badge>
@@ -574,224 +574,224 @@ export default function UserManagement({ store }) {
 
       {/* WhatsApp Invitation Dialog */}
       <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
-         <DialogContent className="max-w-2xl p-0 overflow-hidden rounded-2xl border-none max-h-[90vh] flex flex-col">
-           <div className="bg-slate-50 p-6 border-b shrink-0">
+        <DialogContent className="max-w-2xl p-0 overflow-hidden rounded-2xl border-none max-h-[90vh] flex flex-col">
+          <div className="bg-slate-50 p-6 border-b shrink-0">
             <h2 className="text-2xl font-bold text-slate-800">Undang User Baru</h2>
             <p className="text-sm text-slate-500">Kirim link pendaftaran aman ke karyawan baru</p>
           </div>
-           <div className="p-8 space-y-6 bg-white overflow-y-auto flex-1">
-             <div className="flex items-center gap-4 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><UserPlus className="w-6 h-6" /></div>
-                <div>
-                   <h4 className="font-bold text-slate-800">Form Undangan Registrasi</h4>
-                   <p className="text-xs text-slate-500">Pilih akses sesuai Role-Based Access Control (RBAC)</p>
-                </div>
-             </div>
+          <div className="p-8 space-y-6 bg-white overflow-y-auto flex-1">
+            <div className="flex items-center gap-4 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><UserPlus className="w-6 h-6" /></div>
+              <div>
+                <h4 className="font-bold text-slate-800">Form Undangan Registrasi</h4>
+                <p className="text-xs text-slate-500">Pilih akses sesuai Role-Based Access Control (RBAC)</p>
+              </div>
+            </div>
 
-             <div className="space-y-4">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Nama Lengkap Karyawan *</Label>
+                <Input
+                  placeholder="Contoh: Budi Santoso"
+                  value={inviteForm.name}
+                  onChange={e => setInviteForm({ ...inviteForm, name: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Nomor WA Karyawan *</Label>
+                <Input
+                  placeholder="08xxxxxxxxxx"
+                  value={inviteForm.phone}
+                  onChange={e => setInviteForm({ ...inviteForm, phone: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                   <Label>Nama Lengkap Karyawan *</Label>
-                   <Input 
-                      placeholder="Contoh: Budi Santoso" 
-                      value={inviteForm.name}
-                      onChange={e => setInviteForm({...inviteForm, name: e.target.value})}
-                   />
+                  <Label>Jabatan (Position) *</Label>
+                  <Select value={inviteForm.position} onValueChange={val => setInviteForm({ ...inviteForm, position: val })}>
+                    <SelectTrigger><SelectValue placeholder="Pilih jabatan kerja" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Manager">Manager</SelectItem>
+                      <SelectItem value="Purchasing">Purchasing</SelectItem>
+                      <SelectItem value="Warehouse">Warehouse Staff</SelectItem>
+                      <SelectItem value="Finance">Finance Officer</SelectItem>
+                      <SelectItem value="Operator">Operator Lapangan</SelectItem>
+                      <SelectItem value="Mechanic">Mechanic</SelectItem>
+                      <SelectItem value="Custom">+ Tambah Jabatan Baru</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {inviteForm.position === 'Custom' && (
+                    <Input
+                      placeholder="Ketik jabatan baru..."
+                      value={inviteForm.customPosition}
+                      onChange={e => setInviteForm({ ...inviteForm, customPosition: e.target.value })}
+                      className="mt-2"
+                    />
+                  )}
+                  <p className="text-[10px] text-slate-400 italic">Jabatan ini akan otomatis mengaktifkan modul aplikasi mana saja yang bisa mereka lihat (RBAC)</p>
                 </div>
-
                 <div className="space-y-1.5">
-                   <Label>Nomor WA Karyawan *</Label>
-                   <Input 
-                      placeholder="08xxxxxxxxxx" 
-                      value={inviteForm.phone}
-                      onChange={e => setInviteForm({...inviteForm, phone: e.target.value})}
-                   />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-1.5">
-                      <Label>Jabatan (Position) *</Label>
-                      <Select value={inviteForm.position} onValueChange={val => setInviteForm({...inviteForm, position: val})}>
-                        <SelectTrigger><SelectValue placeholder="Pilih jabatan kerja" /></SelectTrigger>
-                        <SelectContent>
-                           <SelectItem value="Manager">Manager</SelectItem>
-                           <SelectItem value="Purchasing">Purchasing</SelectItem>
-                           <SelectItem value="Warehouse">Warehouse Staff</SelectItem>
-                           <SelectItem value="Finance">Finance Officer</SelectItem>
-                           <SelectItem value="Operator">Operator Lapangan</SelectItem>
-                           <SelectItem value="Mechanic">Mechanic</SelectItem>
-                           <SelectItem value="Custom">+ Tambah Jabatan Baru</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {inviteForm.position === 'Custom' && (
-                        <Input 
-                          placeholder="Ketik jabatan baru..." 
-                          value={inviteForm.customPosition}
-                          onChange={e => setInviteForm({...inviteForm, customPosition: e.target.value})}
-                          className="mt-2"
-                        />
-                      )}
-                      <p className="text-[10px] text-slate-400 italic">Jabatan ini akan otomatis mengaktifkan modul aplikasi mana saja yang bisa mereka lihat (RBAC)</p>
-                   </div>
-                   <div className="space-y-1.5">
-                      <Label>Sistem Role (Privilege) *</Label>
-                      <Select value={inviteForm.role} onValueChange={val => setInviteForm({...inviteForm, role: val})}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                           <SelectItem value="staff">User (Akses Transaksi Terbatas)</SelectItem>
-                           <SelectItem value="admin">Admin (Akses Operasional Penuh)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                   </div>
-                </div>
-
-                <div className="space-y-1.5 mt-4">
-                    <Label>Hak Akses Modul *</Label>
-                    <div className="flex gap-2 mb-2">
-                      <Button type="button" variant="outline" size="sm" className="text-xs h-7" onClick={() => {
-                        const allMods = MODULE_GROUPS.flatMap(g => g.modules);
-                        setInviteForm({...inviteForm, modules: allMods});
-                      }}>Pilih Semua</Button>
-                      <Button type="button" variant="outline" size="sm" className="text-xs h-7" onClick={() => setInviteForm({...inviteForm, modules: []})}>Hapus Semua</Button>
-                      <span className="text-xs text-slate-400 ml-auto self-center">{inviteForm.modules.length} modul dipilih</span>
-                    </div>
-                    <div className="max-h-[300px] overflow-y-auto border rounded-xl bg-slate-50 p-4 space-y-4">
-                      {MODULE_GROUPS.map(group => (
-                        <div key={group.category}>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{group.category}</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            {group.modules.map(mod => (
-                              <div key={mod} className="flex items-center space-x-2">
-                                <Checkbox 
-                                  id={`mod-${mod}`} 
-                                  checked={inviteForm.modules.includes(mod)} 
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setInviteForm({...inviteForm, modules: [...inviteForm.modules, mod]});
-                                    } else {
-                                      setInviteForm({...inviteForm, modules: inviteForm.modules.filter(m => m !== mod)});
-                                    }
-                                  }} 
-                                />
-                                <label htmlFor={`mod-${mod}`} className="text-xs font-medium leading-none cursor-pointer text-slate-700">{mod}</label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-[10px] text-slate-400 italic">Pilih modul mana saja yang bisa diakses oleh karyawan ini.</p>
-                </div>
-             </div>
-
-                 {/* Advanced DoA: Hak Otoritas & Approval */}
-                 <div className="space-y-4 pt-4 border-t">
-                    <Label>Hak Otoritas & Approval (Advanced DoA)</Label>
-                    <div className="bg-slate-50 border rounded-xl p-4 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Procurement & Inventory</p>
-                          {[
-                            { id: 'APPROVE_PR_L1', label: 'Approve PR (Level 1)' },
-                            { id: 'APPROVE_PR_L2', label: 'Approve PR (Level 2)' },
-                            { id: 'APPROVE_PO', label: 'Approve Purchase Order (PO)' },
-                            { id: 'SIGN_GRN', label: 'Tanda Tangan Goods Receipt (GRN)' },
-                            { id: 'APPROVE_ADJUSTMENT', label: 'Approve Stock Opname/Adjustment' },
-                            { id: 'APPROVE_RETURN', label: 'Approve Supplier Return/Kompensasi' }
-                          ].map(auth => (
-                            <div key={auth.id} className="flex items-center space-x-2">
-                              <Checkbox 
-                                id={`auth-${auth.id}`} 
-                                checked={inviteForm.authorities?.includes(auth.id)}
-                                onCheckedChange={(checked) => {
-                                  const currentAuths = inviteForm.authorities || [];
-                                  if (checked) {
-                                    setInviteForm({...inviteForm, authorities: [...currentAuths, auth.id]});
-                                  } else {
-                                    setInviteForm({...inviteForm, authorities: currentAuths.filter(a => a !== auth.id)});
-                                  }
-                                }}
-                              />
-                              <label htmlFor={`auth-${auth.id}`} className="text-xs font-medium cursor-pointer text-slate-700">{auth.label}</label>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="space-y-2">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Finance & Keuangan</p>
-                          {[
-                            { id: 'APPROVE_PAYMENT', label: 'Approve Pembayaran (AP/AR/Kas)' },
-                            { id: 'APPROVE_JOURNAL', label: 'Approve Jurnal Manual' }
-                          ].map(auth => (
-                            <div key={auth.id} className="flex items-center space-x-2">
-                              <Checkbox 
-                                id={`auth-${auth.id}`} 
-                                checked={inviteForm.authorities?.includes(auth.id)}
-                                onCheckedChange={(checked) => {
-                                  const currentAuths = inviteForm.authorities || [];
-                                  if (checked) {
-                                    setInviteForm({...inviteForm, authorities: [...currentAuths, auth.id]});
-                                  } else {
-                                    setInviteForm({...inviteForm, authorities: currentAuths.filter(a => a !== auth.id)});
-                                  }
-                                }}
-                              />
-                              <label htmlFor={`auth-${auth.id}`} className="text-xs font-medium cursor-pointer text-slate-700">{auth.label}</label>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-bold text-slate-600">Batas Limit Approval (Rp)</Label>
-                          <NumberInput 
-                            min="0"
-                            placeholder="0 = Unlimited"
-                            value={inviteForm.approval_limit}
-                            onChange={(e) => setInviteForm({...inviteForm, approval_limit: e.target.value === '' ? '' : parseFloat(e.target.value)})}
-                            className="h-9"
-                          />
-                          <p className="text-[10px] text-slate-400">Batasan nilai dokumen yang bisa di-approve</p>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-bold text-slate-600">Max Pemberian Diskon (%)</Label>
-                          <Input 
-                            type="number"
-                            min="0"
-                            max="100"
-                            placeholder="0 = Tidak Boleh"
-                            value={inviteForm.max_discount_limit}
-                            onChange={(e) => setInviteForm({...inviteForm, max_discount_limit: e.target.value === '' ? '' : parseFloat(e.target.value)})}
-                            className="h-9"
-                          />
-                          <p className="text-[10px] text-slate-400">Batas maks persentase diskon saat promosi</p>
-                        </div>
-                      </div>
-                    </div>
-                 </div>
-
-              <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
-                <div className="flex gap-4">
-                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                      <Mail className="w-5 h-5 text-blue-600" />
-                   </div>
-                   <div className="space-y-1.5">
-                      <h5 className="text-sm font-black text-slate-900 uppercase tracking-tight">Pendaftaran Tanpa Repot (B2B SaaS Flow)</h5>
-                      <ul className="text-[11px] text-slate-600 font-medium space-y-1.5 list-disc ml-4">
-                         <li>Sistem akan men-generate URL rahasia (Token Terenkripsi).</li>
-                         <li>Karyawan menerima Link CTA pendaftaran di WhatsApp mereka.</li>
-                         <li>Karyawan men-set password mereka secara pribadi (Bukan Admin yang buatkan).</li>
-                         <li>Setelah mendaftar, mereka langsung divalidasi ke posisi <span className="font-bold text-blue-600">[{inviteForm.position || 'Pilih Jabatan'}]</span> secara aman.</li>
-                      </ul>
-                   </div>
+                  <Label>Sistem Role (Privilege) *</Label>
+                  <Select value={inviteForm.role} onValueChange={val => setInviteForm({ ...inviteForm, role: val })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="staff">User (Akses Transaksi Terbatas)</SelectItem>
+                      <SelectItem value="admin">Admin (Akses Operasional Penuh)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-             <div className="flex justify-end gap-3 pt-2">
-                <Button variant="ghost" onClick={() => setShowInviteDialog(false)} className="font-bold">Kembali</Button>
-                <Button onClick={handleInviteUserWA} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 px-8">
-                   <MessageCircle className="w-5 h-5 mr-2" /> Kirim Link Pendaftaran
-                </Button>
-             </div>
+              <div className="space-y-1.5 mt-4">
+                <Label>Hak Akses Modul *</Label>
+                <div className="flex gap-2 mb-2">
+                  <Button type="button" variant="outline" size="sm" className="text-xs h-7" onClick={() => {
+                    const allMods = MODULE_GROUPS.flatMap(g => g.modules);
+                    setInviteForm({ ...inviteForm, modules: allMods });
+                  }}>Pilih Semua</Button>
+                  <Button type="button" variant="outline" size="sm" className="text-xs h-7" onClick={() => setInviteForm({ ...inviteForm, modules: [] })}>Hapus Semua</Button>
+                  <span className="text-xs text-slate-400 ml-auto self-center">{inviteForm.modules.length} modul dipilih</span>
+                </div>
+                <div className="max-h-[300px] overflow-y-auto border rounded-xl bg-slate-50 p-4 space-y-4">
+                  {MODULE_GROUPS.map(group => (
+                    <div key={group.category}>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{group.category}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {group.modules.map(mod => (
+                          <div key={mod} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`mod-${mod}`}
+                              checked={inviteForm.modules.includes(mod)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setInviteForm({ ...inviteForm, modules: [...inviteForm.modules, mod] });
+                                } else {
+                                  setInviteForm({ ...inviteForm, modules: inviteForm.modules.filter(m => m !== mod) });
+                                }
+                              }}
+                            />
+                            <label htmlFor={`mod-${mod}`} className="text-xs font-medium leading-none cursor-pointer text-slate-700">{mod}</label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400 italic">Pilih modul mana saja yang bisa diakses oleh karyawan ini.</p>
+              </div>
+            </div>
+
+            {/* Advanced DoA: Hak Otoritas & Approval */}
+            <div className="space-y-4 pt-4 border-t">
+              <Label>Hak Otoritas & Approval (Advanced DoA)</Label>
+              <div className="bg-slate-50 border rounded-xl p-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Procurement & Inventory</p>
+                    {[
+                      { id: 'APPROVE_PR_L1', label: 'Approve PR (Level 1)' },
+                      { id: 'APPROVE_PR_L2', label: 'Approve PR (Level 2)' },
+                      { id: 'APPROVE_PO', label: 'Approve Purchase Order (PO)' },
+                      { id: 'SIGN_GRN', label: 'Tanda Tangan Goods Receipt (GRN)' },
+                      { id: 'APPROVE_ADJUSTMENT', label: 'Approve Stock Opname/Adjustment' },
+                      { id: 'APPROVE_RETURN', label: 'Approve Supplier Return/Kompensasi' }
+                    ].map(auth => (
+                      <div key={auth.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`auth-${auth.id}`}
+                          checked={inviteForm.authorities?.includes(auth.id)}
+                          onCheckedChange={(checked) => {
+                            const currentAuths = inviteForm.authorities || [];
+                            if (checked) {
+                              setInviteForm({ ...inviteForm, authorities: [...currentAuths, auth.id] });
+                            } else {
+                              setInviteForm({ ...inviteForm, authorities: currentAuths.filter(a => a !== auth.id) });
+                            }
+                          }}
+                        />
+                        <label htmlFor={`auth-${auth.id}`} className="text-xs font-medium cursor-pointer text-slate-700">{auth.label}</label>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Finance & Keuangan</p>
+                    {[
+                      { id: 'APPROVE_PAYMENT', label: 'Approve Pembayaran (AP/AR/Kas)' },
+                      { id: 'APPROVE_JOURNAL', label: 'Approve Jurnal Manual' }
+                    ].map(auth => (
+                      <div key={auth.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`auth-${auth.id}`}
+                          checked={inviteForm.authorities?.includes(auth.id)}
+                          onCheckedChange={(checked) => {
+                            const currentAuths = inviteForm.authorities || [];
+                            if (checked) {
+                              setInviteForm({ ...inviteForm, authorities: [...currentAuths, auth.id] });
+                            } else {
+                              setInviteForm({ ...inviteForm, authorities: currentAuths.filter(a => a !== auth.id) });
+                            }
+                          }}
+                        />
+                        <label htmlFor={`auth-${auth.id}`} className="text-xs font-medium cursor-pointer text-slate-700">{auth.label}</label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-slate-600">Batas Limit Approval (Rp)</Label>
+                    <NumberInput
+                      min="0"
+                      placeholder="0 = Unlimited"
+                      value={inviteForm.approval_limit}
+                      onChange={(e) => setInviteForm({ ...inviteForm, approval_limit: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                      className="h-9"
+                    />
+                    <p className="text-[10px] text-slate-400">Batasan nilai dokumen yang bisa di-approve</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-slate-600">Max Pemberian Diskon (%)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      placeholder="0 = Tidak Boleh"
+                      value={inviteForm.max_discount_limit}
+                      onChange={(e) => setInviteForm({ ...inviteForm, max_discount_limit: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                      className="h-9"
+                    />
+                    <p className="text-[10px] text-slate-400">Batas maks persentase diskon saat promosi</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
+              <div className="flex gap-4">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                  <Mail className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="space-y-1.5">
+                  <h5 className="text-sm font-black text-slate-900 uppercase tracking-tight">Pendaftaran Tanpa Repot (B2B SaaS Flow)</h5>
+                  <ul className="text-[11px] text-slate-600 font-medium space-y-1.5 list-disc ml-4">
+                    <li>Sistem akan men-generate URL rahasia (Token Terenkripsi).</li>
+                    <li>Karyawan menerima Link CTA pendaftaran di WhatsApp mereka.</li>
+                    <li>Karyawan men-set password mereka secara pribadi (Bukan Admin yang buatkan).</li>
+                    <li>Setelah mendaftar, mereka langsung divalidasi ke posisi <span className="font-bold text-blue-600">[{inviteForm.position || 'Pilih Jabatan'}]</span> secara aman.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="ghost" onClick={() => setShowInviteDialog(false)} className="font-bold">Kembali</Button>
+              <Button onClick={handleInviteUserWA} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 px-8">
+                <MessageCircle className="w-5 h-5 mr-2" /> Kirim Link Pendaftaran
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -806,204 +806,204 @@ export default function UserManagement({ store }) {
             </DialogHeader>
           </div>
           <div className="p-6 space-y-4 overflow-y-auto flex-1">
-             {/* Photo Upload */}
-             <div className="space-y-1.5">
-                <Label>Foto Profil</Label>
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden bg-slate-50">
-                    {isUploadingPhoto ? (
-                      <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
-                    ) : editingUser?.photo_url || editingUser?.avatar_url ? (
-                      <img src={editingUser.photo_url || editingUser.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <Camera className="w-6 h-6 text-slate-300" />
-                    )}
-                  </div>
-                  <div>
-                    <input type="file" accept="image/*" onChange={handlePhotoUpload} disabled={isUploadingPhoto} className="text-sm" />
-                    <p className="text-[10px] text-slate-400 mt-1">Max 2MB (JPG, PNG)</p>
-                  </div>
+            {/* Photo Upload */}
+            <div className="space-y-1.5">
+              <Label>Foto Profil</Label>
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden bg-slate-50">
+                  {isUploadingPhoto ? (
+                    <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                  ) : editingUser?.photo_url || editingUser?.avatar_url ? (
+                    <img src={editingUser.photo_url || editingUser.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera className="w-6 h-6 text-slate-300" />
+                  )}
                 </div>
-             </div>
-
-             <div className="space-y-1.5">
-                <Label>Nama Lengkap</Label>
-                <Input value={editingUser?.full_name || ''} onChange={e => setEditingUser({...editingUser, full_name: e.target.value})} />
-             </div>
-
-             <div className="space-y-1.5">
-                <Label>Email (Read-only)</Label>
-                <Input value={editingUser?.email || ''} readOnly className="bg-slate-50" />
-             </div>
-
-             <div className="space-y-1.5">
-                <Label>Nomor Telepon</Label>
-                <Input value={editingUser?.phone || ''} onChange={e => setEditingUser({...editingUser, phone: e.target.value})} placeholder="08xx-xxxx-xxxx" />
-             </div>
-
-             <div className="space-y-1.5">
-                <Label>Role *</Label>
-                <Select value={editingUser?.role || 'staff'} onValueChange={val => setEditingUser({...editingUser, role: val})}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                     <SelectItem value="staff">User</SelectItem>
-                     <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-[10px] text-slate-400 italic">Admin: Akses penuh ke semua modul</p>
-             </div>
-
-             <div className="space-y-1.5">
-                <Label>Position (menentukan permissions)</Label>
-                <Select value={editingUser?.position || ''} onValueChange={val => setEditingUser({...editingUser, position: val})}>
-                  <SelectTrigger><SelectValue placeholder="Pilih posisi" /></SelectTrigger>
-                  <SelectContent>
-                     <SelectItem value="Manager">Manager</SelectItem>
-                     <SelectItem value="Purchasing">Purchasing</SelectItem>
-                     <SelectItem value="Warehouse">Warehouse Staff</SelectItem>
-                     <SelectItem value="Finance">Finance Officer</SelectItem>
-                     <SelectItem value="Operator">Operator Lapangan</SelectItem>
-                     <SelectItem value="Mechanic">Mechanic</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-[10px] text-slate-400 italic">Permissions akan otomatis di-sync berdasarkan position</p>
-             </div>
-
-             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                   <Label>Department</Label>
-                   <Input value={editingUser?.department || ''} onChange={e => setEditingUser({...editingUser, department: e.target.value})} placeholder="e.g., Operations" />
+                <div>
+                  <input type="file" accept="image/*" onChange={handlePhotoUpload} disabled={isUploadingPhoto} className="text-sm" />
+                  <p className="text-[10px] text-slate-400 mt-1">Max 2MB (JPG, PNG)</p>
                 </div>
-                <div className="space-y-1.5">
-                   <Label>Site</Label>
-                   <Input value={editingUser?.site || ''} onChange={e => setEditingUser({...editingUser, site: e.target.value})} placeholder="-" />
-                </div>
-             </div>
-
-             {/* Module Access */}
-             <div className="space-y-1.5">
-                <Label>Hak Akses Modul</Label>
-                <div className="flex gap-2 mb-2">
-                  <Button type="button" variant="outline" size="sm" className="text-xs h-7" onClick={() => {
-                    const allMods = MODULE_GROUPS.flatMap(g => g.modules);
-                    setEditingUser({...editingUser, modules: allMods});
-                  }}>Pilih Semua</Button>
-                  <Button type="button" variant="outline" size="sm" className="text-xs h-7" onClick={() => setEditingUser({...editingUser, modules: []})}>Hapus Semua</Button>
-                  <span className="text-xs text-slate-400 ml-auto self-center">{editingUser?.modules?.length || 0} modul</span>
-                </div>
-                <div className="max-h-[200px] overflow-y-auto border rounded-xl bg-slate-50 p-3 space-y-3">
-                  {MODULE_GROUPS.map(group => (
-                    <div key={group.category}>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{group.category}</p>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {group.modules.map(mod => (
-                          <div key={mod} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`edit-mod-${mod}`}
-                              checked={editingUser?.modules?.includes(mod)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setEditingUser({...editingUser, modules: [...(editingUser.modules || []), mod]});
-                                } else {
-                                  setEditingUser({...editingUser, modules: (editingUser.modules || []).filter(m => m !== mod)});
-                                }
-                              }}
-                            />
-                            <label htmlFor={`edit-mod-${mod}`} className="text-[11px] font-medium leading-none cursor-pointer text-slate-700">{mod}</label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                 </div>
               </div>
+            </div>
 
-             {/* Advanced DoA for Edit User */}
-             <div className="space-y-3 pt-3 border-t">
-                <Label>Hak Otoritas & Approval</Label>
-                <div className="bg-slate-50 border rounded-xl p-3 space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Procurement</p>
-                      {[
-                        { id: 'APPROVE_PR_L1', label: 'Approve PR (Level 1)' },
-                        { id: 'APPROVE_PR_L2', label: 'Approve PR (Level 2)' },
-                        { id: 'APPROVE_PO', label: 'Approve PO' },
-                        { id: 'SIGN_GRN', label: 'Tanda Tangan GRN' },
-                        { id: 'APPROVE_ADJUSTMENT', label: 'Approve Opname' },
-                        { id: 'APPROVE_RETURN', label: 'Approve Return' }
-                      ].map(auth => (
-                        <div key={auth.id} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`edit-auth-${auth.id}`} 
-                            checked={editingUser?.authorities?.includes(auth.id)}
+            <div className="space-y-1.5">
+              <Label>Nama Lengkap</Label>
+              <Input value={editingUser?.full_name || ''} onChange={e => setEditingUser({ ...editingUser, full_name: e.target.value })} />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Email (Read-only)</Label>
+              <Input value={editingUser?.email || ''} readOnly className="bg-slate-50" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Nomor Telepon</Label>
+              <Input value={editingUser?.phone || ''} onChange={e => setEditingUser({ ...editingUser, phone: e.target.value })} placeholder="08xx-xxxx-xxxx" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Role *</Label>
+              <Select value={editingUser?.role || 'staff'} onValueChange={val => setEditingUser({ ...editingUser, role: val })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="staff">User</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-slate-400 italic">Admin: Akses penuh ke semua modul</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Position (menentukan permissions)</Label>
+              <Select value={editingUser?.position || ''} onValueChange={val => setEditingUser({ ...editingUser, position: val })}>
+                <SelectTrigger><SelectValue placeholder="Pilih posisi" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Manager">Manager</SelectItem>
+                  <SelectItem value="Purchasing">Purchasing</SelectItem>
+                  <SelectItem value="Warehouse">Warehouse Staff</SelectItem>
+                  <SelectItem value="Finance">Finance Officer</SelectItem>
+                  <SelectItem value="Operator">Operator Lapangan</SelectItem>
+                  <SelectItem value="Mechanic">Mechanic</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-slate-400 italic">Permissions akan otomatis di-sync berdasarkan position</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Department</Label>
+                <Input value={editingUser?.department || ''} onChange={e => setEditingUser({ ...editingUser, department: e.target.value })} placeholder="e.g., Operations" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Site</Label>
+                <Input value={editingUser?.site || ''} onChange={e => setEditingUser({ ...editingUser, site: e.target.value })} placeholder="-" />
+              </div>
+            </div>
+
+            {/* Module Access */}
+            <div className="space-y-1.5">
+              <Label>Hak Akses Modul</Label>
+              <div className="flex gap-2 mb-2">
+                <Button type="button" variant="outline" size="sm" className="text-xs h-7" onClick={() => {
+                  const allMods = MODULE_GROUPS.flatMap(g => g.modules);
+                  setEditingUser({ ...editingUser, modules: allMods });
+                }}>Pilih Semua</Button>
+                <Button type="button" variant="outline" size="sm" className="text-xs h-7" onClick={() => setEditingUser({ ...editingUser, modules: [] })}>Hapus Semua</Button>
+                <span className="text-xs text-slate-400 ml-auto self-center">{editingUser?.modules?.length || 0} modul</span>
+              </div>
+              <div className="max-h-[200px] overflow-y-auto border rounded-xl bg-slate-50 p-3 space-y-3">
+                {MODULE_GROUPS.map(group => (
+                  <div key={group.category}>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{group.category}</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {group.modules.map(mod => (
+                        <div key={mod} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`edit-mod-${mod}`}
+                            checked={editingUser?.modules?.includes(mod)}
                             onCheckedChange={(checked) => {
-                              const currentAuths = editingUser?.authorities || [];
                               if (checked) {
-                                setEditingUser({...editingUser, authorities: [...currentAuths, auth.id]});
+                                setEditingUser({ ...editingUser, modules: [...(editingUser.modules || []), mod] });
                               } else {
-                                setEditingUser({...editingUser, authorities: currentAuths.filter(a => a !== auth.id)});
+                                setEditingUser({ ...editingUser, modules: (editingUser.modules || []).filter(m => m !== mod) });
                               }
                             }}
                           />
-                          <label htmlFor={`edit-auth-${auth.id}`} className="text-[11px] font-medium text-slate-700">{auth.label}</label>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="space-y-1.5">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Finance</p>
-                      {[
-                        { id: 'APPROVE_PAYMENT', label: 'Approve Pembayaran' },
-                        { id: 'APPROVE_JOURNAL', label: 'Approve Jurnal' }
-                      ].map(auth => (
-                        <div key={auth.id} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`edit-auth-${auth.id}`} 
-                            checked={editingUser?.authorities?.includes(auth.id)}
-                            onCheckedChange={(checked) => {
-                              const currentAuths = editingUser?.authorities || [];
-                              if (checked) {
-                                setEditingUser({...editingUser, authorities: [...currentAuths, auth.id]});
-                              } else {
-                                setEditingUser({...editingUser, authorities: currentAuths.filter(a => a !== auth.id)});
-                              }
-                            }}
-                          />
-                          <label htmlFor={`edit-auth-${auth.id}`} className="text-[11px] font-medium text-slate-700">{auth.label}</label>
+                          <label htmlFor={`edit-mod-${mod}`} className="text-[11px] font-medium leading-none cursor-pointer text-slate-700">{mod}</label>
                         </div>
                       ))}
                     </div>
                   </div>
+                ))}
+              </div>
+            </div>
 
-                  <div className="grid grid-cols-2 gap-3 pt-3 border-t">
-                    <div className="space-y-1.5">
-                      <Label className="text-[11px] font-bold text-slate-600">Limit Approval (Rp)</Label>
-                      <NumberInput 
-                        min="0" placeholder="0 = Unlimited"
-                        value={editingUser?.approval_limit}
-                        onChange={(e) => setEditingUser({...editingUser, approval_limit: e.target.value === '' ? '' : parseFloat(e.target.value)})}
-                        className="h-8 text-xs"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[11px] font-bold text-slate-600">Max Diskon (%)</Label>
-                      <Input 
-                        type="number" min="0" max="100" placeholder="0 = Tidak Boleh"
-                        value={editingUser?.max_discount_limit}
-                        onChange={(e) => setEditingUser({...editingUser, max_discount_limit: e.target.value === '' ? '' : parseFloat(e.target.value)})}
-                        className="h-8 text-xs"
-                      />
-                    </div>
+            {/* Advanced DoA for Edit User */}
+            <div className="space-y-3 pt-3 border-t">
+              <Label>Hak Otoritas & Approval</Label>
+              <div className="bg-slate-50 border rounded-xl p-3 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Procurement</p>
+                    {[
+                      { id: 'APPROVE_PR_L1', label: 'Approve PR (Level 1)' },
+                      { id: 'APPROVE_PR_L2', label: 'Approve PR (Level 2)' },
+                      { id: 'APPROVE_PO', label: 'Approve PO' },
+                      { id: 'SIGN_GRN', label: 'Tanda Tangan GRN' },
+                      { id: 'APPROVE_ADJUSTMENT', label: 'Approve Opname' },
+                      { id: 'APPROVE_RETURN', label: 'Approve Return' }
+                    ].map(auth => (
+                      <div key={auth.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`edit-auth-${auth.id}`}
+                          checked={editingUser?.authorities?.includes(auth.id)}
+                          onCheckedChange={(checked) => {
+                            const currentAuths = editingUser?.authorities || [];
+                            if (checked) {
+                              setEditingUser({ ...editingUser, authorities: [...currentAuths, auth.id] });
+                            } else {
+                              setEditingUser({ ...editingUser, authorities: currentAuths.filter(a => a !== auth.id) });
+                            }
+                          }}
+                        />
+                        <label htmlFor={`edit-auth-${auth.id}`} className="text-[11px] font-medium text-slate-700">{auth.label}</label>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-1.5">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Finance</p>
+                    {[
+                      { id: 'APPROVE_PAYMENT', label: 'Approve Pembayaran' },
+                      { id: 'APPROVE_JOURNAL', label: 'Approve Jurnal' }
+                    ].map(auth => (
+                      <div key={auth.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`edit-auth-${auth.id}`}
+                          checked={editingUser?.authorities?.includes(auth.id)}
+                          onCheckedChange={(checked) => {
+                            const currentAuths = editingUser?.authorities || [];
+                            if (checked) {
+                              setEditingUser({ ...editingUser, authorities: [...currentAuths, auth.id] });
+                            } else {
+                              setEditingUser({ ...editingUser, authorities: currentAuths.filter(a => a !== auth.id) });
+                            }
+                          }}
+                        />
+                        <label htmlFor={`edit-auth-${auth.id}`} className="text-[11px] font-medium text-slate-700">{auth.label}</label>
+                      </div>
+                    ))}
                   </div>
                 </div>
-             </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t">
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-bold text-slate-600">Limit Approval (Rp)</Label>
+                    <NumberInput
+                      min="0" placeholder="0 = Unlimited"
+                      value={editingUser?.approval_limit}
+                      onChange={(e) => setEditingUser({ ...editingUser, approval_limit: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-bold text-slate-600">Max Diskon (%)</Label>
+                    <Input
+                      type="number" min="0" max="100" placeholder="0 = Tidak Boleh"
+                      value={editingUser?.max_discount_limit}
+                      onChange={(e) => setEditingUser({ ...editingUser, max_discount_limit: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="p-6 border-t bg-slate-50 shrink-0 flex justify-end gap-3">
-             <Button variant="ghost" onClick={() => setShowEditDialog(false)}>Batal</Button>
-             <Button onClick={handleUpdateRole} className="bg-blue-700 text-white" disabled={isSaving}>
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                Simpan Perubahan
-             </Button>
+            <Button variant="ghost" onClick={() => setShowEditDialog(false)}>Batal</Button>
+            <Button onClick={handleUpdateRole} className="bg-blue-700 text-white" disabled={isSaving}>
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+              Simpan Perubahan
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
