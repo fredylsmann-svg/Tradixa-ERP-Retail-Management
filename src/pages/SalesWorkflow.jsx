@@ -402,7 +402,7 @@ export default function SalesWorkflow() {
             {/* Mode B — RECOMMENDED */}
             <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/10 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800/60 relative">
               <div className="absolute -top-2.5 right-3 bg-emerald-600 text-white text-[8px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-widest shadow-sm">
-                🏆 Rekomendasi
+                Rekomendasi
               </div>
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-7 h-7 bg-emerald-600 text-white rounded-lg flex items-center justify-center text-[10px] font-black shadow-sm">B</div>
