@@ -371,7 +371,7 @@ export default function SalesWorkflow() {
 
       {/* QRIS GPN 4-MODE ARCHITECTURE DETAIL */}
       <Card className="border-violet-200 dark:border-violet-800/50 overflow-hidden">
-        <div className="bg-gradient-to-r from-violet-700 to-purple-800 px-6 py-4">
+        <div className="bg-slate-950 px-6 py-4">
           <h3 className="text-white font-black text-sm tracking-tight flex items-center gap-2">
             <QrCode className="w-4 h-4 text-violet-300" /> Arsitektur QRIS GPN — 4 Mode Pembayaran Cerdas
           </h3>
