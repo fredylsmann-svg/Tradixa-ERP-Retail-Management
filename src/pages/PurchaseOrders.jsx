@@ -235,7 +235,7 @@ export default function PurchaseOrders({ store }) {
     // --- PROCUREMENT LIMIT CHECK ---
     const limits = getEffectiveLimits(store);
     if (limits.maxPO !== Infinity && orders.length >= limits.maxPO) {
-      sonnerToast.error(`Batas PO tercapai (${limits.maxPO} PO). Upgrade ke Pro Plan untuk membuat PO tanpa batas.`, { duration: 5000 });
+      sonnerToast.error(`Batas PO tercapai (${limits.maxPO} PO). Silakan upgrade paket Anda untuk membuat PO tanpa batas.`, { duration: 5000 });
       return;
     }
     // --------------------------------
@@ -303,7 +303,7 @@ export default function PurchaseOrders({ store }) {
     // --- PROCUREMENT LIMIT CHECK ---
     const limits = getEffectiveLimits(store);
     if (limits.maxPO !== Infinity && orders.length >= limits.maxPO) {
-      sonnerToast.error(`Batas PO tercapai (${limits.maxPO} PO). Upgrade ke Pro Plan untuk membuat PO tanpa batas.`, { duration: 5000 });
+      sonnerToast.error(`Batas PO tercapai (${limits.maxPO} PO). Silakan upgrade paket Anda untuk membuat PO tanpa batas.`, { duration: 5000 });
       return;
     }
     // --------------------------------

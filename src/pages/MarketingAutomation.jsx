@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
 import { api } from '@/api/client';
+import { getEffectiveLimits } from '@/planConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -324,13 +325,20 @@ export default function MarketingAutomation({ store }) {
   const handleExecuteCampaign = async (campaign) => {
     if (campaign.status === 'Sent') return;
 
-    // --- CREDIT LIMIT CHECK (hitung langsung dari data campaign) ---
+    // --- CREDIT LIMIT CHECK ---
     const storePlan = store?.plan || 'free';
     const isTrial = storePlan === 'pro' && store?.has_used_trial;
-    const isPaidPro = storePlan === 'pro' && !store?.has_used_trial;
 
     if (storePlan === 'free') {
-      toast.error('Fitur Email Marketing hanya tersedia di paket Pro. Upgrade untuk menggunakan fitur ini.', { duration: 5000 });
+      toast.error('Fitur Email Marketing hanya tersedia di paket berbayar (Pro / Premium). Upgrade untuk menggunakan fitur ini.', { duration: 5000 });
+      return;
+    }
+
+    const limits = getEffectiveLimits(store);
+    const limit = limits.emailCreditsPerMonth || 0;
+
+    if (limit === 0) {
+      toast.error('Plan Anda tidak memiliki akses ke Email Marketing. Silakan upgrade.', { duration: 5000 });
       return;
     }
 
@@ -353,8 +361,12 @@ export default function MarketingAutomation({ store }) {
     if (isTrial) {
       EMAIL_LIMIT = 5;
       currentUsage = totalEmailsSent + totalTransactional;
-    } else if (isPaidPro) {
-      EMAIL_LIMIT = 250;
+    } else if (limit === Infinity) {
+      // Enterprise / unlimited
+      EMAIL_LIMIT = Infinity;
+      currentUsage = totalEmailsSent + totalTransactional;
+    } else {
+      EMAIL_LIMIT = limit;
       // Hitung hanya campaign bulan ini
       const now = new Date();
       const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
@@ -375,12 +387,9 @@ export default function MarketingAutomation({ store }) {
         .gte('created_date', startOfMonth);
 
       currentUsage = campaignUsage + (monthlyTransactional || 0);
-    } else {
-      toast.error('Fitur Email Marketing hanya tersedia di paket Pro. Upgrade untuk menggunakan fitur ini.', { duration: 5000 });
-      return;
     }
 
-    if (currentUsage >= EMAIL_LIMIT) {
+    if (EMAIL_LIMIT !== Infinity && currentUsage >= EMAIL_LIMIT) {
       const msg = isTrial
         ? `Kuota Trial Habis! Anda telah mengirim ${currentUsage} dari maksimal ${EMAIL_LIMIT} email. Upgrade plan untuk melanjutkan.`
         : `Kuota email bulan ini habis (${currentUsage}/${EMAIL_LIMIT}). Kuota akan direset di awal bulan depan.`;

@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Skeleton } from '@/components/ui/skeleton';
 import moment from 'moment';
 import PageHeader from '@/components/layout/PageHeader';
-import { getPlanLimits, DEV_EMAILS } from '@/planConfig';
+import { getPlanLimits, getEffectiveLimits, DEV_EMAILS } from '@/planConfig';
 
 const MODULE_GROUPS = [
   {
@@ -29,7 +29,7 @@ const MODULE_GROUPS = [
   },
   {
     category: 'INVENTORY',
-    modules: ['Product Master', 'Location Settings', 'Stock In', 'Stock Out', 'Inventory Ledger', 'Inventory Reports', 'Low Stock Alert']
+    modules: ['Product Master', 'Location Settings', 'Stock In', 'Stock Out', 'Inventory Ledger', 'Inventory Reports', 'Low Stock Alert', 'Inventory Workflow']
   },
   {
     category: 'WAREHOUSE (WMS)',
@@ -49,7 +49,7 @@ const MODULE_GROUPS = [
   },
   {
     category: 'SALES',
-    modules: ['Sales Transaction', 'Sales Invoices', 'Revenue Reports']
+    modules: ['Sales Transaction', 'Sales Invoices', 'Revenue Reports', 'Sales Workflow']
   },
   {
     category: 'FINANCIAL & OPERATIONS',
@@ -396,22 +396,24 @@ export default function UserManagement({ store }) {
             </Button>
             <Button 
               onClick={() => {
-                const limits = getPlanLimits(store?.plan || 'free');
+                const limits = getEffectiveLimits(store);
                 const isDev = currentUser?.email === 'dev@tradixa.com';
                 
                 if (!limits.userManagement && !isDev) {
                   toast({
                     title: "Akses Terbatas",
-                    description: "Paket Free tidak mendukung User Management. Silakan upgrade ke Pro.",
+                    description: "Paket Free tidak mendukung User Management. Silakan upgrade paket Anda.",
                     variant: "destructive"
                   });
                   return;
                 }
                 const staffCount = users.filter(u => u.id !== store?.owner_user_id).length;
                 if (staffCount >= limits.maxUsers && !isDev) {
+                  const isTrial = store?.plan === 'pro' && store?.has_used_trial;
+                  const planName = isTrial ? 'Pro Trial' : store?.plan;
                   toast({
                     title: "Batas User Tercapai",
-                    description: `Paket ${store?.plan} maksimal ${limits.maxUsers} user karyawan. Silakan upgrade paket Anda.`,
+                    description: `Paket ${planName} maksimal ${limits.maxUsers} user karyawan. Silakan upgrade paket Anda.`,
                     variant: "destructive"
                   });
                   return;

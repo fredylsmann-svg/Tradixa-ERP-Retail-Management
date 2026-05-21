@@ -159,7 +159,7 @@ export default function Suppliers({ store }) {
     const limits = getEffectiveLimits(store);
     if (!editingSupplier && limits.maxSuppliers !== Infinity) {
       if (suppliers.length >= limits.maxSuppliers) {
-        sonnerToast.error(`Kuota supplier habis (${suppliers.length}/${limits.maxSuppliers}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
+        sonnerToast.error(`Kuota supplier habis (${suppliers.length}/${limits.maxSuppliers}). Silakan upgrade paket Anda untuk menambah kuota.`, { duration: 5000 });
         setIsSaving(false);
         return;
       }

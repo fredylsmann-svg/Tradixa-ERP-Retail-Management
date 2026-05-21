@@ -291,7 +291,7 @@ export default function Receivables({ store }) {
     const limits = getEffectiveLimits(store);
     if (limits.maxReceivables !== Infinity) {
       if (receivables.length >= limits.maxReceivables) {
-        sonnerToast.error(`Kuota Piutang habis (${receivables.length}/${limits.maxReceivables}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
+        sonnerToast.error(`Kuota Piutang habis (${receivables.length}/${limits.maxReceivables}). Silakan upgrade paket Anda untuk menambah kuota.`, { duration: 5000 });
         return;
       }
     }
@@ -376,15 +376,20 @@ export default function Receivables({ store }) {
           customer_name: viewingItem.customer_name,
           customer_email: customerData?.email || '',
           customer_phone: customerData?.phone || '',
-          description: `Tagihan Piutang Tradixa - ${viewingItem.invoice_number}`
+          description: `Tagihan Piutang Tradixa - ${viewingItem.invoice_number}`,
+          redirect_url: `${window.location.origin}/receivables`
         }
       });
       
       if (error) throw error;
       
       if (data && data.link) {
+        let finalLink = data.link;
+        if (finalLink.includes('ferdiarmond.myr.id')) {
+          finalLink = finalLink.replace('ferdiarmond.myr.id', 'paytradixasystems.myr.id');
+        }
         loadReceivables();
-        setViewingItem({ ...viewingItem, payment_link: data.link });
+        setViewingItem({ ...viewingItem, payment_link: finalLink });
         toast({ title: 'Sukses', description: 'Payment link berhasil dibuat!' });
       } else {
         toast({ title: 'Gagal', description: 'Gagal membuat link: ' + (data?.error || 'Unknown error'), variant: 'destructive' });
@@ -932,7 +937,7 @@ export default function Receivables({ store }) {
                            if (isOcrLocked) {
                              sonnerToast.error(
                                <div className="flex flex-col gap-1">
-                                 <span className="font-bold text-sm">{isTrial ? 'Fitur Trial Terbatas' : 'Upgrade ke Pro'}</span>
+                                 <span className="font-bold text-sm">{isTrial ? 'Fitur Trial Terbatas' : 'Upgrade Paket'}</span>
                                  <span className="text-xs">Smart AI OCR hanya tersedia untuk paket Pro berbayar. Upgrade untuk menggunakan fitur ini.</span>
                                </div>,
                                { duration: 5000 }

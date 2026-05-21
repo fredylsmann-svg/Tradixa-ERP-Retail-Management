@@ -119,6 +119,86 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
     }
   }, [open, storeId]);
 
+  useEffect(() => {
+    if (!completedTransaction || !paymentLink) return;
+
+    console.log(`[POS QRIS] Starting Supabase Realtime subscription for SalesTransaction ID: ${completedTransaction.id}`);
+
+    // Layer 1: Supabase Realtime Postgres Changes Subscription
+    const channel = supabase
+      .channel(`sales_transaction_qris_${completedTransaction.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'sales_transactions',
+          filter: `id=eq.${completedTransaction.id}`
+        },
+        (payload) => {
+          console.log('[POS QRIS] Realtime update payload:', payload);
+          const updatedRow = payload.new;
+          if (updatedRow && updatedRow.payment_status === 'Paid') {
+            console.log('[POS QRIS] Realtime detected payment status changed to Paid!');
+            toast({
+              title: "Pembayaran Sukses!",
+              description: `Pembayaran QRIS untuk Invoice ${updatedRow.invoice_number} berhasil diterima.`
+            });
+            // Update the completed transaction row to match
+            setCompletedTransaction(updatedRow);
+            // Clear paymentLink and qrisImage to transition UI to Success State
+            setPaymentLink('');
+            setQrisImage('');
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log(`[POS QRIS] Supabase Realtime Status: ${status}`);
+      });
+
+    // Layer 2: Polling fallback as a secondary bulletproof check (every 5 seconds)
+    console.log(`[POS QRIS] Starting polling fallback (every 5s) for SalesTransaction ID: ${completedTransaction.id}`);
+    const pollInterval = setInterval(async () => {
+      try {
+        console.log(`[POS QRIS] Polling database for transaction ${completedTransaction.id}...`);
+        const { data, error } = await supabase
+          .from('sales_transactions')
+          .select('*')
+          .eq('id', completedTransaction.id)
+          .limit(1);
+
+        if (error) {
+          console.error('[POS QRIS] Polling error:', error);
+          return;
+        }
+
+        const transaction = data && data.length > 0 ? data[0] : null;
+
+        if (transaction && transaction.payment_status === 'Paid') {
+          console.log('[POS QRIS] Polling detected payment status changed to Paid!');
+          toast({
+            title: "Pembayaran Sukses!",
+            description: `Pembayaran QRIS untuk Invoice ${transaction.invoice_number} berhasil diterima.`
+          });
+          // Update the completed transaction row to match
+          setCompletedTransaction(transaction);
+          // Clear paymentLink and qrisImage to transition UI to Success State
+          setPaymentLink('');
+          setQrisImage('');
+        }
+      } catch (err) {
+        console.error('[POS QRIS] Failed to poll status:', err);
+      }
+    }, 5000);
+
+    // Cleanup subscription & polling on unmount or when dependencies change
+    return () => {
+      console.log(`[POS QRIS] Cleaning up Realtime and Polling for SalesTransaction ID: ${completedTransaction.id}`);
+      supabase.removeChannel(channel);
+      clearInterval(pollInterval);
+    };
+  }, [completedTransaction, paymentLink]);
+
   const loadDeliveryCount = async () => {
     const { count } = await supabase
       .from('outbound_deliveries')
@@ -458,6 +538,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
 
   const handleSubmit = async (bypassEdcTrace = null) => {
     const cleanBypassTrace = typeof bypassEdcTrace === 'string' ? bypassEdcTrace : null;
+    let generatedPaymentGatewayId = '';
     if (cart.length === 0) return;
 
     if (paymentMethod === 'Piutang / Termin') {
@@ -565,7 +646,8 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
               customer_name: effectiveName,
               customer_email: effectiveEmail,
               customer_phone: effectivePhone,
-              description: `Pembayaran Penjualan ${invoiceNumber}`
+              description: `Pembayaran Penjualan ${invoiceNumber}`,
+              redirect_url: window.location.origin
             }
           });
 
@@ -579,6 +661,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
             generatedPaymentLink = data.link;
             setPaymentLink(data.link);
             proofUrl = data.link;
+            generatedPaymentGatewayId = data.id || '';
             // Set real QRIS image from Mayar if available
             if (data.qris_image) {
               console.log('[Tradixa] QRIS Image received:', data.qris_image);
@@ -669,6 +752,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
       paid_amount: paidAmount,
       bank_account_id: selectedBank || null,
       payment_proof_url: proofUrl,
+      payment_gateway_id: generatedPaymentGatewayId || '',
       sales_pic: salesPic,
       sale_location: saleLocation,
       sale_coordinates: capturedCoords,

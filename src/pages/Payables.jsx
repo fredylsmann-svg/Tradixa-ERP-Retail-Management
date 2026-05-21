@@ -275,7 +275,7 @@ export default function Payables({ store }) {
     const limits = getEffectiveLimits(store);
     if (limits.maxPayables !== Infinity) {
       if (payables.length >= limits.maxPayables) {
-        sonnerToast.error(`Kuota Hutang habis (${payables.length}/${limits.maxPayables}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
+        sonnerToast.error(`Kuota Hutang habis (${payables.length}/${limits.maxPayables}). Silakan upgrade paket Anda untuk menambah kuota.`, { duration: 5000 });
         return;
       }
     }
@@ -875,7 +875,7 @@ export default function Payables({ store }) {
                            if (isOcrLocked) {
                              sonnerToast.error(
                                <div className="flex flex-col gap-1">
-                                 <span className="font-bold text-sm">{isTrial ? 'Fitur Trial Terbatas' : 'Upgrade ke Pro'}</span>
+                                 <span className="font-bold text-sm">{isTrial ? 'Fitur Trial Terbatas' : 'Upgrade Paket'}</span>
                                  <span className="text-xs">Smart AI OCR hanya tersedia untuk paket Pro berbayar. Upgrade untuk menggunakan fitur ini.</span>
                                </div>,
                                { duration: 5000 }

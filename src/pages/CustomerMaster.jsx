@@ -90,7 +90,7 @@ export default function CustomerMaster({ store }) {
     const limits = getEffectiveLimits(store);
     if (!editingCustomer && limits.maxCustomers !== Infinity) {
       if (customers.length >= limits.maxCustomers) {
-        sonnerToast.error(`Kuota customer habis (${customers.length}/${limits.maxCustomers}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
+        sonnerToast.error(`Kuota customer habis (${customers.length}/${limits.maxCustomers}). Silakan upgrade paket Anda untuk menambah kuota.`, { duration: 5000 });
         setIsSaving(false);
         return;
       }

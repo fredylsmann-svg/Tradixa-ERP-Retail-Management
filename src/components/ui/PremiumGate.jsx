@@ -20,9 +20,11 @@ export default function PremiumGate({
   // Premium Paid Logic (Global switch)
   // has_used_trial: false means they have PAID and are no longer in trial.
   const isPaidPro = store?.plan === 'pro' && store?.has_used_trial === false;
+  const isPaidPremium = store?.plan === 'premium';
+  const isEnterprise = store?.plan === 'enterprise';
 
-  // If already paid, render as normal
-  if (isPaidPro) {
+  // If already on any paid plan, render as normal
+  if (isPaidPro || isPaidPremium || isEnterprise) {
     return <>{children}</>;
   }
 
@@ -33,7 +35,7 @@ export default function PremiumGate({
     toast({
       variant: "destructive",
       title: "Akses Premium Dibutuhkan",
-      description: `Maaf, ${featureName} hanya tersedia untuk member Pro. Silakan upgrade untuk membuka akses selamanya.`,
+      description: `Maaf, ${featureName} hanya tersedia untuk paket berbayar. Silakan upgrade untuk membuka akses.`,
       action: (
         <button 
           onClick={() => navigate('/PricingPage')}

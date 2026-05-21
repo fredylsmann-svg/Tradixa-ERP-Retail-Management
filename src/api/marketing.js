@@ -1,5 +1,6 @@
 import { getEmailTemplate } from '../utils/emailTemplates';
 import { supabase } from '../lib/supabase';
+import { getEffectiveLimits } from '../planConfig';
 
 export const marketingApi = {
   /**
@@ -82,11 +83,9 @@ export const marketingApi = {
     
     const plan = store.plan || 'free';
     const isTrial = plan === 'pro' && store.has_used_trial;
-    const isPaidPro = plan === 'pro' && !store.has_used_trial;
-    const isEnterprise = plan === 'enterprise';
 
     if (plan === 'free') {
-      return { allowed: false, message: 'Fitur email hanya tersedia di paket Pro. Silakan upgrade.' };
+      return { allowed: false, message: 'Fitur email hanya tersedia di paket berbayar (Pro / Premium). Silakan upgrade.' };
     }
 
     if (isTrial) {
@@ -96,23 +95,28 @@ export const marketingApi = {
       const totalSent = (allCampaigns?.reduce((sum, c) => sum + (c.sent_count || 0), 0) || 0) + (allLogs || 0);
       
       if (totalSent >= 5) {
-        return { allowed: false, message: 'Kuota Trial habis (5/5). Upgrade ke Pro untuk kuota lebih besar.' };
+        return { allowed: false, message: 'Kuota Trial habis (5/5). Upgrade paket untuk kuota lebih besar.' };
       }
       return { allowed: true, remaining: 5 - totalSent };
     }
 
-    if (isPaidPro) {
+    // Dynamic limit lookup from planConfig
+    const limits = getEffectiveLimits(store);
+    const limit = limits.emailCreditsPerMonth || 0;
+
+    if (limit === Infinity) {
+      return { allowed: true, remaining: Infinity };
+    }
+
+    if (limit > 0) {
       const usage = await this.getMonthlyEmailUsage(store.id);
-      const limit = 250;
       if (usage >= limit) {
         return { allowed: false, message: `Kuota bulan ini habis (${usage}/${limit}). Akan direset awal bulan depan.` };
       }
       return { allowed: true, remaining: limit - usage };
     }
 
-    if (isEnterprise) return { allowed: true, remaining: Infinity };
-
-    return { allowed: false, message: 'Plan tidak valid' };
+    return { allowed: false, message: 'Plan tidak valid atau tidak memiliki kuota email' };
   }
 };
 

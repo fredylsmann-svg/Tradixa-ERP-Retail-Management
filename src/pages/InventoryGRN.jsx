@@ -369,7 +369,7 @@ export default function InventoryGRN({ store }) {
     if (limits.maxInventoryGRN !== Infinity && history.length >= limits.maxInventoryGRN) {
       toast({
         title: "Batas Inventory GRN Tercapai",
-        description: `Batas Inventory GRN tercapai (${limits.maxInventoryGRN} data). Upgrade ke Pro Plan untuk akses tanpa batas.`,
+        description: `Batas Inventory GRN tercapai (${limits.maxInventoryGRN} data). Silakan upgrade paket Anda untuk akses tanpa batas.`,
         variant: "destructive"
       });
       return;

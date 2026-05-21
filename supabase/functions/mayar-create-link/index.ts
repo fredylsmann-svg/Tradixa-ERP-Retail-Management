@@ -13,7 +13,7 @@ serve(async (req: any) => {
   }
 
   try {
-    const { store_id, receivable_id, amount, customer_name, customer_email, customer_phone, description } = await req.json()
+    const { store_id, receivable_id, amount, customer_name, customer_email, customer_phone, description, redirect_url } = await req.json()
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -88,7 +88,7 @@ serve(async (req: any) => {
         mobile: formattedPhone,
         amount: Math.round(Number(amount)),
         description: description || `Pembayaran Invoice ${receivable_id}`,
-        redirectUrl: 'https://tradixa.vercel.app/',
+        redirectUrl: redirect_url || 'https://retail.tradixasystems.com/',
       })
     })
 

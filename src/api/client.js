@@ -67,7 +67,9 @@ async function logActivity({ store_id, entity_name, entity_id, action_type, desc
     });
     
     if (error) {
-      console.error('[Tradixa] Audit log insert error:', error.message, error.details);
+      if (!error.message?.includes('violates row-level security')) {
+        console.error('[Tradixa] Audit log insert error:', error.message, error.details);
+      }
     }
   } catch (err) {
     console.error('[Tradixa] Failed to log activity:', err);

@@ -120,13 +120,13 @@ export default function BankReconciliation({ store }) {
     }
 
     const isTrial = store?.plan === 'pro' && store?.has_used_trial;
-    const isPremium = ((store?.plan === 'pro' && !store?.has_used_trial) || store?.plan === 'enterprise') || user?.email === 'dev@tradixa.com';
+    const isPremium = ((store?.plan === 'pro' && !store?.has_used_trial) || store?.plan === 'premium' || store?.plan === 'enterprise') || user?.email === 'dev@tradixa.com';
     const checkOcrPermission = () => {
       if (!isPremium) {
         toast.error(
           <div className="flex flex-col gap-1">
-            <span className="font-bold text-sm">{isTrial ? 'Fitur Trial Terbatas' : 'Upgrade ke Pro/Enterprise'}</span>
-            <span className="text-xs">{isTrial ? 'Smart AI OCR tidak tersedia di masa trial. Hanya PDF Digital Parsing yang didukung. Upgrade ke Pro untuk menggunakan Smart AI OCR.' : 'Fitur Smart AI OCR (Otomatis baca mutasi dari gambar/PDF) memerlukan paket langganan premium.'}</span>
+            <span className="font-bold text-sm">{isTrial ? 'Fitur Trial Terbatas' : 'Upgrade Paket'}</span>
+            <span className="text-xs">{isTrial ? 'Smart AI OCR tidak tersedia di masa trial. Hanya PDF Digital Parsing yang didukung. Upgrade paket untuk menggunakan Smart AI OCR.' : 'Fitur Smart AI OCR (Otomatis baca mutasi dari gambar/PDF) memerlukan paket langganan premium.'}</span>
           </div>,
           { duration: 5000 }
         );

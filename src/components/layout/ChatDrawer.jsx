@@ -12,8 +12,9 @@ import { useSettings } from '@/contexts/SettingsContext';
 
 export default function ChatDrawer({ isOpen, onOpenChange, store }) {
   const navigate = useNavigate();
-  const isPaidPro = store?.plan === 'pro' && store?.has_used_trial === false;
-  const isChatLocked = !isPaidPro && store?.plan !== 'enterprise';
+  const isPaidPremium = store?.plan === 'premium';
+  const isEnterprise = store?.plan === 'enterprise';
+  const isChatLocked = !isPaidPremium && !isEnterprise;
   const [contacts, setContacts] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedContact, setSelectedContact] = useState(null);
@@ -301,13 +302,13 @@ export default function ChatDrawer({ isOpen, onOpenChange, store }) {
             </div>
             <h3 className="text-lg font-black text-slate-900 mb-2">Fitur Chat Internal</h3>
             <p className="text-sm text-slate-500 mb-6 max-w-xs">
-              Chat Internal hanya tersedia untuk paket <span className="font-bold text-blue-600">Pro</span>. Upgrade untuk berkomunikasi dengan tim Anda secara real-time.
+              Chat Internal hanya tersedia untuk paket <span className="font-bold text-indigo-600">Premium</span>. Upgrade untuk berkomunikasi dengan tim Anda secara real-time.
             </p>
             <button
               onClick={() => { onOpenChange(false); navigate('/PricingPage'); }}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-all hover:scale-[1.02]"
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-all hover:scale-[1.02]"
             >
-              <Sparkles className="w-4 h-4" /> Upgrade ke Pro
+              <Sparkles className="w-4 h-4" /> Upgrade ke Premium
             </button>
           </div>
         ) : !selectedContact ? (

@@ -47,7 +47,7 @@ export default function StockOut({ store }) {
   const handleOpenForm = () => {
     const limits = getEffectiveLimits(store);
     if (limits.maxStockOut !== Infinity && allMovements.length >= limits.maxStockOut) {
-      sonnerToast.error(`Kuota Stock Out habis (${allMovements.length}/${limits.maxStockOut}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
+      sonnerToast.error(`Kuota Stock Out habis (${allMovements.length}/${limits.maxStockOut}). Silakan upgrade paket Anda untuk menambah kuota.`, { duration: 5000 });
       return;
     }
     setShowForm(true);

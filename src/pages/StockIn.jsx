@@ -30,7 +30,7 @@ export default function StockIn({ store }) {
   const handleOpenForm = () => {
     const limits = getEffectiveLimits(store);
     if (limits.maxStockIn !== Infinity && allMovements.length >= limits.maxStockIn) {
-      sonnerToast.error(`Kuota Stock In habis (${allMovements.length}/${limits.maxStockIn}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
+      sonnerToast.error(`Kuota Stock In habis (${allMovements.length}/${limits.maxStockIn}). Silakan upgrade paket Anda untuk menambah kuota.`, { duration: 5000 });
       return;
     }
     setShowForm(true);

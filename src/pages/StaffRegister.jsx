@@ -114,7 +114,18 @@ export default function StaffRegister() {
         password: formData.password,
         options: { data: { full_name: formData.name } }
       });
-      if (authError) throw authError;
+      if (authError) {
+        if (authError.message?.toLowerCase().includes('already registered') || authError.status === 422) {
+          toast({
+            title: "Email Sudah Terdaftar",
+            description: "Email ini sudah pernah terdaftar di sistem. Akses staf Anda telah diperbarui, silakan login dengan password lama Anda.",
+          });
+          navigate('/login?registered=true');
+          setIsLoading(false);
+          return;
+        }
+        throw authError;
+      }
 
       // 4. Sign out to prevent auto-login (staff should login explicitly)
       await supabase.auth.signOut();

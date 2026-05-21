@@ -78,10 +78,10 @@ export const PLAN_TIERS = {
     color: 'blue',
     badge: 'bg-blue-100 text-blue-700',
     gradient: 'from-blue-500 to-blue-600',
-    description: 'Untuk bisnis yang berkembang dengan kebutuhan kontrol penuh',
+    description: 'Untuk bisnis retail mandiri dengan kebutuhan kontrol penuh',
     modules: ['*'],
     limits: {
-      maxProducts: 10000,
+      maxProducts: 1000,
       maxCustomers: Infinity,
       maxSuppliers: Infinity,
       maxPayables: Infinity,
@@ -92,12 +92,12 @@ export const PLAN_TIERS = {
       maxStockIn: Infinity,
       maxStockOut: Infinity,
       maxReconciliationUploads: Infinity,
-      maxUsers: 10,
+      maxUsers: 3,
       maxPhotosPerProduct: 1,
       maxPhotoSizeMB: 2,
-      maxProductPhotos: 2000,
+      maxProductPhotos: 500,
       emailCredits: Infinity,
-      emailCreditsPerMonth: 250,
+      emailCreditsPerMonth: 50,
       maxPR: Infinity,
       maxPO: Infinity,
       maxGRN: Infinity,
@@ -135,17 +135,75 @@ export const PLAN_TIERS = {
     features: [
       'Semua fitur Free Plan',
       'Akses Seluruh Modul Sistem',
-      'Product Master (max 10.000 produk)',
+      'Product Master (max 1.000 produk)',
+      'Upload Foto Produk (max 500 foto)',
       'Procurement Lengkap (PO, GRN, Supplier)',
       'Keuangan (Bank, Payables, Receivables)',
       'Financial Agent (BRILink) — 7 modul',
       'Design Studio & Audit Log',
-      'Customer Segmentation & Marketing',
-      'HRIS & User Management (max 10 user)',
+      'Analisa Segmen (RFM) & Marketing',
+      'HRIS & User Management (max 3 user)',
       'Export Data (CSV, PDF, Print)',
       'Workflow System',
-      'Email & Notifikasi (250/bulan)',
+      'Payment Gateway (QRIS Dinamis)',
+      'Email & Notifikasi (50/bulan)',
       '1x Sesi Bimbingan & Konsultasi Sistem Untuk Tim Anda',
+    ],
+    notIncluded: ['AI Assistant', 'Chat Internal Toko', 'Integrasi EDC Lokal']
+  },
+
+  premium: {
+    id: 'premium',
+    name: 'Premium',
+    label: 'Premium',
+    price: 349000,
+    yearlyPrice: 3490000,
+    priceLabel: 'Rp 349.000',
+    yearlyPriceLabel: 'Rp 3.490.000',
+    savingsLabel: 'Hemat Rp 698.000',
+    color: 'indigo',
+    badge: 'bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-sm',
+    gradient: 'from-indigo-500 to-indigo-600',
+    description: 'Bisnis retail berkembang / multi-kasir dengan kebutuhan lengkap',
+    modules: ['*'],
+    limits: {
+      maxProducts: 10000,
+      maxCustomers: Infinity,
+      maxSuppliers: Infinity,
+      maxPayables: Infinity,
+      maxReceivables: Infinity,
+      maxPayments: Infinity,
+      maxExpenses: Infinity,
+      maxEmployees: Infinity,
+      maxStockIn: Infinity,
+      maxStockOut: Infinity,
+      maxReconciliationUploads: Infinity,
+      maxUsers: 10,
+      maxPhotosPerProduct: 1,
+      maxPhotoSizeMB: 2,
+      maxProductPhotos: 5000,
+      emailCredits: Infinity,
+      emailCreditsPerMonth: 300,
+      maxPR: Infinity,
+      maxPO: Infinity,
+      maxGRN: Infinity,
+      maxInventoryGRN: Infinity,
+      maxSupplierReturn: Infinity,
+      maxSalesPerMonth: Infinity,
+      maxOutboundDeliveries: Infinity,
+      exportEnabled: true,
+      userManagement: true,
+    },
+    features: [
+      'Semua fitur Pro Plan',
+      'Product Master (max 10.000 produk)',
+      'Kapasitas Foto Produk (max 5.000 foto)',
+      'HRIS & User Management (max 10 user)',
+      'Integrasi EDC Lokal (Debit / Kredit)',
+      'Email & Notifikasi (300/bulan)',
+      'AI Assistant (Batas Fair-Use)',
+      'Chat Internal Toko (Komunikasi Tim)',
+      '2x Sesi Bimbingan & Konsultasi Sistem Untuk Tim Anda',
     ],
     notIncluded: []
   },
@@ -191,7 +249,7 @@ export const PLAN_TIERS = {
       userManagement: true,
     },
     features: [
-      'Semua fitur Pro Plan',
+      'Semua fitur Premium Plan',
       'Unlimited Produk & User',
       'Warehouse Management System (WMS)',
       'Financial Agent (BRILink) — 7 modul',
@@ -228,7 +286,7 @@ export function isModuleAccessible(planId, pageName, userEmail = null) {
  * Get the minimum plan required for a module
  */
 export function getRequiredPlan(pageName) {
-  for (const tier of ['free', 'pro', 'enterprise']) {
+  for (const tier of ['free', 'pro', 'premium', 'enterprise']) {
     const plan = PLAN_TIERS[tier];
     if (plan.modules[0] === '*' || plan.modules.includes(pageName)) {
       return tier;
@@ -247,7 +305,8 @@ export function getPlanLimits(planId) {
 /**
  * Get effective limits based on store's current state (trial vs paid)
  * - Pro Trial: uses trialLimits (100 produk, 100 customer, 5 email, 5 PO, dll)
- * - Pro Paid: uses full pro limits (10.000 produk, 250 email/bulan, unlimited procurement)
+ * - Pro Paid: uses full pro limits (1.000 produk, 50 email/bulan, unlimited procurement)
+ * - Premium: uses premium limits (10.000 produk, 300 email/bulan)
  * - Free: uses free limits
  */
 export function getEffectiveLimits(store) {

@@ -141,16 +141,18 @@ serve(async (req: any) => {
       }
     }
 
-    // ─── 2. INVOICE / RECEIVABLE LOGIC (existing, unchanged) ───
+    // ─── 2. INVOICE / RECEIVABLE LOGIC ───
     if (eventName === 'payment.received') {
       const paymentId = productId
 
       // Find the receivable by payment_gateway_id
-      const { data: receivable, error: recError } = await supabase
+      const { data: receivablesList } = await supabase
         .from('receivables')
         .select('*')
         .eq('payment_gateway_id', paymentId)
-        .single()
+        .limit(1)
+      
+      const receivable = receivablesList && receivablesList.length > 0 ? receivablesList[0] : null
 
       if (receivable) {
         // Update Receivable to Paid
@@ -164,12 +166,13 @@ serve(async (req: any) => {
           .eq('id', receivable.id)
 
         // Find standard Bank/Kas Account to record it
-        const { data: bank } = await supabase
+        const { data: bankList } = await supabase
           .from('bank_accounts')
           .select('*')
           .eq('store_id', receivable.store_id)
           .limit(1)
-          .single()
+        
+        const bank = bankList && bankList.length > 0 ? bankList[0] : null
 
         // Create Bank Transaction
         const newBalance = (bank?.balance || 0) + Number(amount)
@@ -196,55 +199,82 @@ serve(async (req: any) => {
         }
       } else {
         // Fallback: Check if it's a direct Sales Transaction
-        const invoiceMatch = payload.data?.productDescription?.match(/INV-\d+/);
-        const invoiceNumber = invoiceMatch ? invoiceMatch[0] : null;
+        const { data: salesG } = await supabase
+          .from('sales_transactions')
+          .select('*')
+          .eq('payment_gateway_id', paymentId)
+          .limit(1)
 
-        if (invoiceNumber) {
-          const { data: salesTx } = await supabase
+        let salesTx = salesG && salesG.length > 0 ? salesG[0] : null;
+
+        // Fallback 2: Check by parsing invoice number from descriptions
+        if (!salesTx) {
+          const descText = String(payload.data?.productDescription || payload.data?.description || '');
+          const invoiceMatch = descText.match(/INV-\d+/);
+          const invoiceNumber = invoiceMatch ? invoiceMatch[0] : null;
+
+          if (invoiceNumber) {
+            const { data: salesInv } = await supabase
+              .from('sales_transactions')
+              .select('*')
+              .eq('invoice_number', invoiceNumber)
+              .limit(1)
+            salesTx = salesInv && salesInv.length > 0 ? salesInv[0] : null;
+          }
+        }
+
+        // Fallback 3: Check by pending QRIS transaction with exact matching amount
+        if (!salesTx) {
+          const { data: salesByAmount } = await supabase
             .from('sales_transactions')
             .select('*')
-            .eq('invoice_number', invoiceNumber)
-            .single()
+            .eq('payment_status', 'Pending')
+            .eq('payment_method', 'QRIS')
+            .eq('total', amount)
+            .order('created_at', { ascending: false })
+            .limit(1)
+          salesTx = salesByAmount && salesByAmount.length > 0 ? salesByAmount[0] : null;
+        }
 
-          if (salesTx) {
+        if (salesTx) {
+          await supabase
+            .from('sales_transactions')
+            .update({
+              payment_status: 'Paid',
+              paid_amount: salesTx.total
+            })
+            .eq('id', salesTx.id)
+
+          // Find bank and create bank transaction
+          const { data: bankList } = await supabase
+            .from('bank_accounts')
+            .select('*')
+            .eq('store_id', salesTx.store_id)
+            .limit(1)
+
+          const bank = bankList && bankList.length > 0 ? bankList[0] : null
+
+          if (bank) {
+            const newBalance = (bank?.balance || 0) + Number(amount)
             await supabase
-              .from('sales_transactions')
-              .update({
-                payment_status: 'Paid',
-                paid_amount: salesTx.total
-              })
-              .eq('id', salesTx.id)
-
-            // Find bank and create bank transaction
-            const { data: bank } = await supabase
               .from('bank_accounts')
-              .select('*')
-              .eq('store_id', salesTx.store_id)
-              .limit(1)
-              .single()
+              .update({ balance: newBalance })
+              .eq('id', bank.id)
 
-            if (bank) {
-              const newBalance = (bank?.balance || 0) + Number(amount)
-              await supabase
-                .from('bank_accounts')
-                .update({ balance: newBalance })
-                .eq('id', bank.id)
-
-              await supabase
-                .from('bank_transactions')
-                .insert({
-                  store_id: salesTx.store_id,
-                  bank_account_id: bank.id,
-                  bank_name: bank.bank_name,
-                  transaction_type: 'Credit',
-                  amount: Number(amount),
-                  description: `Pembayaran Penjualan QRIS/VA (Mayar) - ${salesTx.invoice_number}`,
-                  reference: paymentId,
-                  balance_after: newBalance,
-                  status: 'Approved',
-                  payment_proof_url: salesTx.payment_proof_url || 'Mayar Auto-Verified'
-                })
-            }
+            await supabase
+              .from('bank_transactions')
+              .insert({
+                store_id: salesTx.store_id,
+                bank_account_id: bank.id,
+                bank_name: bank.bank_name,
+                transaction_type: 'Credit',
+                amount: Number(amount),
+                description: `Pembayaran Penjualan QRIS/VA (Mayar) - ${salesTx.invoice_number}`,
+                reference: paymentId,
+                balance_after: newBalance,
+                status: 'Approved',
+                payment_proof_url: salesTx.payment_proof_url || 'Mayar Auto-Verified'
+              })
           }
         }
       }

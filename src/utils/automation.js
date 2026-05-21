@@ -1,6 +1,7 @@
 import { api } from '@/api/client';
 import { supabase } from '@/lib/supabase';
 import { getEmailTemplate } from '@/utils/emailTemplates';
+import { getEffectiveLimits } from '@/planConfig';
 
 /**
  * TRADIXA - Automation Engine (Simulation)
@@ -22,13 +23,15 @@ export async function executeAutomation(storeId, trigger, contextData = {}) {
     const storePhone = store?.phone || '';
     const ownerName = store?.owner_name || 'Admin';
 
-    // --- EMAIL LIMIT CHECK (hitung langsung dari data campaign) ---
+    // --- EMAIL LIMIT CHECK ---
     const storePlan = store?.plan || 'free';
     const isTrial = storePlan === 'pro' && store?.has_used_trial;
-    const isPaidPro = storePlan === 'pro' && !store?.has_used_trial;
 
-    if (storePlan === 'free') {
-      console.log(`[Tradixa Automation] Free plan — email automation disabled.`);
+    const limits = getEffectiveLimits(store);
+    const limit = limits.emailCreditsPerMonth || 0;
+
+    if (limit === 0) {
+      console.log(`[Tradixa Automation] Plan has 0 email limits — email automation disabled.`);
       return;
     }
 
@@ -41,7 +44,7 @@ export async function executeAutomation(storeId, trigger, contextData = {}) {
       return;
     }
 
-    if (isPaidPro) {
+    if (limit !== Infinity) {
       const now = new Date();
       const thisMonthEmails = allCampaigns
         .filter(c => {
@@ -50,8 +53,20 @@ export async function executeAutomation(storeId, trigger, contextData = {}) {
           return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
         })
         .reduce((sum, c) => sum + (c.sent_count || 0), 0);
-      if (thisMonthEmails >= 250) {
-        console.log(`[Tradixa Automation] Monthly email limit reached (${thisMonthEmails}/250). Skipping automation.`);
+
+      // Hitung juga logs di bulan ini
+      const { count: thisMonthLogs } = await supabase
+        .from('communication_logs')
+        .select('id', { count: 'exact', head: true })
+        .eq('store_id', storeId)
+        .eq('type', 'Email')
+        .or('campaign_id.is.null,campaign_id.eq.')
+        .gte('created_date', `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
+
+      const totalMonthlyUsage = thisMonthEmails + (thisMonthLogs || 0);
+
+      if (totalMonthlyUsage >= limit) {
+        console.log(`[Tradixa Automation] Monthly email limit reached (${totalMonthlyUsage}/${limit}). Skipping automation.`);
         return;
       }
     }

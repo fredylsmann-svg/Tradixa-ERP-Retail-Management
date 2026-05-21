@@ -276,7 +276,7 @@ export default function GoodsReceipt({ store }) {
     if (limits.maxGRN !== Infinity && receipts.length >= limits.maxGRN) {
       toast({
         title: "Batas GRN Tercapai",
-        description: `Batas GRN tercapai (${limits.maxGRN} data). Upgrade ke Pro Plan untuk membuat GRN tanpa batas.`,
+        description: `Batas GRN tercapai (${limits.maxGRN} data). Silakan upgrade paket Anda untuk membuat GRN tanpa batas.`,
         variant: "destructive"
       });
       return;

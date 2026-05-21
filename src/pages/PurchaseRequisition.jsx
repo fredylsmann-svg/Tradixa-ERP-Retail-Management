@@ -167,7 +167,7 @@ export default function PurchaseRequisition({ store }) {
     // --- PROCUREMENT LIMIT CHECK ---
     const limits = getEffectiveLimits(store);
     if (limits.maxPR !== Infinity && prs.length >= limits.maxPR) {
-      sonnerToast.error(`Batas PR tercapai (${limits.maxPR} PR). Upgrade ke Pro Plan untuk membuat PR tanpa batas.`, { duration: 5000 });
+      sonnerToast.error(`Batas PR tercapai (${limits.maxPR} PR). Silakan upgrade paket Anda untuk membuat PR tanpa batas.`, { duration: 5000 });
       return;
     }
     // --------------------------------
@@ -225,7 +225,7 @@ export default function PurchaseRequisition({ store }) {
     // --- PROCUREMENT LIMIT CHECK ---
     const limits = getEffectiveLimits(store);
     if (limits.maxPR !== Infinity && prs.length >= limits.maxPR) {
-      sonnerToast.error(`Batas PR tercapai (${limits.maxPR} PR). Upgrade ke Pro Plan untuk membuat PR tanpa batas.`, { duration: 5000 });
+      sonnerToast.error(`Batas PR tercapai (${limits.maxPR} PR). Silakan upgrade paket Anda untuk membuat PR tanpa batas.`, { duration: 5000 });
       return;
     }
     // --------------------------------

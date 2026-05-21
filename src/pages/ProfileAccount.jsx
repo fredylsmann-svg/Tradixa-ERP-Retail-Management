@@ -729,7 +729,7 @@ export default function ProfileAccount({ store }) {
           <DialogDescription className="sr-only">Pilih antara penagihan tahunan atau bulanan</DialogDescription>
           <div className="bg-slate-50">
             <div className="p-6 text-center space-y-2 border-b border-slate-200 bg-white pt-8">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Upgrade ke Pro Plan</h2>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Silakan upgrade paket Anda</h2>
               <p className="text-sm text-slate-500 max-w-sm mx-auto">
                 Pilih siklus penagihan untuk Pro Plan. Akses semua fitur tanpa batas.
               </p>

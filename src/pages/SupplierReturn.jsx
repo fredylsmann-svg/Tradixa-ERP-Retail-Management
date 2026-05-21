@@ -162,7 +162,7 @@ export default function SupplierReturn({ store }) {
     if (limits.maxSupplierReturn !== Infinity && returns.length >= limits.maxSupplierReturn) {
       toast({
         title: "Batas Retur Tercapai",
-        description: `Batas Retur Supplier tercapai (${limits.maxSupplierReturn} data). Upgrade ke Pro Plan untuk akses tanpa batas.`,
+        description: `Batas Retur Supplier tercapai (${limits.maxSupplierReturn} data). Silakan upgrade paket Anda untuk akses tanpa batas.`,
         variant: "destructive"
       });
       return;

@@ -44,7 +44,8 @@ import { supabase } from '@/lib/supabase';
 
 function UsageCard({ icon: Icon, title, current, limit, color = 'blue', description }) {
   const isUnlimited = limit === Infinity || limit === 'Unlimited';
-  const percent = isUnlimited ? 0 : limit > 0 ? Math.min(100, (current / limit) * 100) : 0;
+  const rawPercent = isUnlimited ? 0 : limit > 0 ? Math.min(100, (current / limit) * 100) : 0;
+  const percent = current > 0 && rawPercent < 1 ? 1 : Math.round(rawPercent);
   const isReached = !isUnlimited && limit > 0 && current >= limit;
   const isLocked = limit === 0;
 
@@ -214,7 +215,7 @@ export default function UsageStats({ store }) {
         // Monthly email — hitung dari campaign yang dibuat bulan ini + transactional bulan ini
         const now = new Date();
         const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-        
+
         let monthlyEmail = 0;
         if (campaignRes.data) {
           const { data: thisMonthCampaigns } = await supabase
@@ -236,7 +237,7 @@ export default function UsageStats({ store }) {
           .eq('type', 'Email')
           .or('campaign_id.is.null,campaign_id.eq.')
           .gte('created_date', startOfMonth);
-        
+
         monthlyEmail += (thisMonthLogs || 0);
 
         // Hitung foto produk (products with image_url yang benar-benar ada)
@@ -284,9 +285,10 @@ export default function UsageStats({ store }) {
   }, [store?.id]);
 
   // Determine email display
+  const isPaidPremium = store?.plan === 'premium';
   const emailCurrent = isTrial ? stats.emailSent : stats.monthlyEmail;
-  const emailLimit = isTrial ? 5 : isPaidPro ? 250 : 0;
-  const emailDesc = isTrial ? 'Total selama trial' : isPaidPro ? 'Reset setiap bulan' : 'Upgrade untuk menggunakan';
+  const emailLimit = isTrial ? 5 : isPaidPremium ? 300 : isPaidPro ? 50 : 0;
+  const emailDesc = isTrial ? 'Total selama trial' : (isPaidPro || isPaidPremium) ? 'Reset setiap bulan' : 'Upgrade untuk menggunakan';
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">

@@ -153,7 +153,7 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
     const limits = getEffectiveLimits(store);
     if (!product?.id && limits.maxProducts !== Infinity) {
       if (existingProducts.length >= limits.maxProducts) {
-        sonnerToast.error(`Kuota produk habis (${existingProducts.length}/${limits.maxProducts}). Upgrade ke Pro Plan untuk menambah produk.`, { duration: 5000 });
+        sonnerToast.error(`Kuota produk habis (${existingProducts.length}/${limits.maxProducts}). Silakan upgrade paket Anda untuk menambah produk.`, { duration: 5000 });
         setIsLoading(false);
         return;
       }
@@ -163,7 +163,8 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
     let imageUrl = product?.image_url || '';
     if (imageFile) {
       // --- PHOTO LIMIT CHECK ---
-      if (limits.maxProductPhotos !== Infinity) {
+      const isNewPhoto = !product?.image_url;
+      if (isNewPhoto && limits.maxProductPhotos !== Infinity) {
         const { count: photoCount } = await supabase
           .from('products')
           .select('id', { count: 'exact', head: true })
@@ -171,7 +172,7 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
           .not('image_url', 'is', null)
           .neq('image_url', '');
         if ((photoCount || 0) >= limits.maxProductPhotos) {
-          sonnerToast.error(`Kuota foto produk habis (${photoCount}/${limits.maxProductPhotos}). Upgrade ke Pro Plan untuk menambah kuota.`, { duration: 5000 });
+          sonnerToast.error(`Kuota foto produk habis (${photoCount}/${limits.maxProductPhotos}). Silakan upgrade paket Anda untuk menambah kuota.`, { duration: 5000 });
           setIsLoading(false);
           return;
         }
@@ -357,10 +358,12 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
                 value={formData.tracking_type} 
                 onValueChange={(v) => {
                   if (v !== 'None') {
-                    const limits = getEffectiveLimits(store);
-                    // Check if maxProducts is limited (which means they are on Free/Trial)
-                    if (limits.maxProducts !== Infinity) {
-                      sonnerToast.error('Fitur Pelacakan Batch & Serial terkunci. Upgrade ke Pro Plan untuk menggunakan.', { duration: 5000 });
+                    const isPaidPro = store?.plan === 'pro' && store?.has_used_trial === false;
+                    const isPaidPremium = store?.plan === 'premium';
+                    const isEnterprise = store?.plan === 'enterprise';
+                    
+                    if (!(isPaidPro || isPaidPremium || isEnterprise)) {
+                      sonnerToast.error('Fitur Pelacakan Batch & Serial terkunci. Silakan upgrade paket Anda untuk menggunakan.', { duration: 5000 });
                       return; // Do not update state
                     }
                   }

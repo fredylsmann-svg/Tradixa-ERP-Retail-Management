@@ -18,8 +18,8 @@ export default function TradixaAssistant({ store }) {
     return parts.map((part, index) => {
       if (index % 2 === 1) {
         return (
-          <strong 
-            key={index} 
+          <strong
+            key={index}
             className={`font-black tracking-wide ${isUser ? 'text-blue-100 font-extrabold' : 'text-blue-700 font-bold'}`}
           >
             {part}
@@ -29,7 +29,7 @@ export default function TradixaAssistant({ store }) {
       return part;
     });
   };
-  
+
   const renderMessageContentWithActions = (msg, msgIdx) => {
     if (msg.role === 'user') {
       return (
@@ -64,17 +64,17 @@ export default function TradixaAssistant({ store }) {
 
     const handleExecuteAction = async () => {
       if (!actionData || actionStatus !== 'idle') return;
-      
+
       setExecutedActions(prev => ({ ...prev, [msgIdx]: 'loading' }));
       try {
         const entity = actionData.entity;
         const payload = actionData.payload;
-        
+
         // Calculate subtotal and tax amounts dynamically for PR
         if (entity === 'PurchaseRequisition') {
           const subtotal = payload.items?.reduce((sum, item) => sum + (Number(item.qty || 1) * Number(item.price || 0)), 0) || 0;
-          const tax_amount = payload.include_tax ? subtotal * 0.11 : 0; 
-          
+          const tax_amount = payload.include_tax ? subtotal * 0.11 : 0;
+
           payload.subtotal = subtotal;
           payload.tax_amount = tax_amount;
           payload.total_amount = subtotal + tax_amount;
@@ -87,7 +87,7 @@ export default function TradixaAssistant({ store }) {
         if (api.entities[entity]) {
           await api.entities[entity].create(payload, { via_ai: true });
           setExecutedActions(prev => ({ ...prev, [msgIdx]: 'success' }));
-          
+
           // Persist the executed status in localStorage so it remains executed when returning to chat
           if (currentConversation?.id) {
             const chatKey = `chat_${store?.id || 'default'}_${currentConversation.id}`;
@@ -98,7 +98,7 @@ export default function TradixaAssistant({ store }) {
               setMessages(storedMessages);
             }
           }
-          
+
           sonnerToast.success(`Aksi AI Berhasil: Data ${entity} berhasil dibuat di database!`, {
             description: `Tercatat di Audit Log: 'Created new ${entity} (via Tradixa AI Assistant)'.`,
             duration: 6000
@@ -122,7 +122,7 @@ export default function TradixaAssistant({ store }) {
             {renderMessageContent(mainText, false)}
           </div>
         )}
-        
+
         {actionData && (
           <div className="mt-3 p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 shadow-xl overflow-hidden relative">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
@@ -192,17 +192,16 @@ export default function TradixaAssistant({ store }) {
                   <Button
                     onClick={handleExecuteAction}
                     disabled={!isCrudActive || actionStatus === 'loading'}
-                    className={`flex-1 h-9 text-xs font-bold rounded-xl shadow-md transition-all ${
-                      isCrudActive 
-                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-[1.01]' 
+                    className={`flex-1 h-9 text-xs font-bold rounded-xl shadow-md transition-all ${isCrudActive
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white hover:scale-[1.01]'
                         : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                    }`}
+                      }`}
                   >
                     {actionStatus === 'loading' && (
                       <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
                     )}
-                    {isCrudActive 
-                      ? `Konfirmasi & Eksekusi (${isPrSubmitted ? 'Diajukan' : 'Draft'})` 
+                    {isCrudActive
+                      ? `Konfirmasi & Eksekusi (${isPrSubmitted ? 'Diajukan' : 'Draft'})`
                       : 'Aktifkan AI Actions'}
                   </Button>
                 </div>
@@ -213,11 +212,11 @@ export default function TradixaAssistant({ store }) {
       </div>
     );
   };
-  
-  // Premium gating logic
-  const isTrial = store?.plan === 'pro' && store?.has_used_trial;
-  const isFree = !store?.plan || store?.plan === 'free';
-  const isAiLocked = isTrial || isFree;
+
+  // Premium gating logic — only Premium (paid) and Enterprise can access
+  const isPremiumPaid = store?.plan === 'premium' && store?.has_used_trial === false;
+  const isEnterprise = store?.plan === 'enterprise';
+  const isAiLocked = !(isPremiumPaid || isEnterprise);
 
   const [conversations, setConversations] = useState([]);
   const [currentConversation, setCurrentConversation] = useState(null);
@@ -411,8 +410,8 @@ export default function TradixaAssistant({ store }) {
         <div className="p-4 text-center text-slate-500">
           <MessageCircle className="w-12 h-12 mx-auto mb-2 text-slate-300" />
           <p className="text-sm">Belum ada percakapan</p>
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             onClick={createNewConversation}
             className="mt-3 bg-blue-600 hover:bg-blue-700"
           >
@@ -425,16 +424,15 @@ export default function TradixaAssistant({ store }) {
             <button
               key={convo.id}
               onClick={() => loadConversation(convo.id)}
-              className={`w-full text-left p-3 rounded-lg transition-colors ${
-                currentConversation?.id === convo.id
+              className={`w-full text-left p-3 rounded-lg transition-colors ${currentConversation?.id === convo.id
                   ? 'bg-blue-50 border border-blue-200'
                   : 'hover:bg-slate-50'
-              }`}
+                }`}
             >
-              <p 
+              <p
                 className="font-medium text-sm text-slate-800"
-                style={{ 
-                  whiteSpace: 'normal', 
+                style={{
+                  whiteSpace: 'normal',
                   wordBreak: 'break-word',
                   overflowWrap: 'anywhere'
                 }}
@@ -479,7 +477,7 @@ export default function TradixaAssistant({ store }) {
             </div>
             <h3 className="text-xl font-black text-slate-900 mb-2">Tradixa AI Assistant</h3>
             <p className="text-sm text-slate-500 mb-8 max-w-sm mx-auto">
-              Fitur AI Assistant eksklusif untuk paket <span className="font-bold text-blue-600">Pro & Enterprise</span>. 
+              Fitur AI Assistant eksklusif untuk paket <span className="font-bold text-blue-600">Premium & Enterprise</span>.
               Upgrade sekarang untuk mendapatkan asisten pintar yang memahami seluruh bisnis Anda.
             </p>
             <Button
@@ -488,7 +486,7 @@ export default function TradixaAssistant({ store }) {
             >
               <Sparkles className="w-5 h-5" /> Upgrade ke Premium
             </Button>
-            <p className="text-[10px] text-slate-400 mt-6 uppercase tracking-widest font-bold">Premium Feature Only</p>
+            <p className="text-[10px] text-slate-400 mt-6 uppercase tracking-widest font-bold">Premium & Enterprise Only</p>
           </div>
         )}
 
@@ -523,7 +521,7 @@ export default function TradixaAssistant({ store }) {
               <CardTitle className="text-base lg:text-lg truncate">Tradixa Assistant</CardTitle>
               <p className="text-xs lg:text-sm text-slate-500 truncate">AI Assistant untuk sistem retail</p>
             </div>
-            
+
             {/* AI Actions (CRUD) Toggle and InfoTooltip */}
             <div className="flex items-center gap-2 border-l pl-3 ml-2 border-slate-200">
               <div className="flex flex-col items-end">
@@ -532,9 +530,9 @@ export default function TradixaAssistant({ store }) {
                   <span className={`text-[9px] lg:text-[10px] font-semibold px-1.5 py-0.5 rounded-full transition-colors ${isCrudActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
                     {isCrudActive ? 'Active' : 'Disabled'}
                   </span>
-                  
+
                   {/* Switch Toggle Button */}
-                  <button 
+                  <button
                     onClick={() => setIsCrudActive(!isCrudActive)}
                     className={`w-8 h-4 lg:w-9 lg:h-5 rounded-full p-0.5 transition-colors focus:outline-none relative flex items-center ${isCrudActive ? 'bg-emerald-500' : 'bg-slate-300'}`}
                   >
@@ -548,8 +546,8 @@ export default function TradixaAssistant({ store }) {
                     <div className="absolute right-0 top-6 w-56 lg:w-64 p-3 bg-slate-900 text-white text-[11px] leading-relaxed rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 shadow-xl border border-slate-800">
                       <p className="font-bold text-emerald-400 mb-1 flex items-center gap-1">🤖 AI Actions (CRUD)</p>
                       <p className="text-slate-200">
-                        {isCrudActive 
-                          ? 'Aktif: AI diizinkan menyarankan & mengisi formulir transaksi secara otomatis (PO, Stock Opname, Promosi, dll).' 
+                        {isCrudActive
+                          ? 'Aktif: AI diizinkan menyarankan & mengisi formulir transaksi secara otomatis (PO, Stock Opname, Promosi, dll).'
                           : 'Nonaktif: AI hanya berjalan dalam mode diskusi/tanya jawab biasa (Tidak bisa memicu aksi CRUD).'}
                       </p>
                       <div className="absolute right-1.5 -top-1 w-2.5 h-2.5 bg-slate-900 rotate-45 border-l border-t border-slate-800" />
@@ -597,17 +595,16 @@ export default function TradixaAssistant({ store }) {
                           </div>
                         )}
                         <div
-                          className={`max-w-[85%] lg:max-w-[75%] rounded-2xl px-3 py-2 lg:px-4 lg:py-2.5 shadow-sm ${
-                            msg.role === 'user'
+                          className={`max-w-[85%] lg:max-w-[75%] rounded-2xl px-3 py-2 lg:px-4 lg:py-2.5 shadow-sm ${msg.role === 'user'
                               ? 'bg-blue-600 text-white'
                               : 'bg-white border text-slate-800'
-                          }`}
+                            }`}
                         >
-                          <div 
+                          <div
                             className="text-xs lg:text-[13.5px] leading-relaxed"
-                            style={{ 
-                              wordWrap: 'break-word', 
-                              overflowWrap: 'break-word', 
+                            style={{
+                              wordWrap: 'break-word',
+                              overflowWrap: 'break-word',
                               wordBreak: 'break-word',
                               whiteSpace: 'pre-wrap'
                             }}

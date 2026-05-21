@@ -8,7 +8,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 export default function PrintInvoice({ invoice, store, onClose, forceThermal = false, type = 'INVOICE' }) {
   const [printLayout, setPrintLayout] = useState(forceThermal ? 'Thermal' : (store?.invoice_layout_style || 'Modern'));
 
-  const isPaidPro = store?.plan === 'pro' && store?.has_used_trial === false;
+  const isPaidPro = (store?.plan === 'pro' && store?.has_used_trial === false) || store?.plan === 'premium' || store?.plan === 'enterprise';
 
   const handlePrint = () => {
     window.print();

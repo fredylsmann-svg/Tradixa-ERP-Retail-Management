@@ -59,6 +59,11 @@ export default function CompanySettings({ store }) {
   const isTrial = store?.plan === 'pro' && store?.has_used_trial;
   const isFree = !store?.plan || store?.plan === 'free';
   const isApiLocked = isTrial || isFree;
+
+  // Premium-only feature lock (EDC, AI Assistant etc.) — only Premium (paid) and Enterprise can access
+  const isPremiumPaid = store?.plan === 'premium' && store?.has_used_trial === false;
+  const isEnterprise = store?.plan === 'enterprise';
+  const isPremiumLocked = !(isPremiumPaid || isEnterprise);
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(store?.logo_url || null);
 
@@ -179,7 +184,7 @@ export default function CompanySettings({ store }) {
 
     let logoUrl = store?.logo_url || '';
     if (logoFile) {
-      const _uploadRes = await api.storage.upload(logoFile );
+      const _uploadRes = await api.storage.upload(logoFile);
       const file_url = _uploadRes.url;
       logoUrl = file_url;
     }
@@ -394,16 +399,16 @@ export default function CompanySettings({ store }) {
                   <Lock className="w-8 h-8 text-slate-400" />
                 </div>
                 <div className="text-center space-y-2">
-                  <h4 className="text-lg font-black text-slate-800">Fitur Khusus Pro Plan</h4>
+                  <h4 className="text-lg font-black text-slate-800">Fitur Paket Berbayar</h4>
                   <p className="text-sm text-slate-500 max-w-sm">
-                    Integrasi Payment Gateway (QRIS, VA) hanya tersedia untuk paket Pro berbayar. Upgrade untuk mengaktifkan fitur ini.
+                    Integrasi Payment Gateway (QRIS, VA) tersedia untuk paket Pro & Premium berbayar. Upgrade untuk mengaktifkan fitur ini.
                   </p>
                 </div>
-                <Button 
+                <Button
                   onClick={() => window.location.href = '/PricingPage'}
                   className="h-11 px-8 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold hover:opacity-90 shadow-lg transition-all hover:scale-105"
                 >
-                  Upgrade ke Pro
+                  Upgrade Paket Anda
                 </Button>
               </div>
             )}
@@ -465,11 +470,10 @@ export default function CompanySettings({ store }) {
                 type="button"
                 variant="outline"
                 size="sm"
-                className={`h-9 px-4 text-xs font-bold transition-all ${
-                  testResult === 'success' ? 'border-emerald-300 text-emerald-700 bg-emerald-50' :
+                className={`h-9 px-4 text-xs font-bold transition-all ${testResult === 'success' ? 'border-emerald-300 text-emerald-700 bg-emerald-50' :
                   testResult === 'error' ? 'border-red-300 text-red-700 bg-red-50' :
-                  'border-blue-200 text-blue-700 hover:bg-blue-50'
-                }`}
+                    'border-blue-200 text-blue-700 hover:bg-blue-50'
+                  }`}
                 disabled={!formData.mayar_api_key || isTesting || isApiLocked}
                 onClick={async () => {
                   setIsTesting(true);
@@ -494,8 +498,8 @@ export default function CompanySettings({ store }) {
                 }}
               >
                 {isTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> :
-                 testResult === 'success' ? <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> :
-                 <Zap className="w-3.5 h-3.5 mr-1.5" />}
+                  testResult === 'success' ? <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> :
+                    <Zap className="w-3.5 h-3.5 mr-1.5" />}
                 {isTesting ? 'Menguji...' : testResult === 'success' ? 'Terhubung!' : 'Tes Koneksi API'}
               </Button>
               {testResult === 'success' && (
@@ -597,7 +601,27 @@ export default function CompanySettings({ store }) {
               Atur tipe integrasi EDC default untuk POS/Kasir & Transaksi Agen, serta unduh aplikasi bridge dan panduan Bluetooth.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6 pt-6">
+          <CardContent className="space-y-6 pt-6 relative">
+            {/* Lock Overlay for non-Premium users */}
+            {isPremiumLocked && (
+              <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-[2px] rounded-b-xl flex flex-col items-center justify-center gap-4 p-8">
+                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                  <Lock className="w-8 h-8 text-slate-400" />
+                </div>
+                <div className="text-center space-y-2">
+                  <h4 className="text-lg font-black text-slate-800">Fitur Khusus Premium Plan</h4>
+                  <p className="text-sm text-slate-500 max-w-sm">
+                    Integrasi Mesin EDC (Tradixa Link) hanya tersedia untuk paket Premium & Enterprise berbayar. Upgrade untuk mengaktifkan fitur ini.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => window.location.href = '/PricingPage'}
+                  className="h-11 px-8 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold hover:opacity-90 shadow-lg transition-all hover:scale-105"
+                >
+                  Upgrade ke Premium
+                </Button>
+              </div>
+            )}
             {/* Default Integration Setting */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
               <div>
@@ -687,7 +711,7 @@ export default function CompanySettings({ store }) {
                     <h4 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                       2. Panduan Koneksi Perangkat
                     </h4>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* USB Connection */}
                       <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3">
@@ -744,8 +768,8 @@ export default function CompanySettings({ store }) {
                 <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">Mode Negosiasi Harga</h4>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Tentukan bagaimana supplier melakukan penawaran harga di portal</p>
               </div>
-              <RadioGroup 
-                value={settings.negotiationMode || 'Item'} 
+              <RadioGroup
+                value={settings.negotiationMode || 'Item'}
                 onValueChange={(val) => updateSetting('negotiationMode', val)}
                 className="space-y-3"
               >
@@ -774,8 +798,8 @@ export default function CompanySettings({ store }) {
                 <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">Mode Persetujuan Gudang (GRN)</h4>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Tentukan hierarki tanda tangan untuk penerimaan barang</p>
               </div>
-              <RadioGroup 
-                value={settings.warehouseApprovalMode || 'Single'} 
+              <RadioGroup
+                value={settings.warehouseApprovalMode || 'Single'}
                 onValueChange={(val) => updateSetting('warehouseApprovalMode', val)}
                 className="space-y-3"
               >

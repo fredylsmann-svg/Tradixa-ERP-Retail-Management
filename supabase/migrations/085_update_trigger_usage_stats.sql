@@ -17,7 +17,6 @@ DECLARE
     campaign_id UUID;
     current_usage JSONB;
     current_email_count INTEGER;
-    email_limit INTEGER;
     is_trial BOOLEAN;
 BEGIN
     -- 1. Ambil data toko
@@ -39,12 +38,19 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    -- Pro paid: limit 250 per bulan (cek monthly_email_count)
-    IF COALESCE(store_record.plan, 'free') = 'pro' AND NOT is_trial THEN
+    -- Pro & Premium paid: limit 50 & 300 per bulan (cek monthly_email_count)
+    IF COALESCE(store_record.plan, 'free') IN ('pro', 'premium') AND NOT is_trial THEN
         DECLARE
             monthly_count INTEGER;
             reset_date TIMESTAMPTZ;
+            email_limit INTEGER;
         BEGIN
+            IF store_record.plan = 'premium' THEN
+                email_limit := 300;
+            ELSE
+                email_limit := 50;
+            END IF;
+
             monthly_count := COALESCE((current_usage->>'monthly_email_count')::integer, 0);
             IF current_usage->>'email_reset_date' IS NOT NULL THEN
                 reset_date := (current_usage->>'email_reset_date')::timestamptz;
@@ -54,8 +60,8 @@ BEGIN
                     monthly_count := 0;
                 END IF;
             END IF;
-            IF monthly_count >= 250 THEN
-                RAISE WARNING 'Email limit bulanan tercapai (250/bulan). Welcome email tidak dikirim.';
+            IF monthly_count >= email_limit THEN
+                RAISE WARNING 'Email limit bulanan tercapai. Welcome email tidak dikirim.';
                 RETURN NEW;
             END IF;
         END;
