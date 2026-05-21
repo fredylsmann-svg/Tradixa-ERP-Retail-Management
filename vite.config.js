@@ -29,6 +29,9 @@ export default defineConfig({
             purpose: 'any maskable'
           }
         ]
+      },
+      workbox: {
+        importScripts: ['/firebase-messaging-sw.js']
       }
     })
   ],

@@ -43,6 +43,7 @@
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.5.2",
+    "firebase": "^12.13.0",
     "framer-motion": "^11.16.4",
     "html2pdf.js": "^0.14.0",
     "html5-qrcode": "^2.3.8",

@@ -29,11 +29,21 @@ import {
   Zap,
   Sparkles,
   Lock,
-  MessageCircle
+  MessageCircle,
+  Bell,
+  BellOff,
+  Smartphone
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { PLAN_TIERS } from '@/planConfig';
 import { toast as sonnerToast } from 'sonner';
+import { 
+  getNotificationPermissionState, 
+  getCurrentDeviceToken, 
+  registerDeviceForPush, 
+  unregisterDeviceFromPush 
+} from '@/utils/firebaseMessaging';
+
 
 export default function ProfileAccount({ store }) {
   const navigate = useNavigate();
@@ -49,6 +59,77 @@ export default function ProfileAccount({ store }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef(null);
   const { toast } = useToast();
+
+  const [isPushSupported, setIsPushSupported] = useState(false);
+  const [isPushEnabled, setIsPushEnabled] = useState(false);
+  const [pushToken, setPushToken] = useState(null);
+  const [isPushLoading, setIsPushLoading] = useState(false);
+
+  useEffect(() => {
+    const checkPushStatus = async () => {
+      if (!user) return;
+      const isSupported = 'Notification' in window && 'serviceWorker' in navigator;
+      setIsPushSupported(isSupported);
+      if (isSupported) {
+        try {
+          const permission = getNotificationPermissionState();
+          if (permission === 'granted') {
+            const token = await getCurrentDeviceToken();
+            if (token) {
+              setPushToken(token);
+              // Verify if this token is actually in our database
+              const { data } = await supabase
+                .from('user_push_subscriptions')
+                .select('id')
+                .eq('fcm_token', token)
+                .maybeSingle();
+              
+              setIsPushEnabled(!!data);
+            }
+          }
+        } catch (err) {
+          console.error('[FCM] Error checking initial status:', err);
+        }
+      }
+    };
+    checkPushStatus();
+  }, [user]);
+
+  const handleTogglePush = async () => {
+    if (isPushLoading || !user || !store?.id) return;
+    setIsPushLoading(true);
+    try {
+      if (isPushEnabled) {
+        // Disable: delete from DB
+        await unregisterDeviceFromPush(pushToken);
+        setPushToken(null);
+        setIsPushEnabled(false);
+        sonnerToast.success('Notifikasi push berhasil dinonaktifkan untuk perangkat ini.');
+      } else {
+        // Enable: request permission and register
+        const token = await registerDeviceForPush(user, store.id);
+        setPushToken(token);
+        setIsPushEnabled(true);
+        sonnerToast.success('Notifikasi push berhasil diaktifkan untuk perangkat ini!');
+        
+        // Send a test notification immediately
+        await supabase.functions.invoke('send-push-notification', {
+          body: {
+            title: 'Notifikasi Berhasil Aktif!',
+            body: `Perangkat Anda sekarang terdaftar untuk menerima notifikasi push Tradixa ERP.`,
+            store_id: store.id,
+            target_user_id: user.id || user.auth_id
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Failed to toggle push notifications:', err);
+      sonnerToast.error(err.message || 'Gagal mengubah pengaturan notifikasi.');
+    } finally {
+      setIsPushLoading(false);
+    }
+  };
+
 
   // Upload limit tracking (max 3 photo changes)
   const MAX_PHOTO_UPLOADS = 3;
@@ -434,7 +515,111 @@ export default function ProfileAccount({ store }) {
               </form>
             </CardContent>
           </Card>
+
+          <Card className="border-slate-200 rounded-3xl shadow-sm overflow-hidden mt-6">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-slate-900" /> Notifikasi Perangkat PWA
+                </CardTitle>
+                <CardDescription>Aktifkan notifikasi sistem real-time di perangkat ini</CardDescription>
+              </div>
+              {isPushEnabled && (
+                <Badge className="bg-emerald-100 text-emerald-700 border-none font-bold text-[10px]">AKTIF</Badge>
+              )}
+            </CardHeader>
+            <CardContent className="p-8">
+              {store?.plan !== 'premium' ? (
+                // Premium Gating Banner
+                <div className="p-6 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-200/50 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+                  <div className="flex flex-col md:flex-row items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center flex-shrink-0 text-white shadow-md shadow-amber-500/20">
+                      <Crown className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-black text-slate-900 text-sm">Fitur Khusus Paket Premium</h4>
+                      <p className="text-slate-500 text-xs mt-1 max-w-md">
+                        Notifikasi Push PWA (Firebase Cloud Messaging) hanya dapat diaktifkan oleh toko dengan paket berlangganan Premium.
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={() => navigate('/PricingPage')}
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black hover:opacity-90 rounded-xl h-10 px-6 shrink-0 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02]"
+                  >
+                    Upgrade ke Premium
+                  </Button>
+                </div>
+              ) : !isPushSupported ? (
+                // Browser Not Supported Banner
+                <div className="p-5 bg-red-50 dark:bg-red-950/30 border border-red-200/50 rounded-2xl flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                  <div>
+                    <h5 className="font-bold text-slate-800 dark:text-slate-200 text-sm">Browser Tidak Mendukung</h5>
+                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">
+                      Browser Anda saat ini tidak mendukung Web Push Notifications. Harap gunakan Google Chrome, Microsoft Edge, atau Safari (iOS 16.4+).
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                // Push Notification Management
+                <div className="space-y-6">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-md transition-colors ${
+                        isPushEnabled 
+                          ? 'bg-emerald-500 text-white shadow-emerald-500/20' 
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
+                      }`}>
+                        {isPushEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+                      </div>
+                      <div className="text-left">
+                        <h5 className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                          {isPushEnabled ? 'Notifikasi Aktif di Perangkat Ini' : 'Notifikasi Nonaktif'}
+                        </h5>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5 flex items-center gap-1.5">
+                          <Smartphone className="w-3.5 h-3.5 text-slate-400" />
+                          {isPushEnabled ? 'Token FCM tersimpan & terhubung.' : 'Ketuk tombol di samping untuk mengaktifkan.'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={handleTogglePush}
+                      disabled={isPushLoading}
+                      variant={isPushEnabled ? "destructive" : "default"}
+                      className={`h-11 rounded-xl font-bold text-sm px-6 min-w-[140px] shadow-md transition-all hover:scale-[1.02] ${
+                        !isPushEnabled && 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
+                    >
+                      {isPushLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      ) : isPushEnabled ? (
+                        <BellOff className="w-4 h-4 mr-2" />
+                      ) : (
+                        <Bell className="w-4 h-4 mr-2" />
+                      )}
+                      {isPushLoading ? 'Memproses...' : isPushEnabled ? 'Matikan' : 'Aktifkan'}
+                    </Button>
+                  </div>
+
+                  {Notification.permission === 'denied' && (
+                    <div className="flex items-start gap-2.5 p-3.5 bg-red-50 dark:bg-red-950/30 rounded-xl border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400">
+                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs font-bold leading-relaxed">
+                        Izin notifikasi diblokir di browser ini. Harap buka pengaturan situs pada browser Anda (ikon gembok di sebelah alamat URL) dan ubah izin Notifikasi menjadi "Izinkan" / "Allow".
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="text-[11px] text-slate-400 leading-relaxed pl-1 text-left">
+                    💡 <strong>Tips PWA:</strong> Di perangkat iOS (iPhone/iPad), Anda harus menambahkan aplikasi ini ke layar utama (Add to Home Screen) terlebih dahulu agar notifikasi push PWA dapat diaktifkan.
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
+
 
         {/* Right Column: Status & Activity */}
         <div className="space-y-6">
