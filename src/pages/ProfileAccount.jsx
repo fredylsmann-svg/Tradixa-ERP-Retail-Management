@@ -533,13 +533,10 @@ export default function ProfileAccount({ store }) {
                 // Premium Gating Banner
                 <div className="p-6 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-200/50 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
                   <div className="flex flex-col md:flex-row items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center flex-shrink-0 text-white shadow-md shadow-amber-500/20">
-                      <Crown className="w-6 h-6 text-white" />
-                    </div>
                     <div className="text-left">
                       <h4 className="font-black text-slate-900 text-sm">Fitur Khusus Paket Premium</h4>
                       <p className="text-slate-500 text-xs mt-1 max-w-md">
-                        Notifikasi Push PWA (Firebase Cloud Messaging) hanya dapat diaktifkan oleh toko dengan paket berlangganan Premium.
+                        Notifikasi Push PWA hanya dapat diaktifkan oleh toko dengan paket berlangganan Premium.
                       </p>
                     </div>
                   </div>

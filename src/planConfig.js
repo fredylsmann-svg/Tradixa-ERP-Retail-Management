@@ -201,6 +201,7 @@ export const PLAN_TIERS = {
       'HRIS & User Management (max 10 user)',
       'Integrasi EDC Lokal (Debit / Kredit)',
       'Email & Notifikasi (300/bulan)',
+      'Notifikasi Push PWA (Mobile & Laptop)',
       'AI Assistant (Batas Fair-Use)',
       'Chat Internal Toko (Komunikasi Tim)',
       '2x Sesi Bimbingan & Konsultasi Sistem Untuk Tim Anda',

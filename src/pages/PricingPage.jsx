@@ -134,6 +134,7 @@ const featureGroups = [
       { name: 'Hapus Watermark Struk', free: false, pro: true, premium: true, enterprise: true },
       { name: 'AI Assistant', free: false, pro: false, premium: true, enterprise: true },
       { name: 'Chat Internal Toko', free: false, pro: false, premium: true, enterprise: true },
+      { name: 'Notifikasi Push PWA (Mobile & Laptop)', free: false, pro: false, premium: true, enterprise: true },
       { name: 'Sesi Bimbingan & Konsultasi', free: false, pro: '1x Sesi', premium: '2x Sesi', enterprise: 'Kustom' },
     ]
   },
