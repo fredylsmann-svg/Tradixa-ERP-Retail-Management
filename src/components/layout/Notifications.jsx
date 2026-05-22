@@ -437,11 +437,25 @@ export default function Notifications({ store }) {
       })
       .subscribe();
 
+    const prChannel = supabase
+      .channel(`notif_pr_${store.id}`)
+      .on('postgres_changes', {
+        event: '*', // Listen to INSERT, UPDATE, DELETE
+        schema: 'public',
+        table: 'purchase_requisitions',
+        filter: `store_id=eq.${store.id}`
+      }, () => {
+        // PR status or entry changed — refresh immediately
+        setTimeout(() => loadNotifications(), 500);
+      })
+      .subscribe();
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       supabase.removeChannel(salesChannel);
       supabase.removeChannel(poChannel);
+      supabase.removeChannel(prChannel);
     };
   }, [store, loadNotifications]);
 
