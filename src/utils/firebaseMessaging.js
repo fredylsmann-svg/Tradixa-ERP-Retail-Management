@@ -106,6 +106,21 @@ export const registerDeviceForPush = async (user, storeId) => {
       deviceName = 'Linux Device';
     }
 
+    // Verify plan gating
+    const { data: store, error: storeError } = await supabase
+      .from('stores')
+      .select('plan')
+      .eq('id', storeId)
+      .single();
+
+    if (storeError || !store) {
+      throw new Error("Gagal memverifikasi paket toko Anda.");
+    }
+
+    if (store.plan !== 'premium') {
+      throw new Error("Notifikasi push eksklusif untuk toko dengan Paket Premium.");
+    }
+
     // Save token to Supabase user_push_subscriptions table
     const { error } = await supabase
       .from('user_push_subscriptions')
