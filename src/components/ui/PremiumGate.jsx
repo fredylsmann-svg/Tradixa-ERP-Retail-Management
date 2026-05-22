@@ -12,6 +12,7 @@ export default function PremiumGate({
   children, 
   store, 
   featureName = "fitur ini",
+  requiredPlan = "pro",
   className = "" 
 }) {
   const { toast } = useToast();
@@ -23,8 +24,16 @@ export default function PremiumGate({
   const isPaidPremium = store?.plan === 'premium';
   const isEnterprise = store?.plan === 'enterprise';
 
-  // If already on any paid plan, render as normal
-  if (isPaidPro || isPaidPremium || isEnterprise) {
+  // Determine access based on required plan
+  let hasAccess = false;
+  if (requiredPlan === 'premium') {
+    hasAccess = isPaidPremium || isEnterprise;
+  } else {
+    hasAccess = isPaidPro || isPaidPremium || isEnterprise;
+  }
+
+  // If already has access, render as normal
+  if (hasAccess) {
     return <>{children}</>;
   }
 

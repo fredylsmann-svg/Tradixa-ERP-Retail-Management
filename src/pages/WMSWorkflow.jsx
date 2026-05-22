@@ -6,7 +6,7 @@ import {
   MapPin, Warehouse, LayoutDashboard, ClipboardList, Truck, ArrowRightLeft,
   RefreshCw, Workflow, ChevronRight, ArrowRight, Info, CheckCircle2,
   Activity, DollarSign, Package, ShieldCheck, Clock, Cpu, Lightbulb,
-  Layers, Target, Boxes
+  Layers, Target, Boxes, Smartphone
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import WarehouseTransferIcon from '@/components/icons/WarehouseTransferIcon';
@@ -121,20 +121,20 @@ const wmsSteps = [
   },
   {
     id: 'stock-opname',
-    title: 'Stock Opname',
-    subtitle: 'Cycle Count & Verifikasi',
-    description: 'Audit fisik berkala untuk memastikan jumlah dan kondisi barang di rak sesuai dengan data sistem. Selisih akan di-adjust otomatis ke Inventory Ledger.',
+    title: 'Stock Opname (PDA)',
+    subtitle: 'Cycle Count & Verifikasi Mobile',
+    description: 'Audit fisik berkala menggunakan perangkat PDA (Personal Digital Assistant) Barcode Scanner terintegrasi untuk mencocokkan stok fisik di rak dengan data sistem secara real-time tanpa kertas (paperless). Selisih akan di-adjust otomatis ke Inventory Ledger.',
     icon: RefreshCw,
     gradient: 'from-slate-600 to-slate-700',
     path: '/StockOpname',
-    tip: 'Lakukan cycle count mingguan per zona rak, bukan full opname bulanan. Lebih efisien dan tidak mengganggu operasional.',
-    output: 'Akurasi stok 99%+ dengan adjustment terdokumentasi',
+    tip: 'Integrasikan perangkat PDA Handheld Scanner agar staf dapat scan langsung barcode barang di rak dan input jumlah fisik tanpa bolak-balik mencatat di kertas.',
+    output: 'Akurasi stok 99%+ dengan adjustment terdokumentasi via PDA',
     journal: 'DR/CR Persediaan | CR/DR Selisih Inventaris (Variance)',
     subSteps: [
-      'Pilih lokasi/rak yang akan di-opname',
-      'Hitung fisik dan input ke sistem',
-      'Bandingkan dengan data sistem secara otomatis',
-      'Posting adjustment jika ada selisih'
+      'Buka modul Stock Opname di perangkat PDA Mobile / Handheld',
+      'Scan barcode barang langsung di rak menggunakan laser scanner PDA',
+      'Input kuantitas fisik real-time — sistem otomatis membandingkan dengan data sistem',
+      'Posting adjustment instan jika disetujui supervisor'
     ]
   }
 ];
@@ -243,6 +243,7 @@ export default function WMSWorkflow() {
                 { icon: Lightbulb, color: 'amber', title: 'Putaway Suggestion Otomatis', desc: 'Sistem menyarankan rak berdasarkan histori produk sejenis. Staf tinggal klik.' },
                 { icon: Layers, color: 'blue', title: 'Batch Picking Multi-Order', desc: 'Gabungkan 10 order jadi 1 daftar picking. Efisiensi naik 3-5x lipat.' },
                 { icon: WarehouseTransferIcon, color: 'indigo', title: 'Transfer Antar Gudang Terlacak', desc: 'Workflow 3 tahap dengan audit trail. Tidak ada stok hilang misterius.' },
+                { icon: Smartphone, color: 'rose', title: 'Integrasi PDA Handheld Scanner', desc: 'Stock Opname paperless secara mobile. Scan barcode barang langsung di depan rak.' },
                 { icon: LayoutDashboard, color: 'emerald', title: 'Dashboard Real-Time', desc: 'KPI, grafik, dan alert dalam satu layar. Keputusan berbasis data.' }
               ].map((item, idx) => (
                 <div key={idx} className="flex gap-3 items-start">

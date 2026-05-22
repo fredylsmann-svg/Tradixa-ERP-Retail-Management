@@ -14,6 +14,7 @@ import { NumberInput } from '@/components/ui/number-input';
 import { formatNumber } from '@/utils/currencyFormatter';
 import PageHeader from '@/components/layout/PageHeader';
 import { exportToPDF, exportToExcel } from '@/components/layout/ExportToolbar';
+import PremiumGate from '@/components/ui/PremiumGate';
 import { toast } from 'sonner';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 
@@ -404,7 +405,8 @@ export default function FundTransfers({ store }) {
   const rejectedCount = transfers.filter(t => t.status === 'Rejected').length;
 
   return (
-    <div className="space-y-6">
+    <PremiumGate store={store} featureName="Modul Fund Transfer" requiredPlan="premium" className="w-full block">
+      <div className="space-y-6">
       <PageHeader
         title="Fund Transfer & Approval"
         subtitle="Kelola pemindahan dana internal antar kas/bank dengan alur persetujuan multi-role resmi."
@@ -502,6 +504,7 @@ export default function FundTransfers({ store }) {
             <Table id="fund-transfer-table">
               <TableHeader className="bg-slate-50/50 dark:bg-slate-800/40">
                 <TableRow>
+                  <TableHead className="w-12 text-center">No.</TableHead>
                   <TableHead className="w-[120px]">Ref Number</TableHead>
                   <TableHead>Aliran Pemindahan Dana (Flow)</TableHead>
                   <TableHead className="text-right">Nominal Bersih</TableHead>
@@ -517,23 +520,26 @@ export default function FundTransfers({ store }) {
                 {isLoading ? (
                   Array(5).fill(0).map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell colSpan={9}><Skeleton className="h-14 w-full" /></TableCell>
+                      <TableCell colSpan={10}><Skeleton className="h-14 w-full" /></TableCell>
                     </TableRow>
                   ))
                 ) : transfers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-20 text-slate-400">
+                    <TableCell colSpan={10} className="text-center py-20 text-slate-400">
                       <Coins className="w-12 h-12 mx-auto mb-4 opacity-25" />
                       Belum ada permohonan pemindahan dana yang terdaftar.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  transfers.map((trf) => {
+                  transfers.map((trf, idx) => {
                     const fromAcc = accounts.find(a => a.id === trf.from_account_id);
                     const toAcc = accounts.find(a => a.id === trf.to_account_id);
 
                     return (
                       <TableRow key={trf.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                        <TableCell className="text-center text-slate-500 font-medium w-12 text-xs">
+                          {idx + 1}
+                        </TableCell>
                         <TableCell className="font-mono text-xs font-bold text-slate-700 dark:text-slate-300">
                           {trf.reference}
                         </TableCell>
@@ -908,6 +914,7 @@ export default function FundTransfers({ store }) {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </PremiumGate>
   );
 }

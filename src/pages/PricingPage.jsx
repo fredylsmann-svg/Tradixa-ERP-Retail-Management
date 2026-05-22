@@ -88,6 +88,7 @@ const featureGroups = [
     features: [
       { name: 'Bank Accounts & Transactions', free: false, pro: true, premium: true, enterprise: true },
       { name: 'Cash Register', free: true, pro: true, premium: true, enterprise: true },
+      { name: 'Fund Transfer (Persetujuan Direktur)', free: false, pro: false, premium: true, enterprise: true },
       { name: 'Payables & Receivables', free: false, pro: true, premium: true, enterprise: true },
       { name: 'Journal Entries', free: false, pro: true, premium: true, enterprise: true },
       { name: 'Financial Statements', free: false, pro: true, premium: true, enterprise: true },
@@ -119,9 +120,14 @@ const featureGroups = [
     title: 'Financial Agent',
     icon: Landmark,
     features: [
-      { name: 'Agent Workflow (BRILink)', free: false, pro: true, premium: true, enterprise: true },
-      { name: 'Transaksi & Dashboard Agent', free: false, pro: true, premium: true, enterprise: true },
+      { name: 'Agent Workflow', free: false, pro: true, premium: true, enterprise: true },
+      { name: 'Dashboard Agent', free: false, pro: true, premium: true, enterprise: true },
+      { name: 'Transaksi Agen', free: false, pro: true, premium: true, enterprise: true },
+      { name: 'Daftar Layanan', free: false, pro: true, premium: true, enterprise: true },
+      { name: 'Saldo & Kas Agen', free: false, pro: true, premium: true, enterprise: true },
+      { name: 'Laporan Fee', free: false, pro: true, premium: true, enterprise: true },
       { name: 'Agent Performance', free: false, pro: true, premium: true, enterprise: true },
+      { name: 'Pengaturan Agen', free: false, pro: true, premium: true, enterprise: true },
     ]
   },
   {

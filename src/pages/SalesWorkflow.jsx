@@ -44,15 +44,16 @@ const steps = [
   {
     id: 'pos',
     title: 'Sales Transaction (POS)',
-    description: 'Proses kasir POS (Point of Sale) retail. Pilih barang dengan barcode scanner, hubungkan pelanggan, input diskon, dan tentukan metode pembayaran.',
+    description: 'Proses kasir POS (Point of Sale) retail. Pilih barang dengan barcode scanner, hubungkan staf Sales (Salesperson) untuk pelacakan komisi, kaitkan dengan Customer, input diskon, dan tentukan metode pembayaran.',
     icon: ShoppingCart,
     gradient: 'from-violet-500 to-violet-600',
     path: '/SalesTransaction',
-    tip: 'Gunakan tombol shortcut keyboard di layar kasir untuk mempercepat proses checkout.',
-    output: 'Transaksi Kasir POS → pengurangan stok otomatis + draft invoice',
+    tip: 'Memilih sales dan customer saat transaksi membantu pencatatan komisi serta pelacakan performa/spending secara real-time.',
+    output: 'Transaksi Kasir POS → pengurangan stok otomatis + pencatatan performa Sales & Customer',
     subSteps: [
       'Scan barcode produk / cari produk di katalog POS',
-      'Pilih pembeli untuk akumulasi poin & loyalty member',
+      'Pilih staf Sales (Salesperson) yang melayani untuk melacak komisi/performa',
+      'Pilih Customer untuk melacak akumulasi belanja (Customer Spending Tracking) dan riwayat invoice tempo (Customer Invoice Tracking)',
       'Pilih metode pembayaran (Tunai, Bank Transfer, QRIS, atau EDC)'
     ]
   },
@@ -158,7 +159,7 @@ export default function SalesWorkflow() {
           </div>
           <div>
             <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">Sales Workflow</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Alur transaksi kasir, otomasi integrasi EDC lokal, hingga pelaporan laba rugi</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Alur transaksi kasir (Didukung Real-Time Sales Tracking), otomasi integrasi EDC lokal, hingga pelaporan laba rugi</p>
           </div>
         </div>
         <Badge className="bg-blue-50 text-blue-700 border-blue-200 font-bold text-[10px] uppercase tracking-widest">
@@ -473,6 +474,34 @@ export default function SalesWorkflow() {
               <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed">
                 QRIS adalah standar kode QR nasional yang kompatibel dengan seluruh e-wallet & mobile banking di Indonesia (GoPay, OVO, DANA, ShopeePay, LinkAja, BCA Mobile, Mandiri Livin, dll). MDR (biaya transaksi) sebesar ~0.7% dipotong otomatis oleh jaringan GPN — baik dari gateway maupun bank.
               </p>
+            </div>
+          </div>
+
+          {/* Aturan Rekonsiliasi Mayar & Bank Transfer */}
+          <div className="mt-5 p-5 bg-amber-50/20 dark:bg-amber-950/10 rounded-xl border border-amber-200/60 dark:border-slate-800/50 space-y-4">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <h4 className="text-xs font-black text-slate-850 dark:text-slate-200 uppercase tracking-wider">Aturan Sinkronisasi & Rekonsiliasi Penting (Mayar & Bank Transfer)</h4>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2">
+                <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span className="text-xs font-black">1. Online Payment Gateway (Mayar)</span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Agar mutasi QRIS dinamis/statis yang diproses lewat Mayar bisa langsung terdeteksi dan tersinkronisasi otomatis ke akun bank penampung yang tepat, Anda <strong>wajib menginput akun bank dengan kata kunci <span className="text-blue-600 font-bold underline">"mayar"</span></strong> di dalam modul <strong>Bank Account</strong> (contoh: <em>"Mayar QRIS"</em>, <em>"Bank Account Mayar"</em>). Jika tidak ada, sistem penyeimbang jurnal otomatis tidak akan dapat mengarahkan debit kas ke rekening penampung.
+                </p>
+              </div>
+              <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2">
+                <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                  <Info className="w-4 h-4 shrink-0" />
+                  <span className="text-xs font-black">2. Manual Bank Transfer (Perlu ACC Manual)</span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Jika kasir POS menggunakan metode pembayaran <strong>Bank Transfer Manual</strong> (transfer manual antar bank tanpa payment gateway), status transaksi tidak akan otomatis terhitung Paid di ledger utama. Transaksi ini <strong>memerlukan persetujuan manual (klik <em>Approved</em>) di modul Bank Transactions</strong> oleh pihak Direktur/Manajer Keuangan untuk mengonfirmasi bahwa dana fisik dari pembeli benar-benar telah mendarat di mutasi rekening.
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>

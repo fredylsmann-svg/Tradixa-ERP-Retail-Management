@@ -273,11 +273,11 @@ export const DEV_EMAILS = [
   'tradixasystems@gmail.com',
 ];
 
-/**
- * Check if a module/page is accessible on a given plan
- */
 export function isModuleAccessible(planId, pageName, userEmail = null) {
   if (userEmail && DEV_EMAILS.includes(userEmail.toLowerCase())) return true;
+  if (pageName === 'FundTransfers') {
+    return planId === 'premium' || planId === 'enterprise';
+  }
   const plan = PLAN_TIERS[planId] || PLAN_TIERS.free;
   if (plan.modules[0] === '*') return true;
   return plan.modules.includes(pageName);

@@ -631,8 +631,17 @@ export default function ProfileAccount({ store }) {
             const startedAt = store?.plan_started_at ? new Date(store.plan_started_at) : null;
             const expiresAt = store?.plan_expires_at ? new Date(store.plan_expires_at) : null;
             const now = new Date();
-            const remainingDays = expiresAt ? Math.max(0, Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24))) : null;
-            const totalDays = (startedAt && expiresAt) ? Math.ceil((expiresAt - startedAt) / (1000 * 60 * 60 * 24)) : null;
+            
+            // Timezone-safe calendar days difference
+            const getCalendarDaysDifference = (date1, date2) => {
+              if (!date1 || !date2) return 0;
+              const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+              const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+              return Math.round((d1 - d2) / (1000 * 60 * 60 * 24));
+            };
+
+            const remainingDays = expiresAt ? Math.max(0, getCalendarDaysDifference(expiresAt, now)) : null;
+            const totalDays = (startedAt && expiresAt) ? Math.max(1, getCalendarDaysDifference(expiresAt, startedAt)) : null;
             const progressPercent = (totalDays && remainingDays !== null) ? Math.max(0, Math.min(100, ((totalDays - remainingDays) / totalDays) * 100)) : 0;
             
             // Status determination
