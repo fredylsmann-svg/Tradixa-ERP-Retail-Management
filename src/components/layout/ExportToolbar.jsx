@@ -9,7 +9,7 @@ import { toast } from 'sonner';
  * Kolom "Aksi" otomatis disembunyikan saat export.
  */
 
-function buildPrintHTML(title, date, storeName, storeAddress, storeLogoUrl, tableHTML) {
+function buildPrintHTML(title, date, storeName, storeAddress, storeLogoUrl, tableHTML, autoPrint = true) {
   return `<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8">
     <title>${title} - ${storeName}</title>
     <style>
@@ -42,7 +42,7 @@ function buildPrintHTML(title, date, storeName, storeAddress, storeLogoUrl, tabl
     </div>
     <div class="print-content">${tableHTML}</div>
     <div class="print-footer">Dicetak pada: ${new Date().toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })} · ${storeName || 'Management System'}</div>
-    <script>window.onload=function(){window.print();};</script>
+    ${autoPrint ? `<script>window.onload=function(){window.print();};</script>` : ''}
   </body></html>`;
 }
 
@@ -123,7 +123,14 @@ function exportToExcel(title, date, storeName, storeAddress, contentId) {
 
 function exportToPDF(title, date, storeName, storeAddress, storeLogoUrl, contentId) {
   const tableHTML = cleanTableHTML(contentId);
-  const htmlContent = buildPrintHTML(title, date, storeName, storeAddress, storeLogoUrl, tableHTML);
+  
+  // Bersihkan jika ada iframe sisa dari panggilan sebelumnya
+  const removeExistingIframe = () => {
+    const existing = document.getElementById('print-iframe');
+    if (existing && existing.parentNode) {
+      existing.parentNode.removeChild(existing);
+    }
+  };
   
   // Deteksi jika user berada di perangkat mobile atau menggunakan mode standalone (PWA)
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
@@ -131,66 +138,79 @@ function exportToPDF(title, date, storeName, storeAddress, storeLogoUrl, content
   const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
   if (isMobile || isStandalone) {
-    // Gunakan teknik Hidden Iframe Printing agar aman dari pop-up blocker dan bekerja sempurna di iOS PWA
-    let iframe = document.getElementById('print-iframe');
-    if (!iframe) {
-      iframe = document.createElement('iframe');
-      iframe.id = 'print-iframe';
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      iframe.style.zIndex = '-9999';
-      document.body.appendChild(iframe);
-    }
+    removeExistingIframe();
+    
+    // Buka HTML tanpa auto-print script (autoPrint = false) agar tidak memicu eksekusi ganda di iframe
+    const htmlContentIFrame = buildPrintHTML(title, date, storeName, storeAddress, storeLogoUrl, tableHTML, false);
+    
+    const iframe = document.createElement('iframe');
+    iframe.id = 'print-iframe';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.zIndex = '-9999';
+    document.body.appendChild(iframe);
     
     const doc = iframe.contentWindow.document || iframe.contentDocument;
     doc.open();
-    doc.write(htmlContent);
+    doc.write(htmlContentIFrame);
     doc.close();
     
     setTimeout(() => {
       iframe.contentWindow.focus();
       iframe.contentWindow.print();
+      
+      // Bersihkan elemen iframe dari DOM setelah dialog cetak aktif agar bersih dan tidak memicu cancel ganda
+      setTimeout(() => {
+        removeExistingIframe();
+      }, 2000);
     }, 500);
     return;
   }
   
-  // Mekanisme default untuk desktop (menggunakan tab baru)
-  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
+  // Mekanisme default untuk desktop (menggunakan tab baru dengan auto-print aktif)
+  const htmlContentDesktop = buildPrintHTML(title, date, storeName, storeAddress, storeLogoUrl, tableHTML, true);
   
-  const w = window.open(url, '_blank', 'noopener,noreferrer');
+  // Membuka tab kosong terlebih dahulu untuk menghindari bug GPU Chrome di MacOS yang memicu layar hitam saat menutup tab Blob URL
+  const w = window.open('', '_blank');
   if (!w) { 
-    // Fallback jika pop-up terblokir di desktop, gunakan iframe printing agar tetap bisa cetak
-    let iframe = document.getElementById('print-iframe');
-    if (!iframe) {
-      iframe = document.createElement('iframe');
-      iframe.id = 'print-iframe';
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      iframe.style.zIndex = '-9999';
-      document.body.appendChild(iframe);
-    }
+    // Fallback jika pop-up terblokir di desktop, gunakan iframe printing (tanpa auto-print ganda)
+    removeExistingIframe();
+    const htmlContentIFrameFallback = buildPrintHTML(title, date, storeName, storeAddress, storeLogoUrl, tableHTML, false);
+    
+    const iframe = document.createElement('iframe');
+    iframe.id = 'print-iframe';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.zIndex = '-9999';
+    document.body.appendChild(iframe);
+    
     const doc = iframe.contentWindow.document || iframe.contentDocument;
     doc.open();
-    doc.write(htmlContent);
+    doc.write(htmlContentIFrameFallback);
     doc.close();
+    
     setTimeout(() => {
       iframe.contentWindow.focus();
       iframe.contentWindow.print();
+      setTimeout(() => {
+        removeExistingIframe();
+      }, 2000);
     }, 500);
     return;
   }
   
-  // Bersihkan memori blob setelah dimuat di tab baru
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  // Tulis konten secara langsung ke tab baru (menghindari penggunaan Blob URL)
+  w.document.open();
+  w.document.write(htmlContentDesktop);
+  w.document.close();
 }
 
 export default function ExportToolbar({ title, date, storeName, storeAddress, storeLogoUrl, contentId, store }) {
