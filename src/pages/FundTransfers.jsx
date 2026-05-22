@@ -412,18 +412,18 @@ export default function FundTransfers({ store }) {
         subtitle="Kelola pemindahan dana internal antar kas/bank dengan alur persetujuan multi-role resmi."
         icon={Coins}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               onClick={() => exportToPDF('Fund Transfer', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'fund-transfer-table')}
-              className="h-11 px-4 border-slate-200 hover:bg-slate-50 flex items-center gap-2"
+              className="h-11 px-4 border-slate-200 hover:bg-slate-50 flex items-center gap-2 flex-1 sm:flex-none justify-center"
             >
               <Printer className="w-4 h-4" /> PDF
             </Button>
             <Button
               variant="outline"
               onClick={() => exportToExcel('Fund Transfer', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, 'fund-transfer-table')}
-              className="h-11 px-4 border-slate-200 hover:bg-slate-50 flex items-center gap-2"
+              className="h-11 px-4 border-slate-200 hover:bg-slate-50 flex items-center gap-2 flex-1 sm:flex-none justify-center"
             >
               <FileSpreadsheet className="w-4 h-4" /> Excel
             </Button>
@@ -432,7 +432,7 @@ export default function FundTransfers({ store }) {
                 setFormData({ from_account_id: '', to_account_id: '', amount: '', fee: '', notes: '' });
                 setShowRequestForm(true);
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 rounded-xl flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 rounded-xl flex items-center gap-2 w-full sm:w-auto justify-center"
             >
               <Plus className="w-4 h-4" /> Ajukan Transfer
             </Button>
