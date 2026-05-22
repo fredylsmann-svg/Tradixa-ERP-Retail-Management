@@ -179,34 +179,8 @@ function exportToPDF(title, date, storeName, storeAddress, storeLogoUrl, content
   // Membuka Blob URL dengan noopener/noreferrer agar proses tab terpisah sehingga tab utama tidak membeku (freeze)
   const w = window.open(url, '_blank', 'noopener,noreferrer');
   if (!w) { 
-    // Fallback jika pop-up terblokir di desktop, gunakan iframe printing (tanpa auto-print ganda)
-    removeExistingIframe();
-    const htmlContentIFrameFallback = buildPrintHTML(title, date, storeName, storeAddress, storeLogoUrl, tableHTML, false);
-    
-    const iframe = document.createElement('iframe');
-    iframe.id = 'print-iframe';
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    iframe.style.zIndex = '-9999';
-    document.body.appendChild(iframe);
-    
-    const doc = iframe.contentWindow.document || iframe.contentDocument;
-    doc.open();
-    doc.write(htmlContentIFrameFallback);
-    doc.close();
-    
-    setTimeout(() => {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-      setTimeout(() => {
-        removeExistingIframe();
-      }, 2000);
-    }, 500);
-    return;
+    // Jika pop-up diblokir di desktop, tampilkan toast instruksi yang elegan tanpa mengganggu antarmuka utama
+    toast.error('Gagal membuka preview cetak! Mohon izinkan pop-up (izinkan selalu/always allow) untuk situs ini pada browser Anda.');
   }
   
   // Bersihkan memori blob setelah dimuat di tab baru
