@@ -69,14 +69,21 @@ export const registerDeviceForPush = async (user, storeId) => {
       throw new Error("Push notifications are not supported on this browser.");
     }
 
-    // Request notification permission
-    const permission = await Notification.requestPermission();
+    // Request notification permission with a 15-second timeout
+    const permission = await Promise.race([
+      Notification.requestPermission(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Permintaan izin notifikasi diblokir atau tidak direspon oleh browser Anda.")), 15000))
+    ]);
+    
     if (permission !== 'granted') {
-      throw new Error("Notification permission was denied by the user.");
+      throw new Error("Izin notifikasi ditolak oleh pengguna. Silakan aktifkan izin notifikasi di pengaturan browser Anda.");
     }
 
-    // Get VitePWA active service worker registration
-    const registration = await navigator.serviceWorker.ready;
+    // Get VitePWA active service worker registration with a 5-second timeout
+    const registration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("PWA Service Worker tidak merespon. Pastikan Anda mengakses melalui koneksi aman HTTPS / Production Build.")), 5000))
+    ]);
     if (!registration) {
       throw new Error("PWA Service Worker registration not ready.");
     }
