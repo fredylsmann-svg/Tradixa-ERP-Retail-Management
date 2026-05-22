@@ -338,7 +338,7 @@ export default function SalesInvoices({ store }) {
                   <div><span className="text-slate-500">Pembayaran:</span> {viewingInvoice.payment_method}</div>
                   <div><span className="text-slate-500">Status:</span> {viewingInvoice.payment_status}</div>
                 </div>
-              {viewingInvoice.payment_proof_url && (
+              {viewingInvoice.payment_proof_url && viewingInvoice.payment_method !== 'QRIS' && (
                 <div>
                   <p className="text-sm text-slate-500 mb-2">Bukti Transfer:</p>
                   <img src={viewingInvoice.payment_proof_url} alt="Proof" className="w-full max-w-md rounded-lg border" />
