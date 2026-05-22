@@ -15,6 +15,7 @@ import { formatNumber } from '@/utils/currencyFormatter';
 import PageHeader from '@/components/layout/PageHeader';
 import { exportToPDF, exportToExcel } from '@/components/layout/ExportToolbar';
 import { toast } from 'sonner';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 
 export default function FundTransfers({ store }) {
   const [transfers, setTransfers] = useState([]);
@@ -439,38 +440,56 @@ export default function FundTransfers({ store }) {
 
       {/* Summary Statistics Widgets */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-slate-200/60 shadow-sm bg-gradient-to-br from-amber-500/5 to-transparent dark:from-amber-950/20">
-          <CardContent className="p-6 flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Pending Approval</p>
-              <h3 className="text-2xl font-black text-amber-600 dark:text-amber-400">{pendingCount} Permohonan</h3>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
-              <Clock className="w-6 h-6" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200/60 shadow-sm bg-gradient-to-br from-emerald-500/5 to-transparent dark:from-emerald-950/20">
-          <CardContent className="p-6 flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Dana Disetujui (Approved)</p>
-              <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400">Rp {formatNumber(approvedTotal)}</h3>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="w-6 h-6" />
+        <Card className="relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-amber-500 to-amber-700 border-none shadow-md hover:-translate-y-1 hover:brightness-105 active:scale-95">
+          <div className="absolute inset-x-0 top-0 h-px bg-white/30" />
+          <CardContent className="p-6 relative z-10">
+            <div className="relative">
+              <div className="absolute right-0 top-0 w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center flex-shrink-0 shadow-inner border border-white/20">
+                <Clock className="w-6 h-6 text-white drop-shadow-md" />
+              </div>
+              <div className="text-white pr-16">
+                <p className="text-xs font-bold text-white/90 uppercase tracking-widest drop-shadow-sm">Pending Approval</p>
+                <h3 className="text-3xl font-black text-white mt-2 tracking-tight drop-shadow-md">
+                  <AnimatedNumber value={pendingCount} suffix=" Permohonan" />
+                </h3>
+                <p className="text-xs mt-2 text-white/80 drop-shadow-sm font-medium">Menunggu persetujuan Direktur</p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200/60 shadow-sm bg-gradient-to-br from-rose-500/5 to-transparent dark:from-rose-950/20">
-          <CardContent className="p-6 flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Permohonan Ditolak (Rejected)</p>
-              <h3 className="text-2xl font-black text-rose-600 dark:text-rose-400">{rejectedCount} Transaksi</h3>
+        <Card className="relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-emerald-500 to-emerald-700 border-none shadow-md hover:-translate-y-1 hover:brightness-105 active:scale-95">
+          <div className="absolute inset-x-0 top-0 h-px bg-white/30" />
+          <CardContent className="p-6 relative z-10">
+            <div className="relative">
+              <div className="absolute right-0 top-0 w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center flex-shrink-0 shadow-inner border border-white/20">
+                <CheckCircle2 className="w-6 h-6 text-white drop-shadow-md" />
+              </div>
+              <div className="text-white pr-16">
+                <p className="text-xs font-bold text-white/90 uppercase tracking-widest drop-shadow-sm">Dana Disetujui (Approved)</p>
+                <h3 className="text-3xl font-black text-white mt-2 tracking-tight drop-shadow-md">
+                  <AnimatedNumber value={approvedTotal} prefix="Rp " />
+                </h3>
+                <p className="text-xs mt-2 text-white/80 drop-shadow-sm font-medium">Berhasil dipindahkan & tercatat</p>
+              </div>
             </div>
-            <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400">
-              <XCircle className="w-6 h-6" />
+          </CardContent>
+        </Card>
+
+        <Card className="relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-rose-500 to-rose-700 border-none shadow-md hover:-translate-y-1 hover:brightness-105 active:scale-95">
+          <div className="absolute inset-x-0 top-0 h-px bg-white/30" />
+          <CardContent className="p-6 relative z-10">
+            <div className="relative">
+              <div className="absolute right-0 top-0 w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center flex-shrink-0 shadow-inner border border-white/20">
+                <XCircle className="w-6 h-6 text-white drop-shadow-md" />
+              </div>
+              <div className="text-white pr-16">
+                <p className="text-xs font-bold text-white/90 uppercase tracking-widest drop-shadow-sm">Permohonan Ditolak (Rejected)</p>
+                <h3 className="text-3xl font-black text-white mt-2 tracking-tight drop-shadow-md">
+                  <AnimatedNumber value={rejectedCount} suffix=" Transaksi" />
+                </h3>
+                <p className="text-xs mt-2 text-white/80 drop-shadow-sm font-medium font-medium">Pengajuan dibatalkan/ditolak</p>
+              </div>
             </div>
           </CardContent>
         </Card>
