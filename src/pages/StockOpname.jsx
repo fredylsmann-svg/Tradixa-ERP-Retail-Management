@@ -22,10 +22,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import BarcodeScanner from '@/components/barcode/BarcodeScanner';
+import WMSBarcodeScanner, { playSound } from '@/components/wms/BarcodeScanner';
+import PDAOpnameCard from '@/components/wms/PDAOpnameCard';
 import {
   PackageCheck, Plus, Search, Eye, CheckCircle2, XCircle, ArrowUpCircle, ArrowDownCircle,
   MinusCircle, Loader2, ScanLine, FileText, ChevronRight, Package, AlertTriangle, Info, Calendar, MapPin, UserCheck, X,
-  Download, Printer, RefreshCw, Shield
+  Download, Printer, RefreshCw, Shield, Smartphone, Sparkles
 } from 'lucide-react';
 import { DialogTrigger } from '@/components/ui/dialog';
 import PremiumGate from '@/components/ui/PremiumGate';
@@ -220,6 +222,70 @@ export default function StockOpname({ store }) {
     } else {
       toast({ title: "Tidak Ditemukan", description: `Barcode ${code} tidak ada dalam daftar.`, variant: "destructive" });
     }
+  };
+
+  // === PDA MODE STATE & HANDLERS ===
+  const [isPDAMode, setIsPDAMode] = useState(false);
+  const [activePDAItem, setActivePDAItem] = useState(null);
+  const [continuousMode, setContinuousMode] = useState(true);
+  const [pdaFilter, setPdaFilter] = useState('all'); // all, pending, variance, match
+
+  const handlePDAScan = (code) => {
+    const found = items.find(i => i.barcode === code || i.sku === code);
+    if (found) {
+      playSound('success');
+      if (navigator.vibrate) navigator.vibrate(50);
+      
+      const currentQty = found.physical_stock === null ? 0 : found.physical_stock;
+      const nextQty = continuousMode ? currentQty + 1 : currentQty;
+      
+      if (continuousMode) {
+        updatePhysicalStock(found.id, nextQty);
+      }
+      
+      const variance = nextQty - found.system_stock;
+      const type = nextQty === null ? 'Match' : variance > 0 ? 'Surplus' : variance < 0 ? 'Deficit' : 'Match';
+      
+      setActivePDAItem({
+        ...found,
+        physical_stock: nextQty,
+        variance,
+        variance_type: type
+      });
+      
+      toast({ 
+        title: `📦 ${found.product_name}`, 
+        description: `Barcode cocok! Qty Aktual: ${nextQty} pcs` 
+      });
+    } else {
+      playSound('error');
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+      toast({ 
+        title: "Barcode Tidak Ditemukan", 
+        description: `Kode: ${code} tidak terdaftar pada sesi ini.`, 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const handlePDAQtyChange = (newQty) => {
+    if (!activePDAItem) return;
+    
+    updatePhysicalStock(activePDAItem.id, newQty);
+    playSound('success');
+    if (navigator.vibrate) navigator.vibrate(30);
+
+    setActivePDAItem(prev => {
+      if (!prev) return null;
+      const variance = newQty - prev.system_stock;
+      const type = variance > 0 ? 'Surplus' : variance < 0 ? 'Deficit' : 'Match';
+      return {
+        ...prev,
+        physical_stock: newQty,
+        variance,
+        variance_type: type
+      };
+    });
   };
 
   // === SAVE PROGRESS ===
@@ -557,12 +623,13 @@ export default function StockOpname({ store }) {
           </div>
 
           {/* Search + Scan + Refresh */}
-          <div className="flex gap-2 mb-3">
-            <div className="relative flex-1">
+          <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-2 mb-3">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
               <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari produk..." className="pl-9" />
             </div>
-            <div className="flex items-center gap-2">
+            
+            <div className="flex items-center flex-wrap gap-2">
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="text-blue-500 hover:text-blue-600 hover:bg-blue-50">
@@ -589,66 +656,184 @@ export default function StockOpname({ store }) {
               </Dialog>
 
               {(showDetail?.status === 'In Progress' || showDetail?.status === 'Draft') && (
+                <Button 
+                  variant={isPDAMode ? "destructive" : "outline"} 
+                  size="sm" 
+                  onClick={() => {
+                    setIsPDAMode(!isPDAMode);
+                    setActivePDAItem(null);
+                  }}
+                  className="h-10 px-3 font-bold border-blue-200 text-blue-600 hover:bg-blue-50"
+                >
+                  {isPDAMode ? (
+                    <span className="flex items-center gap-1.5">🖥️ Mode Desktop</span>
+                  ) : (
+                    <span className="flex items-center gap-1.5"><Smartphone className="w-4 h-4" /> Mode PDA Gudang</span>
+                  )}
+                </Button>
+              )}
+
+              {(showDetail?.status === 'In Progress' || showDetail?.status === 'Draft') && !isPDAMode && (
                 <Button variant="outline" size="sm" onClick={() => setShowRefreshConfirm(true)} disabled={isSaving} className="h-10 px-3 border-blue-200 text-blue-600 hover:bg-blue-50">
                   <RefreshCw className={`w-4 h-4 mr-2 ${isSaving ? 'animate-spin' : ''}`} /> Refresh Stok
                 </Button>
               )}
 
-              {(showDetail?.status === 'In Progress' || showDetail?.status === 'Draft') && (
+              {(showDetail?.status === 'In Progress' || showDetail?.status === 'Draft') && !isPDAMode && (
                 <Button variant="outline" size="sm" onClick={() => setShowScanner(true)} className="h-10 px-3"><ScanLine className="w-4 h-4 mr-2" /> Scan</Button>
               )}
             </div>
           </div>
 
-          {/* Items Table */}
-          <div className="border rounded-xl overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50 dark:bg-slate-800/50">
-                  <TableHead className="w-8">#</TableHead>
-                  <TableHead>Produk</TableHead>
-                  <TableHead className="text-center w-24">Stok Sistem</TableHead>
-                  <TableHead className="text-center w-28">Stok Fisik</TableHead>
-                  <TableHead className="text-center w-20">Selisih</TableHead>
-                  <TableHead className="text-center w-20">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredItems.map((item, idx) => (
-                  <TableRow key={item.id} className={item.variance_type === 'Surplus' ? 'bg-amber-50/50' : item.variance_type === 'Deficit' ? 'bg-red-50/50' : ''}>
-                    <TableCell className="text-xs text-slate-400">{idx + 1}</TableCell>
-                    <TableCell>
-                      <p className="font-medium text-sm">{item.product_name}</p>
-                      <p className="text-xs text-slate-400">{item.sku}{item.barcode ? ` · ${item.barcode}` : ''}</p>
-                    </TableCell>
-                    <TableCell className="text-center font-bold">{item.system_stock}</TableCell>
-                    <TableCell className="text-center">
-                      {showDetail?.status === 'In Progress' || showDetail?.status === 'Draft' ? (
-                        <Input id={`input-${item.id}`} type="number" min="0" value={item.physical_stock ?? ''} onChange={e => updatePhysicalStock(item.id, e.target.value)}
-                          className="w-20 mx-auto text-center h-8 font-bold" placeholder="—" />
-                      ) : (
-                        <span className="font-bold">{item.physical_stock ?? '—'}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {item.physical_stock !== null && (
-                        <span className={`font-black ${item.variance > 0 ? 'text-amber-600' : item.variance < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                          {item.variance > 0 ? `+${item.variance}` : item.variance}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {item.physical_stock !== null && (
-                        item.variance_type === 'Match' ? <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" /> :
-                          item.variance_type === 'Surplus' ? <ArrowUpCircle className="w-4 h-4 text-amber-500 mx-auto" /> :
-                            <ArrowDownCircle className="w-4 h-4 text-red-500 mx-auto" />
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          {isPDAMode ? (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4">
+              {/* SISI KIRI: PEMINDAI BARCODE & KARTU PRODUK RAKSASA */}
+              <div className="lg:col-span-5 space-y-4">
+                <PDAOpnameCard 
+                  item={activePDAItem} 
+                  onQtyChange={handlePDAQtyChange}
+                  continuousMode={continuousMode}
+                  onToggleContinuous={() => setContinuousMode(!continuousMode)}
+                />
+                
+                {/* WMS Barcode Scanner Component */}
+                <WMSBarcodeScanner 
+                  onScan={handlePDAScan} 
+                  isActive={isPDAMode} 
+                />
+              </div>
+
+              {/* SISI KANAN: CONDENSED LIST & REVIEW PROGRESS */}
+              <div className="lg:col-span-7 space-y-4">
+                <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-2xl">
+                  {[
+                    { id: 'all', label: `Semua (${summary.total})` },
+                    { id: 'pending', label: `Belum (${summary.total - summary.filled})` },
+                    { id: 'variance', label: `Selisih (${summary.surplus + summary.deficit})` },
+                    { id: 'match', label: `Cocok (${summary.match})` }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setPdaFilter(tab.id)}
+                      className={`flex-1 px-3 py-2 text-xs font-black rounded-xl transition-all ${
+                        pdaFilter === tab.id 
+                          ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm' 
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Filtered List */}
+                <div className="border border-slate-100 dark:border-slate-800 rounded-3xl overflow-hidden max-h-[420px] overflow-y-auto bg-slate-50/30 dark:bg-slate-950/20 shadow-inner">
+                  <div className="divide-y divide-slate-100 dark:divide-slate-900">
+                    {filteredItems
+                      .filter(item => {
+                        if (pdaFilter === 'pending') return item.physical_stock === null;
+                        if (pdaFilter === 'variance') return item.variance_type !== 'Match' && item.physical_stock !== null;
+                        if (pdaFilter === 'match') return item.variance_type === 'Match' && item.physical_stock !== null;
+                        return true;
+                      })
+                      .map((item) => {
+                        const isCurrentActive = activePDAItem?.id === item.id;
+                        return (
+                          <div 
+                            key={item.id} 
+                            onClick={() => setActivePDAItem(item)}
+                            className={`p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all ${
+                              isCurrentActive 
+                                ? 'bg-blue-500/10 dark:bg-blue-500/5 border-l-4 border-blue-500' 
+                                : 'hover:bg-slate-100/50 dark:hover:bg-slate-900/40 bg-white dark:bg-slate-950'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate">{item.product_name}</p>
+                              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">{item.sku} {item.barcode ? `· ${item.barcode}` : ''}</p>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 text-right shrink-0">
+                              <div>
+                                <p className="text-[8px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider">Aktual / Sistem</p>
+                                <p className="font-black text-sm text-slate-800 dark:text-slate-200">
+                                  {item.physical_stock ?? '—'} <span className="text-slate-400 font-normal">/ {item.system_stock}</span>
+                                </p>
+                              </div>
+                              
+                              {item.physical_stock !== null && (
+                                <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-black text-xs ${
+                                  item.variance === 0 
+                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
+                                    : item.variance > 0 
+                                      ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' 
+                                      : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                                }`}>
+                                  {item.variance === 0 ? '✓' : item.variance > 0 ? `+${item.variance}` : item.variance}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Items Table */}
+              <div className="border rounded-xl overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50 dark:bg-slate-800/50">
+                      <TableHead className="w-8">#</TableHead>
+                      <TableHead>Produk</TableHead>
+                      <TableHead className="text-center w-24">Stok Sistem</TableHead>
+                      <TableHead className="text-center w-28">Stok Fisik</TableHead>
+                      <TableHead className="text-center w-20">Selisih</TableHead>
+                      <TableHead className="text-center w-20">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredItems.map((item, idx) => (
+                      <TableRow key={item.id} className={item.variance_type === 'Surplus' ? 'bg-amber-50/50' : item.variance_type === 'Deficit' ? 'bg-red-50/50' : ''}>
+                        <TableCell className="text-xs text-slate-400">{idx + 1}</TableCell>
+                        <TableCell>
+                          <p className="font-medium text-sm">{item.product_name}</p>
+                          <p className="text-xs text-slate-400">{item.sku}{item.barcode ? ` · ${item.barcode}` : ''}</p>
+                        </TableCell>
+                        <TableCell className="text-center font-bold">{item.system_stock}</TableCell>
+                        <TableCell className="text-center">
+                          {showDetail?.status === 'In Progress' || showDetail?.status === 'Draft' ? (
+                            <Input id={`input-${item.id}`} type="number" min="0" value={item.physical_stock ?? ''} onChange={e => updatePhysicalStock(item.id, e.target.value)}
+                              className="w-20 mx-auto text-center h-8 font-bold" placeholder="—" />
+                          ) : (
+                            <span className="font-bold">{item.physical_stock ?? '—'}</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {item.physical_stock !== null && (
+                            <span className={`font-black ${item.variance > 0 ? 'text-amber-600' : item.variance < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                              {item.variance > 0 ? `+${item.variance}` : item.variance}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {item.physical_stock !== null && (
+                            item.variance_type === 'Match' ? <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" /> :
+                              item.variance_type === 'Surplus' ? <ArrowUpCircle className="w-4 h-4 text-amber-500 mx-auto" /> :
+                                <ArrowDownCircle className="w-4 h-4 text-red-500 mx-auto" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
 
           {/* Actions */}
           <div className="flex justify-end gap-2 mt-4">
