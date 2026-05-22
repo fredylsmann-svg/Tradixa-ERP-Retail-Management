@@ -173,9 +173,11 @@ function exportToPDF(title, date, storeName, storeAddress, storeLogoUrl, content
   
   // Mekanisme default untuk desktop (menggunakan tab baru dengan auto-print aktif)
   const htmlContentDesktop = buildPrintHTML(title, date, storeName, storeAddress, storeLogoUrl, tableHTML, true);
+  const blob = new Blob([htmlContentDesktop], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
   
-  // Membuka tab kosong terlebih dahulu untuk menghindari bug GPU Chrome di MacOS yang memicu layar hitam saat menutup tab Blob URL
-  const w = window.open('', '_blank');
+  // Membuka Blob URL dengan noopener/noreferrer agar proses tab terpisah sehingga tab utama tidak membeku (freeze)
+  const w = window.open(url, '_blank', 'noopener,noreferrer');
   if (!w) { 
     // Fallback jika pop-up terblokir di desktop, gunakan iframe printing (tanpa auto-print ganda)
     removeExistingIframe();
@@ -207,10 +209,8 @@ function exportToPDF(title, date, storeName, storeAddress, storeLogoUrl, content
     return;
   }
   
-  // Tulis konten secara langsung ke tab baru (menghindari penggunaan Blob URL)
-  w.document.open();
-  w.document.write(htmlContentDesktop);
-  w.document.close();
+  // Bersihkan memori blob setelah dimuat di tab baru
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 export default function ExportToolbar({ title, date, storeName, storeAddress, storeLogoUrl, contentId, store }) {
