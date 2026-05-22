@@ -829,32 +829,32 @@ export default function ProfileAccount({ store }) {
             </Card>
           )}
 
-          <Card className="border-slate-200 rounded-3xl shadow-sm bg-gradient-to-b from-white to-slate-50/50">
+          <Card className="border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-950 dark:to-slate-900/80">
             <CardContent className="p-8">
               <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-inner">
+                <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-inner">
                   <CheckCircle2 className="w-10 h-10" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-900">Status Akun Aktif</h3>
-                  <p className="text-xs text-slate-500 mt-1 italic font-medium">Terakhir login: Hari ini, {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</p>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white">Status Akun Aktif</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 italic font-medium">Terakhir login: Hari ini, {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</p>
                 </div>
               </div>
 
               <div className="mt-8 space-y-4">
-                <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-                  <Clock className="w-5 h-5 text-slate-400" />
+                <div className="p-4 bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                  <Clock className="w-5 h-5 text-slate-400 dark:text-slate-500" />
                   <div className="text-left">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sesi Aktif</p>
-                    <p className="text-sm font-bold text-slate-700">Chrome on MacOS</p>
+                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Sesi Aktif</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Chrome on MacOS</p>
                   </div>
-                  <Badge className="ml-auto bg-blue-50 text-blue-600 border-none font-bold">CURRENT</Badge>
+                  <Badge className="ml-auto bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-none font-bold">CURRENT</Badge>
                 </div>
-                <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-                  <AlertCircle className="w-5 h-5 text-slate-400" />
+                <div className="p-4 bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                  <AlertCircle className="w-5 h-5 text-slate-400 dark:text-slate-500" />
                   <div className="text-left">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">IP Address</p>
-                    <p className="text-sm font-bold text-slate-700">182.1.204.XX</p>
+                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">IP Address</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">182.1.204.XX</p>
                   </div>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import PremiumGate from '@/components/ui/PremiumGate';
 import { Printer, FileText, FileSpreadsheet } from 'lucide-react';
+import { toast } from 'sonner';
 
 /**
  * ExportToolbar — Global export utility: Print, PDF, Excel
@@ -84,6 +85,33 @@ function exportToExcel(title, date, storeName, storeAddress, contentId) {
     ${tableHTML}
   </body></html>`;
 
+  // Deteksi lingkungan standalone (PWA) di iOS/Android
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+  if (isMobile && isStandalone && navigator.clipboard && window.ClipboardItem) {
+    try {
+      const blob = new Blob([html], { type: 'text/html' });
+      const textBlob = new Blob([`${title} - ${date}`], { type: 'text/plain' });
+      const clipboardItem = new ClipboardItem({
+        'text/html': blob,
+        'text/plain': textBlob
+      });
+      navigator.clipboard.write([clipboardItem]).then(() => {
+        toast.success('Tabel Excel disalin ke clipboard! Buka Excel/Sheets di HP Anda lalu lakukan Tempel (Paste) untuk mendapatkan data beserta formatnya.');
+      }).catch(() => {
+        // Fallback untuk plain text copy
+        navigator.clipboard.writeText(html).then(() => {
+          toast.success('Data disalin ke clipboard! Silakan tempel langsung di Excel/Sheets Anda.');
+        });
+      });
+      return;
+    } catch (e) {
+      // Lanjut ke fallback jika ClipboardItem gagal
+    }
+  }
+
+  // Mekanisme default (Download file langsung)
   const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -97,13 +125,71 @@ function exportToPDF(title, date, storeName, storeAddress, storeLogoUrl, content
   const tableHTML = cleanTableHTML(contentId);
   const htmlContent = buildPrintHTML(title, date, storeName, storeAddress, storeLogoUrl, tableHTML);
   
+  // Deteksi jika user berada di perangkat mobile atau menggunakan mode standalone (PWA)
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                   window.matchMedia('(max-width: 768px)').matches;
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+  if (isMobile || isStandalone) {
+    // Gunakan teknik Hidden Iframe Printing agar aman dari pop-up blocker dan bekerja sempurna di iOS PWA
+    let iframe = document.getElementById('print-iframe');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'print-iframe';
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.style.zIndex = '-9999';
+      document.body.appendChild(iframe);
+    }
+    
+    const doc = iframe.contentWindow.document || iframe.contentDocument;
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+    
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    }, 500);
+    return;
+  }
+  
+  // Mekanisme default untuk desktop (menggunakan tab baru)
   const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   
   const w = window.open(url, '_blank', 'noopener,noreferrer');
-  if (!w) { window.alert('Pop-up blocked! Izinkan pop-up untuk export PDF.'); return; }
+  if (!w) { 
+    // Fallback jika pop-up terblokir di desktop, gunakan iframe printing agar tetap bisa cetak
+    let iframe = document.getElementById('print-iframe');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'print-iframe';
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.style.zIndex = '-9999';
+      document.body.appendChild(iframe);
+    }
+    const doc = iframe.contentWindow.document || iframe.contentDocument;
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    }, 500);
+    return;
+  }
   
-  // Clean up memory after the new tab has likely loaded
+  // Bersihkan memori blob setelah dimuat di tab baru
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
