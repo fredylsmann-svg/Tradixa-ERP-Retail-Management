@@ -19,6 +19,7 @@ const DashboardAgent = lazy(() => import('./pages/DashboardAgent'));
 const DesignStudio = lazy(() => import('./pages/DesignStudio'));
 const DiscountManagement = lazy(() => import('./pages/DiscountManagement'));
 const Expenses = lazy(() => import('./pages/Expenses'));
+const FundTransfers = lazy(() => import('./pages/FundTransfers'));
 const FinancialStatements = lazy(() => import('./pages/FinancialStatements'));
 const FinancialAgentWorkflow = lazy(() => import('./pages/FinancialAgentWorkflow'));
 const GoodsReceipt = lazy(() => import('./pages/GoodsReceipt'));
@@ -95,6 +96,7 @@ export const PAGES = {
     "DesignStudio": DesignStudio,
     "DiscountManagement": DiscountManagement,
     "Expenses": Expenses,
+    "FundTransfers": FundTransfers,
     "FinancialStatements": FinancialStatements,
     "FinancialAgentWorkflow": FinancialAgentWorkflow,
     "GoodsReceipt": GoodsReceipt,

@@ -11,7 +11,7 @@ import {
   ShoppingCart, Receipt, FileInput, TrendingUp, Users, ClipboardList, Truck,
   Building2, ArrowLeftRight, CreditCard, FileOutput, Wallet, LayoutDashboard,
   ArrowRightLeft, List, DollarSign, Settings, UserCircle, GitBranch, Network,
-  Workflow, ChevronDown, Menu, X, MessageCircle, Award, Layers, Mail, Zap, Megaphone, Banknote, PieChart, Contact, Landmark,
+  Workflow, ChevronDown, Menu, X, MessageCircle, Award, Layers, Mail, Zap, Megaphone, Banknote, PieChart, Contact, Landmark, Coins,
   BookOpen, ReceiptText, LineChart, BarChart, Activity, Warehouse, ClipboardCheck, MapPin, Palette, Boxes, BarChart3, HandCoins, History,
   Lock, CreditCard as CreditCardIcon, Calculator, FileSignature, PackageCheck
 } from 'lucide-react';
@@ -97,6 +97,7 @@ const getFilteredMenuGroups = (isOwner) => {
       items: [
         { name: 'Bank Accounts', icon: Landmark, page: 'BankAccounts' },
         { name: 'Bank Transactions', icon: Banknote, page: 'BankTransactions' },
+        { name: 'Fund Transfer', icon: Coins, page: 'FundTransfers' },
         { name: 'Cash Register', icon: Calculator, page: 'CashRegister' },
         { name: 'Bank Reconciliation', icon: FileCheck, page: 'BankReconciliation' },
         { name: 'Account Receivables', icon: Wallet, page: 'Receivables' },

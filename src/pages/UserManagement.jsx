@@ -53,7 +53,7 @@ const MODULE_GROUPS = [
   },
   {
     category: 'FINANCIAL & OPERATIONS',
-    modules: ['Bank Accounts', 'Bank Transactions', 'Cash Register', 'Bank Reconciliation', 'Account Receivables', 'Account Receivable Invoices', 'Account Payables', 'Account Payable Invoices', 'Payments', 'Operational Expenses', 'Journal Entries', 'Chart of Accounts', 'Tax Management']
+    modules: ['Bank Accounts', 'Bank Transactions', 'Fund Transfer', 'Cash Register', 'Bank Reconciliation', 'Account Receivables', 'Account Receivable Invoices', 'Account Payables', 'Account Payable Invoices', 'Payments', 'Operational Expenses', 'Journal Entries', 'Chart of Accounts', 'Tax Management']
   },
   {
     category: 'HRIS & MANAGEMENT',

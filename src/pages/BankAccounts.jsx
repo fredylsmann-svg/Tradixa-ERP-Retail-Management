@@ -232,11 +232,11 @@ export default function BankAccounts({ store }) {
         <DialogContent className="w-[95vw] max-w-2xl">
           <DialogHeader><DialogTitle className="text-lg">{editingAccount ? 'Edit Rekening' : 'Tambah Rekening Baru'}</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-3">
-            <div><Label className="text-xs md:text-sm">Nama Bank *</Label><Input value={formData.bank_name} onChange={(e) => setFormData({...formData, bank_name: e.target.value})} className="mt-1 text-sm" required /></div>
-            <div><Label className="text-xs md:text-sm">No. Rekening *</Label><Input value={formData.account_number} onChange={(e) => setFormData({...formData, account_number: e.target.value})} className="mt-1 text-sm" required /></div>
-            <div><Label className="text-xs md:text-sm">Atas Nama *</Label><Input value={formData.account_name} onChange={(e) => setFormData({...formData, account_name: e.target.value})} className="mt-1 text-sm" required /></div>
+            <div><Label className="text-xs md:text-sm">Nama Bank *</Label><Input value={formData.bank_name} onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })} className="mt-1 text-sm" required /></div>
+            <div><Label className="text-xs md:text-sm">No. Rekening *</Label><Input value={formData.account_number} onChange={(e) => setFormData({ ...formData, account_number: e.target.value })} className="mt-1 text-sm" required /></div>
+            <div><Label className="text-xs md:text-sm">Atas Nama *</Label><Input value={formData.account_name} onChange={(e) => setFormData({ ...formData, account_name: e.target.value })} className="mt-1 text-sm" required /></div>
             <div><Label className="text-xs md:text-sm">Tipe Rekening</Label>
-              <Select value={formData.account_type} onValueChange={(v) => setFormData({...formData, account_type: v})}>
+              <Select value={formData.account_type} onValueChange={(v) => setFormData({ ...formData, account_type: v })}>
                 <SelectTrigger className="mt-1 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Savings">Savings</SelectItem>
@@ -245,7 +245,7 @@ export default function BankAccounts({ store }) {
                 </SelectContent>
               </Select>
             </div>
-            <div><Label className="text-xs md:text-sm">Saldo Awal</Label><NumberInput value={formData.balance} onChange={(e) => setFormData({...formData, balance: e.target.value})} className="mt-1 text-sm" placeholder="0" /></div>
+            <div><Label className="text-xs md:text-sm">Saldo Awal</Label><NumberInput value={formData.balance} onChange={(e) => setFormData({ ...formData, balance: e.target.value })} className="mt-1 text-sm" placeholder="0" /></div>
             <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
               <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="text-sm">Batal</Button>
               <Button type="submit" disabled={isSaving} className="text-sm">{isSaving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Simpan</Button>

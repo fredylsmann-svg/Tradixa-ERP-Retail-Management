@@ -544,16 +544,45 @@ export default function BankTransactions({ store }) {
                 <TransactionItems salesTransactionId={viewingDetail.sales_transaction_id} />
               )}
               
-              {viewingDetail.payment_proof_url && (
-                <div>
-                  <p className="text-sm text-slate-500 mb-2">Bukti Transfer:</p>
-                  <img 
-                    src={viewingDetail.payment_proof_url} 
-                    alt="Bukti Transfer" 
-                    className="w-full rounded-lg border"
-                  />
-                </div>
-              )}
+              {viewingDetail.payment_proof_url && (() => {
+                const proof = viewingDetail.payment_proof_url;
+                const isMayarLink = proof.includes('mayar.id') || proof.includes('qris');
+                const isApprovedOrCleared = viewingDetail.status === 'Approved' || viewingDetail.status === 'Cleared';
+                const isTextProof = proof.startsWith('RRN:') || proof.startsWith('EDC Trace:') || proof === 'Mayar Auto-Verified';
+
+                // Security: hide QRIS barcode for completed transactions
+                if (isMayarLink && isApprovedOrCleared) {
+                  return (
+                    <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl">
+                      <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Pembayaran QRIS Terverifikasi</p>
+                        <p className="text-xs text-emerald-600/70 dark:text-emerald-500/70 mt-0.5">Barcode QRIS disembunyikan untuk keamanan setelah pembayaran berhasil.</p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (isTextProof) {
+                  return (
+                    <div>
+                      <p className="text-sm text-slate-500 mb-2">Bukti Pembayaran:</p>
+                      <p className="text-sm font-medium bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border">{proof}</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div>
+                    <p className="text-sm text-slate-500 mb-2">Bukti Transfer:</p>
+                    <img 
+                      src={proof} 
+                      alt="Bukti Transfer" 
+                      className="w-full rounded-lg border"
+                    />
+                  </div>
+                );
+              })()}
 
               {viewingDetail.status === 'Pending' && (
                 <div className="flex gap-2 pt-4 border-t">

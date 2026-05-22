@@ -124,20 +124,43 @@ export default function SalesTransaction({ store }) {
       if (store?.id) {
         const bankAccounts = await api.entities.BankAccount.filter({ store_id: store.id, is_active: true });
         if (bankAccounts?.length > 0) {
-          const primaryBank = bankAccounts[0];
+          // Find bank containing 'mayar', or fallback to bankAccounts[0]
+          let targetBank = bankAccounts.find(b => b.bank_name.toLowerCase().includes('mayar'));
+          if (!targetBank) {
+            // Auto-provision "Akun Mayar" in frontend if not found!
+            try {
+              targetBank = await api.entities.BankAccount.create({
+                store_id: store.id,
+                bank_name: 'Akun Mayar',
+                account_number: 'MAYAR-' + Math.random().toString(36).substring(2, 7).toUpperCase(),
+                account_name: 'Mayar Auto-Provision',
+                balance: 0,
+                account_type: 'Savings',
+                is_active: true
+              });
+            } catch (err) {
+              console.error('[Tradixa] Failed to auto-provision Mayar bank account in frontend:', err);
+              targetBank = bankAccounts[0];
+            }
+          }
+
+          const newBalance = (targetBank.balance || 0) + viewingTransaction.total;
           await api.entities.BankTransaction.create({
             store_id: store.id,
-            bank_account_id: primaryBank.id,
-            bank_name: primaryBank.bank_name,
+            bank_account_id: targetBank.id,
+            bank_name: targetBank.bank_name,
             transaction_type: 'Credit',
             amount: viewingTransaction.total,
             description: `Pembayaran QRIS ${viewingTransaction.invoice_number} (RRN: ${qrisConfirmRrn.trim()})`,
             reference: viewingTransaction.invoice_number,
-            balance_after: primaryBank.balance || 0,
+            balance_after: newBalance,
             status: 'Cleared',
             sales_transaction_id: viewingTransaction.id,
             payment_proof_url: `RRN: ${qrisConfirmRrn.trim()}`
           });
+
+          // Update bank account balance in DB
+          await api.entities.BankAccount.update(targetBank.id, { balance: newBalance });
         }
       }
 

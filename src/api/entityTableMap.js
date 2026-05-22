@@ -49,6 +49,7 @@ export const ENTITY_TABLE_MAP = {
   Expense:           'expenses',
   BankAccount:       'bank_accounts',
   BankTransaction:   'bank_transactions',
+  FundTransfer:      'fund_transfers',
   Payable:           'payables',
   Receivable:        'receivables',
   InvoicePayment:    'invoice_payments',

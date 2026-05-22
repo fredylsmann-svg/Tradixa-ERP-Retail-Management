@@ -617,6 +617,17 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
     let generatedPaymentLink = '';
     let usingStaticQris = false;
     if (paymentMethod === 'QRIS') {
+      const hasMayar = bankAccounts.some(acc => acc.bank_name && acc.bank_name.toLowerCase().includes('mayar'));
+      if (!hasMayar) {
+        toast({
+          title: 'Akun Kas Mayar Belum Siap',
+          description: "Sistem mendeteksi Anda belum memiliki Akun Kas bernama 'Mayar' di modul Bank Accounts. Silakan buat satu akun bank dengan nama 'Mayar' terlebih dahulu agar saldo QRIS otomatis tersinkronisasi!",
+          variant: 'destructive'
+        });
+        setIsLoading(false);
+        return;
+      }
+
       if (!activeStore?.mayar_api_key && activeStore?.qris_static_url) {
         // Mode C: Static QRIS dari Bank/GPN Offline
         console.log('[Tradixa] Using Static GPN QRIS mode. Bypassing Mayar integration.');
@@ -977,10 +988,12 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
       });
     }
 
-    if (paymentMethod !== 'Cash' && selectedBank) {
+    // Skip QRIS — bank transaction will be created by webhook (Dynamic QRIS) or handleConfirmStaticQris (Static GPN QRIS)
+    if (paymentMethod !== 'Cash' && paymentMethod !== 'QRIS' && selectedBank) {
       const bankAccount = bankAccounts.find(b => b.id === selectedBank);
       if (bankAccount) {
         const txAmount = paidAmount > 0 ? paidAmount : total;
+        const newBalance = (bankAccount.balance || 0) + txAmount;
         await api.entities.BankTransaction.create({
           store_id: storeId,
           bank_account_id: selectedBank,
@@ -989,12 +1002,15 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
           amount: txAmount,
           description: `Penjualan ${invoiceNumber} - ${customerName}${actualTrace ? ` (EDC Trace: ${actualTrace})` : ''}`,
           reference: invoiceNumber,
-          balance_after: bankAccount.balance,
+          balance_after: newBalance,
           status: 'Pending',
           sales_transaction_id: salesTransaction.id,
           payment_proof_url: proofUrl,
           timestamp_wib: getWIBTimestamp()
         });
+
+        // Update bank account balance
+        await api.entities.BankAccount.update(selectedBank, { balance: newBalance });
       }
     }
 
@@ -1672,7 +1688,19 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                   <div className="grid grid-cols-2 gap-3 pt-2">
                     <div className="space-y-1.5">
                       <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Metode Bayar</Label>
-                      <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                      <Select value={paymentMethod} onValueChange={(val) => {
+                        if (val === 'QRIS') {
+                          const hasMayar = bankAccounts.some(acc => acc.bank_name && acc.bank_name.toLowerCase().includes('mayar'));
+                          if (!hasMayar) {
+                            toast({
+                              title: 'Akun Kas Mayar Belum Siap',
+                              description: "Sistem mendeteksi Anda belum memiliki Akun Kas bernama 'Mayar' di modul Bank Accounts. Silakan buat satu akun bank dengan nama 'Mayar' terlebih dahulu agar saldo QRIS otomatis tersinkronisasi!",
+                              variant: 'destructive'
+                            });
+                          }
+                        }
+                        setPaymentMethod(val);
+                      }}>
                         <SelectTrigger className="h-12 border-slate-100 bg-slate-50 rounded-2xl font-bold"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Cash">Cash / Tunai</SelectItem>

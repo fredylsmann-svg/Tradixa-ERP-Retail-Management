@@ -60,6 +60,7 @@ export const PAGE_TO_MODULE = {
   // Financial & Operations
   'BankAccounts': 'Bank Accounts',
   'BankTransactions': 'Bank Transactions',
+  'FundTransfers': 'Fund Transfer',
   'CashRegister': 'Cash Register',
   'BankReconciliation': 'Bank Reconciliation',
   'Receivables': 'Account Receivables',

@@ -176,14 +176,45 @@ serve(async (req: any) => {
           })
           .eq('id', receivable.id)
 
-        // Find standard Bank/Kas Account to record it
+        // Find standard Bank/Kas Account containing 'Mayar' or fallback
         const { data: bankList } = await supabase
           .from('bank_accounts')
           .select('*')
           .eq('store_id', receivable.store_id)
+          .ilike('bank_name', '%mayar%')
           .limit(1)
         
-        const bank = bankList && bankList.length > 0 ? bankList[0] : null
+        let bank = bankList && bankList.length > 0 ? bankList[0] : null
+
+        if (!bank) {
+          // Auto-provision a new "Akun Mayar" account!
+          const { data: newBank, error: createError } = await supabase
+            .from('bank_accounts')
+            .insert({
+              store_id: receivable.store_id,
+              bank_name: 'Akun Mayar',
+              account_number: 'MAYAR-' + Math.random().toString(36).substring(2, 7).toUpperCase(),
+              account_name: 'Mayar Auto-Provision',
+              balance: 0,
+              account_type: 'Savings',
+              is_active: true,
+              created_date: new Date().toISOString().split('T')[0],
+              updated_date: new Date().toISOString().split('T')[0]
+            })
+            .select()
+            .single()
+          
+          if (!createError && newBank) {
+            bank = newBank
+          } else {
+            const { data: fallbackList } = await supabase
+              .from('bank_accounts')
+              .select('*')
+              .eq('store_id', receivable.store_id)
+              .limit(1)
+            bank = fallbackList && fallbackList.length > 0 ? fallbackList[0] : null
+          }
+        }
 
         // Create Bank Transaction
         const newBalance = (bank?.balance || 0) + Number(amount)
@@ -257,37 +288,92 @@ serve(async (req: any) => {
             })
             .eq('id', salesTx.id)
 
-          // Find bank and create bank transaction
-          const { data: bankList } = await supabase
-            .from('bank_accounts')
-            .select('*')
-            .eq('store_id', salesTx.store_id)
-            .limit(1)
-
-          const bank = bankList && bankList.length > 0 ? bankList[0] : null
+           // Find bank containing 'Mayar' or fallback
+           const { data: bankList } = await supabase
+             .from('bank_accounts')
+             .select('*')
+             .eq('store_id', salesTx.store_id)
+             .ilike('bank_name', '%mayar%')
+             .limit(1)
+ 
+           let bank = bankList && bankList.length > 0 ? bankList[0] : null
+ 
+           if (!bank) {
+             // Auto-provision a new "Akun Mayar" account!
+             const { data: newBank, error: createError } = await supabase
+               .from('bank_accounts')
+               .insert({
+                 store_id: salesTx.store_id,
+                 bank_name: 'Akun Mayar',
+                 account_number: 'MAYAR-' + Math.random().toString(36).substring(2, 7).toUpperCase(),
+                 account_name: 'Mayar Auto-Provision',
+                 balance: 0,
+                 account_type: 'Savings',
+                 is_active: true,
+                 created_date: new Date().toISOString().split('T')[0],
+                 updated_date: new Date().toISOString().split('T')[0]
+               })
+               .select()
+               .single()
+             
+             if (!createError && newBank) {
+               bank = newBank
+             } else {
+               const { data: fallbackList } = await supabase
+                 .from('bank_accounts')
+                 .select('*')
+                 .eq('store_id', salesTx.store_id)
+                 .limit(1)
+               bank = fallbackList && fallbackList.length > 0 ? fallbackList[0] : null
+             }
+           }
 
           if (bank) {
             const newBalance = (bank?.balance || 0) + Number(amount)
+
+            // Idempotency: check if bank transaction already exists for this sale
+            const { data: existingBankTx } = await supabase
+              .from('bank_transactions')
+              .select('id')
+              .eq('store_id', salesTx.store_id)
+              .eq('reference', salesTx.invoice_number)
+              .limit(1)
+
+            if (existingBankTx && existingBankTx.length > 0) {
+              // Update existing bank transaction to Approved (created by frontend as Pending)
+              await supabase
+                .from('bank_transactions')
+                .update({
+                  status: 'Approved',
+                  bank_account_id: bank.id,
+                  bank_name: bank.bank_name,
+                  balance_after: newBalance,
+                  payment_proof_url: salesTx.payment_proof_url || 'Mayar Auto-Verified'
+                })
+                .eq('id', existingBankTx[0].id)
+            } else {
+              // No existing record — create new bank transaction
+              await supabase
+                .from('bank_transactions')
+                .insert({
+                  store_id: salesTx.store_id,
+                  bank_account_id: bank.id,
+                  bank_name: bank.bank_name,
+                  transaction_type: 'Credit',
+                  amount: Number(amount),
+                  description: `Pembayaran Penjualan QRIS/VA (Mayar) - ${salesTx.invoice_number}`,
+                  reference: paymentId,
+                  balance_after: newBalance,
+                  status: 'Approved',
+                  payment_proof_url: salesTx.payment_proof_url || 'Mayar Auto-Verified',
+                  timestamp_wib: getWIBTimestamp()
+                })
+            }
+
             await supabase
               .from('bank_accounts')
               .update({ balance: newBalance })
               .eq('id', bank.id)
-
-            await supabase
-              .from('bank_transactions')
-              .insert({
-                store_id: salesTx.store_id,
-                bank_account_id: bank.id,
-                bank_name: bank.bank_name,
-                transaction_type: 'Credit',
-                amount: Number(amount),
-                description: `Pembayaran Penjualan QRIS/VA (Mayar) - ${salesTx.invoice_number}`,
-                reference: paymentId,
-                balance_after: newBalance,
-                status: 'Approved',
-                payment_proof_url: salesTx.payment_proof_url || 'Mayar Auto-Verified',
-                timestamp_wib: getWIBTimestamp()
-              })
           }
         }
       }
