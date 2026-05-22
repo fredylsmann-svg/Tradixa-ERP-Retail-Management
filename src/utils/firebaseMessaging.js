@@ -128,11 +128,18 @@ export const registerDeviceForPush = async (user, storeId) => {
       throw new Error("Notifikasi push eksklusif untuk toko dengan Paket Premium.");
     }
 
+    // Get actual Supabase Auth User ID from active session to satisfy RLS Policy
+    const { data: { session } } = await supabase.auth.getSession();
+    const authUserId = session?.user?.id;
+    if (!authUserId) {
+      throw new Error("Sesi pengguna tidak ditemukan. Silakan login kembali.");
+    }
+
     // Save token to Supabase user_push_subscriptions table
     const { error } = await supabase
       .from('user_push_subscriptions')
       .upsert({
-        user_id: user.id || user.auth_id,
+        user_id: authUserId,
         store_id: storeId,
         device_name: deviceName,
         fcm_token: token,
