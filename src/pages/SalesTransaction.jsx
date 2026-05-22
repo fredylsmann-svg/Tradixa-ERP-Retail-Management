@@ -621,7 +621,7 @@ export default function SalesTransaction({ store }) {
                   viewingTransaction.payment_status === 'Paid' ? 'bg-emerald-100 text-emerald-700 ml-auto' :
                   viewingTransaction.payment_status === 'Partial' ? 'bg-blue-100 text-blue-700 ml-auto' :
                   'bg-amber-100 text-amber-700 ml-auto'
-                }>{viewingTransaction.payment_status === 'Paid' ? 'Lunas' : viewingTransaction.payment_status === 'Partial' ? 'Bayar Sebagian' : 'Belum Bayar'}</Badge>
+                }>{viewingTransaction.payment_status}</Badge>
               )}
             </DialogTitle>
           </DialogHeader>

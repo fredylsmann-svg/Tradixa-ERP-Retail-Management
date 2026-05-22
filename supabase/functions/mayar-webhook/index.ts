@@ -17,6 +17,17 @@ const SAAS_PRICES: Record<number, { plan: string; cycle: string }> = {
   1490000: { plan: 'pro', cycle: 'yearly' },        // Pro yearly (production)
 }
 
+function getWIBTimestamp(): string {
+  const now = new Date();
+  const wibTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+  const date = String(wibTime.getUTCDate()).padStart(2, '0');
+  const month = String(wibTime.getUTCMonth() + 1).padStart(2, '0');
+  const year = wibTime.getUTCFullYear();
+  const hours = String(wibTime.getUTCHours()).padStart(2, '0');
+  const minutes = String(wibTime.getUTCMinutes()).padStart(2, '0');
+  return `${date}/${month}/${year} ${hours}:${minutes} WIB`;
+}
+
 serve(async (req: any) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -194,7 +205,8 @@ serve(async (req: any) => {
               reference: paymentId,
               balance_after: newBalance,
               status: 'Approved',
-              payment_proof_url: receivable.payment_link || 'Mayar Auto-Verified'
+              payment_proof_url: receivable.payment_link || 'Mayar Auto-Verified',
+              timestamp_wib: getWIBTimestamp()
             })
         }
       } else {
@@ -273,7 +285,8 @@ serve(async (req: any) => {
                 reference: paymentId,
                 balance_after: newBalance,
                 status: 'Approved',
-                payment_proof_url: salesTx.payment_proof_url || 'Mayar Auto-Verified'
+                payment_proof_url: salesTx.payment_proof_url || 'Mayar Auto-Verified',
+                timestamp_wib: getWIBTimestamp()
               })
           }
         }

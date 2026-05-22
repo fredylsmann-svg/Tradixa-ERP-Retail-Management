@@ -292,7 +292,11 @@ export default function Notifications({ store }) {
           type: isPending ? 'sale_pending' : 'new_sale',
           icon: isPending ? CreditCard : Receipt,
           iconClass: isPending ? 'text-amber-600 bg-amber-50' : 'text-emerald-600 bg-emerald-50',
-          title: isPending ? '⏳ Menunggu Pembayaran' : 'Transaksi Penjualan Baru',
+          title: isPending && (sale.payment_method === 'Transfer' || sale.payment_method === 'Debit' || sale.payment_method === 'Debit Card' || sale.payment_method === 'Credit Card' || sale.payment_method === 'Giro')
+            ? '⏳ Perlu Verifikasi Pembayaran'
+            : isPending
+              ? '⏳ Menunggu Pembayaran'
+              : 'Transaksi Penjualan Baru',
           message: `${sale.customer_name || 'Walk-in Customer'} — Rp ${Number(sale.total || 0).toLocaleString('id-ID')}${isPending && isQRIS ? ' (QRIS)' : ''}`,
           time: sale.timestamp_wib?.split(' ')[1] || 'Hari ini',
           timestamp: saleTimestamp

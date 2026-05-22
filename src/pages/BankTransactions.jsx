@@ -101,7 +101,7 @@ export default function BankTransactions({ store }) {
 
   const loadData = async () => {
     const [txData, accData] = await Promise.all([
-      api.entities.BankTransaction.filter({ store_id: store.id }, '-created_date'),
+      api.entities.BankTransaction.filter({ store_id: store.id }, '-created_at'),
       api.entities.BankAccount.filter({ store_id: store.id })
     ]);
     setAllTransactions(txData);

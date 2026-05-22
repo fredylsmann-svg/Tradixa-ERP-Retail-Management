@@ -64,7 +64,7 @@ export default function SalesInvoices({ store }) {
       setEmailingInvoice(null);
       return;
     }
-    
+
     setIsSendingEmail(true);
     try {
       const quotaCheck = await marketingApi.checkEmailQuota(store);
@@ -97,7 +97,7 @@ export default function SalesInvoices({ store }) {
           storeName: store.store_name,
           ctaUrl: `${window.location.origin}/public/invoice/sales/${emailingInvoice.id}`
         });
-        
+
         // Log Activity to Audit
         api.logActivity({
           store_id: store.id,
@@ -130,32 +130,32 @@ export default function SalesInvoices({ store }) {
 
   const handleSendWA = async (tx) => {
     if (!tx.customer_id) {
-       toast.error('Data pelanggan tidak tersedia pada invoice ini.');
-       return;
+      toast.error('Data pelanggan tidak tersedia pada invoice ini.');
+      return;
     }
-    
+
     try {
       const customers = await api.entities.Customer.filter({ id: tx.customer_id });
       if (customers.length > 0 && customers[0].phone) {
-         const customer = customers[0];
-         const link = `${window.location.origin}/public/invoice/sales/${tx.id}`;
-         const message = `Halo ${customer.name},\n\nBerikut adalah tagihan / invoice untuk transaksi Anda di *${store?.store_name}*.\n\nNo. Invoice: *${tx.invoice_number}*\nTotal: *Rp ${formatCurrency(tx.total)}*\nStatus: *${tx.payment_status}*\n\nSilakan klik tautan di bawah ini untuk melihat dan mengunduh detail invoice:\n${link}\n\nTerima kasih,\n${store?.store_name}`;
-         
-         const cleanPhone = customer.phone.replace(/\D/g, '');
-         const waUrl = `https://wa.me/${cleanPhone.startsWith('0') ? '62' + cleanPhone.substring(1) : cleanPhone}?text=${encodeURIComponent(message)}`;
-         
-         window.open(waUrl, '_blank');
+        const customer = customers[0];
+        const link = `${window.location.origin}/public/invoice/sales/${tx.id}`;
+        const message = `Halo ${customer.name},\n\nBerikut adalah tagihan / invoice untuk transaksi Anda di *${store?.store_name}*.\n\nNo. Invoice: *${tx.invoice_number}*\nTotal: *Rp ${formatCurrency(tx.total)}*\nStatus: *${tx.payment_status}*\n\nSilakan klik tautan di bawah ini untuk melihat dan mengunduh detail invoice:\n${link}\n\nTerima kasih,\n${store?.store_name}`;
 
-         // Log Activity
-         api.logActivity({
-           store_id: store.id,
-           entity_name: 'SalesInvoice',
-           entity_id: tx.id,
-           action_type: 'status_change', // Using status_change or similar as a proxy for engagement
-           description: `Opened WhatsApp to send invoice ${tx.invoice_number} to ${customer.phone}`
-         });
+        const cleanPhone = customer.phone.replace(/\D/g, '');
+        const waUrl = `https://wa.me/${cleanPhone.startsWith('0') ? '62' + cleanPhone.substring(1) : cleanPhone}?text=${encodeURIComponent(message)}`;
+
+        window.open(waUrl, '_blank');
+
+        // Log Activity
+        api.logActivity({
+          store_id: store.id,
+          entity_name: 'SalesInvoice',
+          entity_id: tx.id,
+          action_type: 'status_change', // Using status_change or similar as a proxy for engagement
+          description: `Opened WhatsApp to send invoice ${tx.invoice_number} to ${customer.phone}`
+        });
       } else {
-         toast.error('Customer ini tidak memiliki nomor telepon WhatsApp yang terdaftar!');
+        toast.error('Customer ini tidak memiliki nomor telepon WhatsApp yang terdaftar!');
       }
     } catch (e) {
       toast.error('Gagal mengambil data customer: ' + e.message);
@@ -330,14 +330,14 @@ export default function SalesInvoices({ store }) {
                 <h2 className="text-xl font-bold">{store?.store_name}</h2>
                 <p className="text-sm text-slate-500">{store?.address}</p>
               </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div><span className="text-slate-500">Pelanggan:</span> {viewingInvoice.customer_name}</div>
-                  <div><span className="text-slate-500">Sales PIC:</span> {viewingInvoice.sales_pic || '-'}</div>
-                  <div><span className="text-slate-500">Lokasi:</span> {viewingInvoice.sale_location || '-'}</div>
-                  <div><span className="text-slate-500">Tanggal:</span> {viewingInvoice.timestamp_wib}</div>
-                  <div><span className="text-slate-500">Pembayaran:</span> {viewingInvoice.payment_method}</div>
-                  <div><span className="text-slate-500">Status:</span> {viewingInvoice.payment_status}</div>
-                </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><span className="text-slate-500">Pelanggan:</span> {viewingInvoice.customer_name}</div>
+                <div><span className="text-slate-500">Sales PIC:</span> {viewingInvoice.sales_pic || '-'}</div>
+                <div><span className="text-slate-500">Lokasi:</span> {viewingInvoice.sale_location || '-'}</div>
+                <div><span className="text-slate-500">Tanggal:</span> {viewingInvoice.timestamp_wib}</div>
+                <div><span className="text-slate-500">Pembayaran:</span> {viewingInvoice.payment_method}</div>
+                <div><span className="text-slate-500">Status:</span> {viewingInvoice.payment_status}</div>
+              </div>
               {viewingInvoice.payment_proof_url && viewingInvoice.payment_method !== 'QRIS' && (
                 <div>
                   <p className="text-sm text-slate-500 mb-2">Bukti Transfer:</p>
