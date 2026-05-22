@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -8,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Plus, Eye, ShoppingCart, Receipt, CalendarClock, Wallet, Phone, User, CreditCard, X, ZoomIn, CheckCircle2, Clock, ArrowRight, Lock, Loader2, QrCode } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import SalesTransactionForm from '@/components/product/SalesTransactionForm';
+import PrintInvoice from '@/components/invoice/PrintInvoice';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
@@ -23,6 +25,8 @@ export default function SalesTransaction({ store }) {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [viewingTransaction, setViewingTransaction] = useState(null);
+  const [viewingQrisTx, setViewingQrisTx] = useState(null);
+  const [printingInvoice, setPrintingInvoice] = useState(null);
   const [linkedAR, setLinkedAR] = useState(null);
   const [proofLightbox, setProofLightbox] = useState(null);
   const { selectedDate, formattedDate, isToday } = useGlobalDate();
@@ -368,6 +372,65 @@ export default function SalesTransaction({ store }) {
     if (store?.id) loadTransactions();
   }, [store]);
 
+  // REALTIME: Auto-update QRIS modal and transactions list when paid
+  useEffect(() => {
+    if (!viewingQrisTx?.id) return;
+    
+    const channel = supabase
+      .channel(`qris_payment_${viewingQrisTx.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'sales_transactions',
+        filter: `id=eq.${viewingQrisTx.id}`
+      }, (payload) => {
+        console.log('[QRIS Realtime] Transaction updated:', payload.new);
+        
+        if (payload.new && payload.new.payment_status === 'Paid') {
+          toast({
+            title: "Pembayaran Berhasil!",
+            description: `Pembayaran untuk Invoice ${payload.new.invoice_number} sebesar Rp ${new Intl.NumberFormat('id-ID').format(payload.new.total)} telah berhasil diverifikasi otomatis oleh sistem.`,
+            variant: "default",
+            className: "bg-emerald-600 text-white border-none font-bold"
+          });
+          
+          setViewingQrisTx(null);
+          setPrintingInvoice(payload.new);
+          loadTransactions();
+        }
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [viewingQrisTx?.id]);
+
+  // REALTIME: Auto-update viewing transaction details when updated in DB
+  useEffect(() => {
+    if (!viewingTransaction?.id) return;
+    
+    const channel = supabase
+      .channel(`tx_detail_${viewingTransaction.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'sales_transactions',
+        filter: `id=eq.${viewingTransaction.id}`
+      }, (payload) => {
+        console.log('[Tx Realtime] Detail updated:', payload.new);
+        if (payload.new) {
+          setViewingTransaction(payload.new);
+          loadTransactions();
+        }
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [viewingTransaction?.id]);
+
   const loadTransactions = async () => {
     const data = await api.entities.SalesTransaction.filter({ store_id: store.id }, '-created_date');
     setAllTransactions(data);
@@ -517,8 +580,8 @@ export default function SalesTransaction({ store }) {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => { setViewingTransaction(tx); setQrisConfirmRrn(''); }}
-                              title="Konfirmasi Pembayaran QRIS"
+                              onClick={() => setViewingQrisTx(tx)}
+                              title="Tampilkan QRIS Barcode"
                               className="text-violet-600 hover:text-violet-700 hover:bg-violet-50"
                             >
                               <QrCode className="w-4 h-4" />
@@ -538,12 +601,14 @@ export default function SalesTransaction({ store }) {
         </CardContent>
       </Card>
 
-      <SalesTransactionForm
-        open={showForm}
-        onClose={() => setShowForm(false)}
-        store={store}
-        onSuccess={loadTransactions}
-      />
+      {showForm && (
+        <SalesTransactionForm
+          open={showForm}
+          onClose={() => setShowForm(false)}
+          store={store}
+          onSuccess={loadTransactions}
+        />
+      )}
 
       <Dialog open={!!viewingTransaction && !proofLightbox} onOpenChange={() => setViewingTransaction(null)}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-3xl mx-auto rounded-2xl p-4 sm:p-6 overflow-y-auto max-h-[90vh]">
@@ -581,7 +646,15 @@ export default function SalesTransaction({ store }) {
                     </a>
                   )}
                 </div>
-                <div><p className="text-sm text-slate-500">Pembayaran</p><p className="font-medium">{viewingTransaction.payment_method}</p></div>
+                <div>
+                  <p className="text-sm text-slate-500">Pembayaran</p>
+                  <p className="font-medium">{viewingTransaction.payment_method}</p>
+                  {viewingTransaction.payment_method === 'QRIS' && viewingTransaction.payment_proof_url && viewingTransaction.payment_proof_url.startsWith('RRN:') && (
+                    <span className="inline-block mt-1 text-[11px] font-bold text-violet-600 bg-violet-50 dark:bg-violet-950/40 dark:text-violet-400 px-2 py-0.5 rounded-md">
+                      {viewingTransaction.payment_proof_url}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* === QRIS Pending Confirmation Section === */}
@@ -688,10 +761,17 @@ export default function SalesTransaction({ store }) {
                 </div>
               )}
 
-              {/* Bukti Transfer (Non-Piutang, Bank/Transfer) */}
-              {viewingTransaction.payment_method !== 'Piutang / Termin' && viewingTransaction.payment_proof_url && (
+              {/* Bukti Transfer (Non-Piutang, Bank/Transfer/Debit/Credit) */}
+              {(((viewingTransaction.payment_method === 'Transfer' || 
+                 viewingTransaction.payment_method === 'Credit Card' || 
+                 viewingTransaction.payment_method === 'Debit Card') && viewingTransaction.payment_proof_url) || 
+                (viewingTransaction.payment_proof_url && viewingTransaction.payment_proof_url.includes('mayar'))) && (
                 <>
-                  {viewingTransaction.payment_status === 'Pending' && viewingTransaction.payment_proof_url && (
+                  {viewingTransaction.payment_status === 'Pending' && 
+                   viewingTransaction.payment_proof_url && 
+                   (viewingTransaction.payment_method === 'Transfer' || 
+                    viewingTransaction.payment_method === 'Credit Card' || 
+                    viewingTransaction.payment_method === 'Debit Card') && (
                     <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -735,28 +815,35 @@ export default function SalesTransaction({ store }) {
                           <p className={`text-sm font-bold ${viewingTransaction.payment_status === 'Paid' ? 'text-emerald-900 dark:text-emerald-100' : 'text-amber-900 dark:text-amber-100'}`}>
                             {viewingTransaction.payment_status === 'Paid' ? 'Diverifikasi oleh Mayar' : 'Menunggu Approval / Klarifikasi'}
                           </p>
-                          <a href={viewingTransaction.payment_proof_url} target="_blank" rel="noreferrer" className={`text-xs hover:underline ${viewingTransaction.payment_status === 'Paid' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                            {viewingTransaction.payment_status === 'Paid' ? 'Lihat Tautan Transaksi' : 'Buka Link Pembayaran'}
-                          </a>
+                          {viewingTransaction.payment_status !== 'Paid' && (
+                            <a href={viewingTransaction.payment_proof_url} target="_blank" rel="noreferrer" className="text-xs hover:underline text-amber-600 dark:text-amber-400 font-bold mt-1 inline-block">
+                              Buka Link Pembayaran
+                            </a>
+                          )}
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bukti Pembayaran</p>
-                      <button onClick={() => setProofLightbox(viewingTransaction.payment_proof_url)} className="w-full relative group">
-                        <img
-                          src={viewingTransaction.payment_proof_url}
-                          alt="Bukti Pembayaran"
-                          className="w-full max-h-48 object-contain rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer group-hover:opacity-80 transition-opacity"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="bg-black/60 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                            <ZoomIn className="w-3.5 h-3.5" /> Perbesar
+                    (viewingTransaction.payment_method === 'Transfer' || 
+                     viewingTransaction.payment_method === 'Credit Card' || 
+                     viewingTransaction.payment_method === 'Debit Card') && 
+                    !viewingTransaction.payment_proof_url.startsWith('RRN:') && (
+                      <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bukti Pembayaran</p>
+                        <button onClick={() => setProofLightbox(viewingTransaction.payment_proof_url)} className="w-full relative group">
+                          <img
+                            src={viewingTransaction.payment_proof_url}
+                            alt="Bukti Pembayaran"
+                            className="w-full max-h-48 object-contain rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer group-hover:opacity-80 transition-opacity"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="bg-black/60 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                              <ZoomIn className="w-3.5 h-3.5" /> Perbesar
+                            </div>
                           </div>
-                        </div>
-                      </button>
-                    </div>
+                        </button>
+                      </div>
+                    )
                   )}
                 </>
               )}
@@ -817,6 +904,105 @@ export default function SalesTransaction({ store }) {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Tampilan QRIS (Gambar 3) */}
+      <Dialog open={!!viewingQrisTx} onOpenChange={() => setViewingQrisTx(null)}>
+        <DialogContent className="max-w-md rounded-2xl p-6 border-none bg-slate-950 text-white flex flex-col items-center text-center">
+          <DialogHeader className="w-full flex flex-col items-center">
+            <div className="w-14 h-14 bg-amber-500/10 rounded-full flex items-center justify-center mb-3">
+              <QrCode className="w-8 h-8 text-amber-500" />
+            </div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/25 rounded-full mb-3">
+              <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+              <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Menunggu Pembayaran</span>
+            </div>
+            <DialogTitle className="text-lg font-black text-white">Scan QRIS untuk Membayar</DialogTitle>
+            <p className="text-xs text-slate-400 max-w-xs mt-1">
+              Minta pelanggan scan QRIS di bawah untuk membayar sebesar <strong className="text-blue-400 text-sm">Rp {viewingQrisTx ? formatCurrency(viewingQrisTx.total) : '0'}</strong>.
+            </p>
+          </DialogHeader>
+
+          {viewingQrisTx && (
+            <div className="my-6 p-5 bg-white rounded-2xl shadow-xl w-64 h-64 flex flex-col justify-center items-center">
+              {(() => {
+                // 1. Check if the transaction's payment_proof_url is a direct QRIS image URL (ends with image extension or contains qrcode/qris/mayar image API)
+                const isDirectImage = viewingQrisTx.payment_proof_url && 
+                                      viewingQrisTx.payment_proof_url.startsWith('http') && 
+                                      (viewingQrisTx.payment_proof_url.match(/\.(png|jpg|jpeg|webp|gif)($|\?)/i) || 
+                                       viewingQrisTx.payment_proof_url.includes('qrcode') || 
+                                       viewingQrisTx.payment_proof_url.includes('qris'));
+                
+                // 2. If it is a direct image URL (e.g. dynamic Mayar QRIS image), render it directly!
+                if (isDirectImage) {
+                  return (
+                    <img
+                      src={viewingQrisTx.payment_proof_url}
+                      alt="Dynamic QRIS Mayar"
+                      className="w-52 h-52 object-contain"
+                    />
+                  );
+                }
+
+                // 3. Fallback: If the store has a configured static GPN QRIS (and it's a real QR Code image, not a mock receipt photo)
+                const hasValidStaticQris = store?.qris_static_url && 
+                                           store.qris_static_url.startsWith('http') && 
+                                           !store.qris_static_url.includes('WhatsApp-Image-2026-05-04-at-21.31.40'); // exclude the mock receipt photo!
+                
+                if (hasValidStaticQris) {
+                  return (
+                    <img
+                      src={store.qris_static_url}
+                      alt="Static QRIS Toko"
+                      className="w-52 h-52 object-contain"
+                    />
+                  );
+                }
+                
+                // 4. Otherwise, generate a clean QR Code of the payment link or fallback dynamic transaction details
+                const isDynamicLink = viewingQrisTx.payment_proof_url && 
+                                      viewingQrisTx.payment_proof_url.startsWith('http') && 
+                                      !viewingQrisTx.payment_proof_url.includes('assets.tradixasystems.com');
+                
+                const qrCodeData = isDynamicLink 
+                  ? viewingQrisTx.payment_proof_url 
+                  : `https://retail.tradixasystems.com/pay?invoice=${viewingQrisTx.invoice_number}&amount=${viewingQrisTx.total}&store=${encodeURIComponent(store?.store_name || '')}`;
+                
+                return (
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrCodeData)}`}
+                    alt="QRIS Pembayaran"
+                    className="w-52 h-52 object-contain"
+                  />
+                );
+              })()}
+            </div>
+          )}
+
+          <p className="text-[10px] text-slate-500 leading-normal max-w-xs mb-4 font-medium">
+            {viewingQrisTx && viewingQrisTx.payment_proof_url && viewingQrisTx.payment_proof_url.startsWith('http') && !viewingQrisTx.payment_proof_url.includes('assets.tradixasystems.com')
+              ? 'Scan dengan Kamera HP untuk membuka halaman pembayaran digital, atau scan QRIS dengan e-wallet.'
+              : 'QRIS resmi toko Anda. Silakan verifikasi RRN setelah pelanggan berhasil mentransfer.'}
+          </p>
+
+          <div className="w-full flex gap-3">
+            {viewingQrisTx && viewingQrisTx.payment_proof_url && viewingQrisTx.payment_proof_url.includes('mayar') && (
+              <Button
+                onClick={() => window.open(viewingQrisTx.payment_proof_url, '_blank')}
+                className="flex-1 h-11 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 border-none"
+              >
+                <ArrowRight className="w-4 h-4" /> Buka Link
+              </Button>
+            )}
+            <Button
+              onClick={() => setViewingQrisTx(null)}
+              variant="outline"
+              className="flex-1 h-11 border-slate-800 text-white hover:bg-slate-900 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5"
+            >
+              <X className="w-4 h-4" /> Tutup
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
@@ -1053,6 +1239,15 @@ export default function SalesTransaction({ store }) {
         </div>
       </DialogContent>
     </Dialog>
+
+    {printingInvoice && (
+      <PrintInvoice
+        invoice={printingInvoice}
+        store={store}
+        onClose={() => setPrintingInvoice(null)}
+        forceThermal={true}
+      />
+    )}
     </>
   );
 }

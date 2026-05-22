@@ -660,7 +660,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
             console.log('[Tradixa] Payment Link received:', data.link);
             generatedPaymentLink = data.link;
             setPaymentLink(data.link);
-            proofUrl = data.link;
+            proofUrl = data.qris_image || data.link;
             generatedPaymentGatewayId = data.id || '';
             // Set real QRIS image from Mayar if available
             if (data.qris_image) {
@@ -1457,13 +1457,16 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
 
                   {!isStaticQris && (
                     <div className="flex flex-col gap-3 pt-4 w-full max-w-sm">
-                      <Button
-                        onClick={() => setShowPrintPreview(true)}
-                        className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 shadow-lg text-base text-white rounded-xl"
-                      >
-                        <Receipt className="w-5 h-5 mr-2" />
-                        Cetak Struk
-                      </Button>
+                      {/* HIDE Cetak Struk button during pending QRIS to prevent cashier fraud */}
+                      {!paymentLink && (
+                        <Button
+                          onClick={() => setShowPrintPreview(true)}
+                          className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 shadow-lg text-base text-white rounded-xl font-bold"
+                        >
+                          <Receipt className="w-5 h-5 mr-2" />
+                          Cetak Struk
+                        </Button>
+                      )}
                       <Button
                         onClick={handleResetAfterSuccess}
                         variant="outline"
