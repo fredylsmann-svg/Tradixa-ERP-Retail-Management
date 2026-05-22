@@ -131,7 +131,7 @@ export default function JournalDetail() {
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-transparent p-4 md:p-8 space-y-8">
       {/* Header Navigation */}
-      <div className="flex items-center justify-between print:hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -159,19 +159,19 @@ export default function JournalDetail() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button onClick={() => window.print()} variant="ghost" className="h-12 px-6 rounded-2xl bg-white border border-slate-200 font-bold shadow-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <Button onClick={() => window.print()} variant="ghost" className="h-12 px-6 rounded-2xl bg-white border border-slate-200 font-bold shadow-sm w-full sm:w-auto justify-center">
             <Printer className="w-4 h-4 mr-2 text-slate-400" />
             Cetak PDF
           </Button>
 
           {entry.status === 'Draft' && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch gap-3 w-full sm:w-auto">
               <Button
                 variant="ghost"
                 onClick={handleVoid}
                 disabled={isProcessing}
-                className="h-12 px-6 rounded-2xl bg-white border border-red-100 text-red-600 hover:bg-red-50 font-bold"
+                className="h-12 px-6 rounded-2xl bg-white border border-red-100 text-red-600 hover:bg-red-50 font-bold w-full sm:w-auto justify-center"
               >
                 <XCircle className="w-4 h-4 mr-2" />
                 Reject / Void
@@ -179,7 +179,7 @@ export default function JournalDetail() {
               <Button
                 onClick={handlePost}
                 disabled={isProcessing}
-                className="h-12 px-8 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                className="h-12 px-8 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold w-full sm:w-auto justify-center"
               >
                 {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
                 Post Journal
@@ -192,7 +192,7 @@ export default function JournalDetail() {
               variant="ghost"
               onClick={handleVoid}
               disabled={isProcessing}
-              className="h-12 px-6 rounded-2xl bg-white border border-red-100 text-red-600 hover:bg-red-50 font-bold"
+              className="h-12 px-6 rounded-2xl bg-white border border-red-100 text-red-600 hover:bg-red-50 font-bold w-full sm:w-auto justify-center"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Void Journal
@@ -288,7 +288,7 @@ export default function JournalDetail() {
                 {lines.length} Baris
               </Badge>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 overflow-x-auto w-full -mx-4 px-4 sm:mx-0 sm:px-0">
               <table className="w-full">
                 <thead>
                   <tr className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">

@@ -546,7 +546,7 @@ export default function SalesTransaction({ store }) {
       />
 
       <Dialog open={!!viewingTransaction && !proofLightbox} onOpenChange={() => setViewingTransaction(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-3xl mx-auto rounded-2xl p-4 sm:p-6 overflow-y-auto max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Receipt className="w-5 h-5" />
@@ -562,7 +562,7 @@ export default function SalesTransaction({ store }) {
           </DialogHeader>
           {viewingTransaction && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div><p className="text-sm text-slate-500">Invoice</p><p className="font-medium">{viewingTransaction.invoice_number}</p></div>
                 <div><p className="text-sm text-slate-500">Tanggal</p><p className="font-medium">{viewingTransaction.timestamp_wib}</p></div>
                 <div><p className="text-sm text-slate-500">Pelanggan</p><p className="font-medium">{viewingTransaction.customer_name}</p></div>
@@ -761,7 +761,7 @@ export default function SalesTransaction({ store }) {
                 </>
               )}
 
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-lg overflow-x-auto w-full">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-slate-50">

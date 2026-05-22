@@ -751,7 +751,7 @@ export default function InventoryGRN({ store }) {
           subtitle="Goods Receipt Note untuk penerimaan barang"
           icon={Warehouse}
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
               <ExportToolbar
                 title="Inventory GRN"
                 date={moment().format('DD/MM/YYYY')}
@@ -762,7 +762,7 @@ export default function InventoryGRN({ store }) {
             />
               <Button
                 onClick={() => setView('create')}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 flex items-center gap-2 transition-all active:scale-95 rounded-xl"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 flex items-center justify-center gap-2 transition-all active:scale-95 rounded-xl w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4" />
                 Terima Barang

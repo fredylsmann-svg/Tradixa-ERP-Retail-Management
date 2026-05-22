@@ -1352,8 +1352,8 @@ export default function PurchaseOrders({ store }) {
                         </Popover>
 
                         {showPORefreshGuide && (
-                          <div className="absolute top-full left-0 mt-4 w-[280px] md:w-[340px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl z-[110] cursor-default border border-slate-700/50 animate-in fade-in zoom-in-95 duration-300">
-                            <div className="absolute -top-1.5 left-[10px] w-3 h-3 bg-slate-900 border-t border-l border-slate-700/50 rotate-45" />
+                          <div className="fixed top-1/4 left-4 right-4 md:absolute md:top-full md:left-0 md:mt-4 w-auto md:w-[340px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl z-[110] cursor-default border border-slate-700/50 animate-in fade-in zoom-in-95 duration-300">
+                            <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 md:left-[10px] md:translate-x-0 w-3 h-3 bg-slate-900 border-t border-l border-slate-700/50 rotate-45" />
                             <div className="flex flex-col gap-3">
                               <div className="relative z-10 space-y-2">
                                 <h4 className="text-xs font-black text-white tracking-wider uppercase">Sinkronisasi Status PO</h4>
@@ -1385,9 +1385,9 @@ export default function PurchaseOrders({ store }) {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto md:overflow-hidden flex flex-col md:flex-row">
+              <div className="flex-1 flex flex-col md:flex-row md:overflow-hidden">
                 {/* Left Column: Content */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex-1 overflow-y-visible md:overflow-y-auto p-6 space-y-6 h-auto md:h-full bg-slate-50/30">
                   {/* Supplier Info */}
                   <Card className="border-none shadow-sm overflow-hidden">
                     <CardHeader className="bg-white border-b py-4 px-6 flex flex-row items-center justify-between">
@@ -1454,35 +1454,37 @@ export default function PurchaseOrders({ store }) {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0 bg-white">
-                      <Table>
-                        <TableHeader className="bg-slate-50/50">
-                          <TableRow>
-                            <TableHead className="pl-6">Deskripsi</TableHead>
-                            <TableHead className="text-center">Qty</TableHead>
-                            <TableHead className="text-right">Harga</TableHead>
-                            <TableHead className="text-right">Total</TableHead>
-                            <TableHead className="text-center pr-6">Diterima</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {(viewingOrder?.status === 'Negotiation' ? (viewingOrder?.original_items || viewingOrder?.items || []) : (viewingOrder?.items || [])).map((item, idx) => (
-                            <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors">
-                              <TableCell className="pl-6">
-                                <div className="font-bold text-slate-700">{item.product_name || 'Tanpa Nama'}</div>
-                                <div className="text-[10px] text-slate-400 font-mono">{item.sku || '-'}</div>
-                              </TableCell>
-                              <TableCell className="text-center">
-                                {item.proposed_qty || item.quantity || 0} <span className="text-slate-900 font-bold">{item.unit || 'pcs'}</span>
-                              </TableCell>
-                              <TableCell className="text-right">Rp {formatCurrency(item.unit_price)}</TableCell>
-                              <TableCell className="text-right font-semibold">Rp {formatCurrency((item.proposed_qty || item.quantity) * item.unit_price)}</TableCell>
-                              <TableCell className="text-center pr-6 text-slate-400 text-xs">
-                                <span className="font-bold text-blue-600">{getReceivedQty(viewingOrder.po_number, item.product_id, item.product_name)}</span> / {item.proposed_qty || item.quantity}
-                              </TableCell>
+                      <div className="overflow-x-auto w-full -mx-4 px-4 sm:mx-0 sm:px-0">
+                        <Table>
+                          <TableHeader className="bg-slate-50/50">
+                            <TableRow>
+                              <TableHead className="pl-6">Deskripsi</TableHead>
+                              <TableHead className="text-center">Qty</TableHead>
+                              <TableHead className="text-right">Harga</TableHead>
+                              <TableHead className="text-right">Total</TableHead>
+                              <TableHead className="text-center pr-6">Diterima</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {(viewingOrder?.status === 'Negotiation' ? (viewingOrder?.original_items || viewingOrder?.items || []) : (viewingOrder?.items || [])).map((item, idx) => (
+                              <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                <TableCell className="pl-6">
+                                  <div className="font-bold text-slate-700">{item.product_name || 'Tanpa Nama'}</div>
+                                  <div className="text-[10px] text-slate-400 font-mono">{item.sku || '-'}</div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {item.proposed_qty || item.quantity || 0} <span className="text-slate-900 font-bold">{item.unit || 'pcs'}</span>
+                                </TableCell>
+                                <TableCell className="text-right">Rp {formatCurrency(item.unit_price)}</TableCell>
+                                <TableCell className="text-right font-semibold">Rp {formatCurrency((item.proposed_qty || item.quantity) * item.unit_price)}</TableCell>
+                                <TableCell className="text-center pr-6 text-slate-400 text-xs">
+                                  <span className="font-bold text-blue-600">{getReceivedQty(viewingOrder.po_number, item.product_id, item.product_name)}</span> / {item.proposed_qty || item.quantity}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
                       <div className="p-6 bg-slate-50/30">
                         {(() => {
                           const origItems = viewingOrder?.status === 'Negotiation' ? (viewingOrder?.original_items || viewingOrder?.items || []) : (viewingOrder?.items || []);
@@ -1556,37 +1558,39 @@ export default function PurchaseOrders({ store }) {
                         </div>
                       </CardHeader>
                       <CardContent className="p-0 bg-white">
-                        <Table>
-                          <TableHeader className="bg-slate-50/50">
-                            <TableRow>
-                              <TableHead className="pl-6">Deskripsi</TableHead>
-                              <TableHead className="text-center">Qty</TableHead>
-                              <TableHead className="text-right">Harga Baru</TableHead>
-                              <TableHead className="text-right pr-6">Total Baru</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {negotiationItems.map((item, idx) => (
-                              <TableRow key={idx}>
-                                <TableCell className="pl-6 font-medium text-slate-700">{item.product_name}</TableCell>
-                                <TableCell className="text-center">{item.proposed_qty || item.quantity} {item.unit}</TableCell>
-                                <TableCell className="text-right">
-                                  <NumberInput
-                                    value={item.unit_price}
-                                    onChange={e => {
-                                      const newArr = [...negotiationItems];
-                                      newArr[idx].unit_price = Number(e.target.value);
-                                      newArr[idx].subtotal = (newArr[idx].proposed_qty || newArr[idx].quantity) * newArr[idx].unit_price;
-                                      setNegotiationItems(newArr);
-                                    }}
-                                    className="w-32 text-right h-8 inline-block"
-                                  />
-                                </TableCell>
-                                <TableCell className="text-right pr-6 font-bold">Rp {formatCurrency((item.proposed_qty || item.quantity) * item.unit_price)}</TableCell>
+                        <div className="overflow-x-auto w-full -mx-4 px-4 sm:mx-0 sm:px-0">
+                          <Table>
+                            <TableHeader className="bg-slate-50/50">
+                              <TableRow>
+                                <TableHead className="pl-6">Deskripsi</TableHead>
+                                <TableHead className="text-center">Qty</TableHead>
+                                <TableHead className="text-right">Harga Baru</TableHead>
+                                <TableHead className="text-right pr-6">Total Baru</TableHead>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                            </TableHeader>
+                            <TableBody>
+                              {negotiationItems.map((item, idx) => (
+                                <TableRow key={idx}>
+                                  <TableCell className="pl-6 font-medium text-slate-700">{item.product_name}</TableCell>
+                                  <TableCell className="text-center">{item.proposed_qty || item.quantity} {item.unit}</TableCell>
+                                  <TableCell className="text-right">
+                                    <NumberInput
+                                      value={item.unit_price}
+                                      onChange={e => {
+                                        const newArr = [...negotiationItems];
+                                        newArr[idx].unit_price = Number(e.target.value);
+                                        newArr[idx].subtotal = (newArr[idx].proposed_qty || newArr[idx].quantity) * newArr[idx].unit_price;
+                                        setNegotiationItems(newArr);
+                                      }}
+                                      className="w-32 text-right h-8 inline-block"
+                                    />
+                                  </TableCell>
+                                  <TableCell className="text-right pr-6 font-bold">Rp {formatCurrency((item.proposed_qty || item.quantity) * item.unit_price)}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
                         <div className="p-4 bg-slate-50 flex items-center justify-between">
                           <div className="text-sm text-slate-600">
                             <span className="font-bold text-slate-800">Total Negosiasi:</span> Rp {formatCurrency(negotiationItems.reduce((sum, i) => sum + ((i.proposed_qty || i.quantity) * i.unit_price), 0) * (viewingOrder?.tax_amount > 0 ? 1.11 : 1))}
@@ -1724,7 +1728,7 @@ export default function PurchaseOrders({ store }) {
                 </div>
 
                 {/* Right Column: Actions Sidebar */}
-                <div className="w-full md:w-80 bg-white border-t md:border-t-0 md:border-l p-6 space-y-8 shrink-0 overflow-y-auto max-h-[80vh]">
+                <div className="w-full md:w-80 bg-white border-t md:border-t-0 md:border-l p-6 space-y-8 shrink-0 overflow-y-visible md:overflow-y-auto h-auto md:h-full">
                   <div className="space-y-4">
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest px-1">Actions</h3>
                     <div className="space-y-2">

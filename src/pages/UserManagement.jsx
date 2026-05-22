@@ -786,9 +786,9 @@ export default function UserManagement({ store }) {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
-              <Button variant="ghost" onClick={() => setShowInviteDialog(false)} className="font-bold">Kembali</Button>
-              <Button onClick={handleInviteUserWA} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 px-8">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-2 w-full">
+              <Button variant="ghost" onClick={() => setShowInviteDialog(false)} className="font-bold w-full sm:w-auto justify-center">Kembali</Button>
+              <Button onClick={handleInviteUserWA} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 px-8 w-full sm:w-auto justify-center">
                 <MessageCircle className="w-5 h-5 mr-2" /> Kirim Link Pendaftaran
               </Button>
             </div>
@@ -998,9 +998,9 @@ export default function UserManagement({ store }) {
               </div>
             </div>
           </div>
-          <div className="p-6 border-t bg-slate-50 shrink-0 flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setShowEditDialog(false)}>Batal</Button>
-            <Button onClick={handleUpdateRole} className="bg-blue-700 text-white" disabled={isSaving}>
+          <div className="p-6 border-t bg-slate-50 shrink-0 flex flex-col-reverse sm:flex-row justify-end gap-3 w-full">
+            <Button variant="ghost" onClick={() => setShowEditDialog(false)} className="w-full sm:w-auto justify-center">Batal</Button>
+            <Button onClick={handleUpdateRole} className="bg-blue-700 text-white w-full sm:w-auto justify-center" disabled={isSaving}>
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
               Simpan Perubahan
             </Button>
@@ -1015,9 +1015,9 @@ export default function UserManagement({ store }) {
             <DialogTitle>Hapus User</DialogTitle>
             <DialogDescription>Yakin ingin menghapus user <strong>{deletingUser?.full_name || deletingUser?.email}</strong>? Aksi ini tidak bisa dibatalkan.</DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowDeleteDialog(false)}>Batal</Button>
-            <Button variant="destructive" onClick={handleDeleteUser}>Hapus User</Button>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3">
+            <Button variant="ghost" onClick={() => setShowDeleteDialog(false)} className="w-full sm:w-auto justify-center">Batal</Button>
+            <Button variant="destructive" onClick={handleDeleteUser} className="w-full sm:w-auto justify-center">Hapus User</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -231,23 +231,25 @@ export default function TransaksiAgen({ store }) {
         subtitle="Kelola transaksi agen keuangan"
         icon={ArrowRightLeft}
         actions={
-          <div className="flex items-center gap-2">
-            <PremiumGate feature="Export Excel" iconType="action" store={store}>
-              <Button variant="outline" size="sm" onClick={exportCSV} className="h-9 px-3 text-xs font-semibold">
-                <Download className="w-3.5 h-3.5 mr-1.5" />Excel
-              </Button>
-            </PremiumGate>
-            <PremiumGate feature="Export PDF" iconType="action" store={store}>
-              <Button variant="outline" size="sm" onClick={exportPDF} className="h-9 px-3 text-xs font-semibold">
-                <FileText className="w-3.5 h-3.5 mr-1.5" />PDF
-              </Button>
-            </PremiumGate>
-            <PremiumGate feature="Print Data" iconType="action" store={store}>
-              <Button variant="outline" size="sm" onClick={() => window.print()} className="h-9 px-3 text-xs font-semibold">
-                <Printer className="w-3.5 h-3.5 mr-1.5" />Print
-              </Button>
-            </PremiumGate>
-            <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold rounded-xl text-white">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <PremiumGate feature="Export Excel" iconType="action" store={store}>
+                <Button variant="outline" size="sm" onClick={exportCSV} className="h-9 px-3 text-xs font-semibold w-full justify-center">
+                  <Download className="w-3.5 h-3.5 mr-1.5" />Excel
+                </Button>
+              </PremiumGate>
+              <PremiumGate feature="Export PDF" iconType="action" store={store}>
+                <Button variant="outline" size="sm" onClick={exportPDF} className="h-9 px-3 text-xs font-semibold w-full justify-center">
+                  <FileText className="w-3.5 h-3.5 mr-1.5" />PDF
+                </Button>
+              </PremiumGate>
+              <PremiumGate feature="Print Data" iconType="action" store={store}>
+                <Button variant="outline" size="sm" onClick={() => window.print()} className="h-9 px-3 text-xs font-semibold w-full justify-center">
+                  <Printer className="w-3.5 h-3.5 mr-1.5" />Print
+                </Button>
+              </PremiumGate>
+            </div>
+            <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 h-11 px-6 font-semibold rounded-xl text-white w-full sm:w-auto justify-center">
               <Plus className="w-4 h-4 mr-2" />
               Transaksi Baru
             </Button>

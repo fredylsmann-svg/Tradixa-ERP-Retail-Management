@@ -236,7 +236,7 @@ export default function SystemSettings() {
                       updateSetting('soundVolume', val);
                       setTimeout(() => playNotificationSound('success'), 100);
                     }}
-                    className="grid grid-cols-3 gap-4"
+                    className="grid grid-cols-1 sm:grid-cols-3 gap-4"
                   >
                     <div className={`flex items-center space-x-3 p-3 border rounded-xl cursor-pointer transition-colors ${settings.soundVolume === 'Kecil' ? 'border-amber-200 bg-amber-50/50' : 'hover:bg-slate-50'}`} onClick={() => { updateSetting('soundVolume', 'Kecil'); setTimeout(() => playNotificationSound('success'), 100); }}>
                       <RadioGroupItem value="Kecil" id="vol-kecil" />

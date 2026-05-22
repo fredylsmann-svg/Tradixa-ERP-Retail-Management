@@ -197,7 +197,7 @@ export default function Payments({ store }) {
         subtitle="Rekam dan kelola pelunasan Piutang (AR) & Utang (AP)"
         icon={HandCoins}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <ExportToolbar
               title="Laporan Pembayaran & Pelunasan"
               date={formattedDate}
@@ -208,7 +208,7 @@ export default function Payments({ store }) {
             
             store={store}
           />
-            <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 rounded-xl">
+            <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 rounded-xl w-full sm:w-auto justify-center">
               <Plus className="w-4 h-4 mr-2" />
               Rekam Pelunasan Baru
             </Button>

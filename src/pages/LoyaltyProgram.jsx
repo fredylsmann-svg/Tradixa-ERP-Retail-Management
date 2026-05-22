@@ -220,10 +220,10 @@ export default function LoyaltyProgram({ store }) {
       </div>
 
       <Tabs defaultValue="tiers" className="space-y-4">
-        <TabsList className="bg-slate-100/50 p-1 rounded-xl">
-          <TabsTrigger value="tiers" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Tier Loyalitas</TabsTrigger>
-          <TabsTrigger value="rewards" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Katalog Reward</TabsTrigger>
-          <TabsTrigger value="members" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Daftar Member</TabsTrigger>
+        <TabsList className="bg-slate-100/50 p-1 rounded-xl w-full flex overflow-x-auto scrollbar-none whitespace-nowrap justify-start md:w-auto md:inline-flex md:justify-start">
+          <TabsTrigger value="tiers" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex-shrink-0">Tier Loyalitas</TabsTrigger>
+          <TabsTrigger value="rewards" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex-shrink-0">Katalog Reward</TabsTrigger>
+          <TabsTrigger value="members" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex-shrink-0">Daftar Member</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tiers" className="space-y-4">
@@ -234,56 +234,58 @@ export default function LoyaltyProgram({ store }) {
           </div>
           <Card className="border-none shadow-sm overflow-hidden">
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/50">
-                    <TableHead className="w-12 text-center">No.</TableHead>
-                    <TableHead >Tier</TableHead>
-                    <TableHead >Min. Poin</TableHead>
-                    <TableHead >Diskon</TableHead>
-                    <TableHead >Pengali Poin</TableHead>
-                    <TableHead >Benefits</TableHead>
-                    <TableHead className="text-center">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tiers.map((tier, idx) => (
-                    <TableRow key={tier.id} className="hover:bg-slate-50/30 transition-colors">
-                      <TableCell className="text-center text-slate-500 font-medium">{idx + 1}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: tier.tier_color + '20' }}>
-                            <Trophy className="w-4 h-4" style={{ color: tier.tier_color }} />
-                          </div>
-                          <span className="font-bold text-slate-700">{tier.tier_name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium text-slate-600">{tier.min_points.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="bg-rose-50 text-rose-600 border-none font-bold">
-                          {tier.discount_percentage}% OFF
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-none font-bold">
-                          {tier.points_multiplier}x Poin
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-xs text-xs text-slate-500 italic">{tier.benefits}</TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600" onClick={() => { setEditingTier(tier); setTierForm(tier); setShowTierForm(true); }}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-rose-50 hover:text-rose-600" onClick={() => handleDeleteTier(tier.id)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <div className="overflow-x-auto w-full -mx-4 px-4 sm:mx-0 sm:px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50/50">
+                      <TableHead className="w-12 text-center">No.</TableHead>
+                      <TableHead >Tier</TableHead>
+                      <TableHead >Min. Poin</TableHead>
+                      <TableHead >Diskon</TableHead>
+                      <TableHead >Pengali Poin</TableHead>
+                      <TableHead >Benefits</TableHead>
+                      <TableHead className="text-center">Aksi</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {tiers.map((tier, idx) => (
+                      <TableRow key={tier.id} className="hover:bg-slate-50/30 transition-colors">
+                        <TableCell className="text-center text-slate-500 font-medium">{idx + 1}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: tier.tier_color + '20' }}>
+                              <Trophy className="w-4 h-4" style={{ color: tier.tier_color }} />
+                            </div>
+                            <span className="font-bold text-slate-700">{tier.tier_name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium text-slate-600">{tier.min_points.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="bg-rose-50 text-rose-600 border-none font-bold">
+                            {tier.discount_percentage}% OFF
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-none font-bold">
+                            {tier.points_multiplier}x Poin
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-xs text-xs text-slate-500 italic">{tier.benefits}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600" onClick={() => { setEditingTier(tier); setTierForm(tier); setShowTierForm(true); }}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-rose-50 hover:text-rose-600" onClick={() => handleDeleteTier(tier.id)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -296,47 +298,49 @@ export default function LoyaltyProgram({ store }) {
           </div>
           <Card className="border-none shadow-sm overflow-hidden">
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/50">
-                    <TableHead className="w-12 text-center">No.</TableHead>
-                    <TableHead >Reward</TableHead>
-                    <TableHead >Tipe</TableHead>
-                    <TableHead >Poin Dibutuhkan</TableHead>
-                    <TableHead >Nilai</TableHead>
-                    <TableHead >Stok</TableHead>
-                    <TableHead >Status</TableHead>
-                    <TableHead className="text-center">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rewards.map((reward, idx) => (
-                    <TableRow key={reward.id} className="hover:bg-slate-50/30 transition-colors">
-                      <TableCell className="text-center text-slate-500 font-medium">{idx + 1}</TableCell>
-                      <TableCell className="font-bold text-slate-700">{reward.reward_name}</TableCell>
-                      <TableCell><Badge variant="outline" className="text-[10px] uppercase tracking-tighter">{reward.reward_type}</Badge></TableCell>
-                      <TableCell className="font-black text-rose-600">{reward.points_required.toLocaleString()} Pts</TableCell>
-                      <TableCell className="font-medium text-slate-600">{reward.reward_value}</TableCell>
-                      <TableCell>{reward.stock_quantity || 'Unlimited'}</TableCell>
-                      <TableCell>
-                        <Badge className={reward.is_active ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none' : 'bg-slate-100 text-slate-700 border-none'}>
-                          {reward.is_active ? 'Aktif' : 'Tidak Aktif'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-50" onClick={() => { setEditingReward(reward); setRewardForm(reward); setShowRewardForm(true); }}>
-                            <Edit className="w-4 h-4 text-slate-500" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-rose-50" onClick={() => handleDeleteReward(reward.id)}>
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <div className="overflow-x-auto w-full -mx-4 px-4 sm:mx-0 sm:px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50/50">
+                      <TableHead className="w-12 text-center">No.</TableHead>
+                      <TableHead >Reward</TableHead>
+                      <TableHead >Tipe</TableHead>
+                      <TableHead >Poin Dibutuhkan</TableHead>
+                      <TableHead >Nilai</TableHead>
+                      <TableHead >Stok</TableHead>
+                      <TableHead >Status</TableHead>
+                      <TableHead className="text-center">Aksi</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {rewards.map((reward, idx) => (
+                      <TableRow key={reward.id} className="hover:bg-slate-50/30 transition-colors">
+                        <TableCell className="text-center text-slate-500 font-medium">{idx + 1}</TableCell>
+                        <TableCell className="font-bold text-slate-700">{reward.reward_name}</TableCell>
+                        <TableCell><Badge variant="outline" className="text-[10px] uppercase tracking-tighter">{reward.reward_type}</Badge></TableCell>
+                        <TableCell className="font-black text-rose-600">{reward.points_required.toLocaleString()} Pts</TableCell>
+                        <TableCell className="font-medium text-slate-600">{reward.reward_value}</TableCell>
+                        <TableCell>{reward.stock_quantity || 'Unlimited'}</TableCell>
+                        <TableCell>
+                          <Badge className={reward.is_active ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none' : 'bg-slate-100 text-slate-700 border-none'}>
+                            {reward.is_active ? 'Aktif' : 'Tidak Aktif'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-50" onClick={() => { setEditingReward(reward); setRewardForm(reward); setShowRewardForm(true); }}>
+                              <Edit className="w-4 h-4 text-slate-500" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-rose-50" onClick={() => handleDeleteReward(reward.id)}>
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -344,34 +348,36 @@ export default function LoyaltyProgram({ store }) {
         <TabsContent value="members" className="space-y-4">
           <Card className="border-none shadow-sm overflow-hidden">
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/50">
-                    <TableHead className="w-12 text-center">No.</TableHead>
-                    <TableHead >Nama Customer</TableHead>
-                    <TableHead >Tier</TableHead>
-                    <TableHead className="text-right">Saldo Poin</TableHead>
-                    <TableHead className="text-right">Total Belanja</TableHead>
-                    <TableHead className="text-right">Poin Masuk</TableHead>
-                    <TableHead className="text-right">Poin Keluar</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {customers.map((cust, idx) => (
-                    <TableRow key={cust.id} className="hover:bg-slate-50/30 transition-colors">
-                      <TableCell className="text-center text-slate-500 font-medium">{idx + 1}</TableCell>
-                      <TableCell className="font-bold text-slate-700">{cust.customer_name || 'Tanpa Nama'}</TableCell>
-                      <TableCell>
-                        <Badge className="bg-blue-600 border-none shadow-sm px-3">{cust.current_tier || 'Bronze'}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-black text-rose-600 text-lg">{(cust.total_points || 0).toLocaleString()}</TableCell>
-                      <TableCell className="text-right font-medium text-slate-600">Rp {(cust.lifetime_spending || 0).toLocaleString()}</TableCell>
-                      <TableCell className="text-right text-emerald-600 font-bold">+{(cust.points_earned || 0).toLocaleString()}</TableCell>
-                      <TableCell className="text-right text-rose-400">-{(cust.points_redeemed || 0).toLocaleString()}</TableCell>
+              <div className="overflow-x-auto w-full -mx-4 px-4 sm:mx-0 sm:px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50/50">
+                      <TableHead className="w-12 text-center">No.</TableHead>
+                      <TableHead >Nama Customer</TableHead>
+                      <TableHead >Tier</TableHead>
+                      <TableHead className="text-right">Saldo Poin</TableHead>
+                      <TableHead className="text-right">Total Belanja</TableHead>
+                      <TableHead className="text-right">Poin Masuk</TableHead>
+                      <TableHead className="text-right">Poin Keluar</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {customers.map((cust, idx) => (
+                      <TableRow key={cust.id} className="hover:bg-slate-50/30 transition-colors">
+                        <TableCell className="text-center text-slate-500 font-medium">{idx + 1}</TableCell>
+                        <TableCell className="font-bold text-slate-700">{cust.customer_name || 'Tanpa Nama'}</TableCell>
+                        <TableCell>
+                          <Badge className="bg-blue-600 border-none shadow-sm px-3">{cust.current_tier || 'Bronze'}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-black text-rose-600 text-lg">{(cust.total_points || 0).toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-medium text-slate-600">Rp {(cust.lifetime_spending || 0).toLocaleString()}</TableCell>
+                        <TableCell className="text-right text-emerald-600 font-bold">+{(cust.points_earned || 0).toLocaleString()}</TableCell>
+                        <TableCell className="text-right text-rose-400">-{(cust.points_redeemed || 0).toLocaleString()}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

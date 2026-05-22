@@ -91,19 +91,19 @@ export default function RevenueReports({ store }) {
         subtitle="Analisis pendapatan dan keuntungan"
         icon={BarChart3}
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             <PremiumGate store={store} featureName="Export Report">
               <Button
                 onClick={handleExport}
                 variant="outline"
-                className="h-11 px-6 rounded-xl border-slate-200 bg-white hover:bg-slate-50 gap-2"
+                className="h-11 px-6 rounded-xl border-slate-200 bg-white hover:bg-slate-50 gap-2 w-full sm:w-auto justify-center"
               >
                 <Printer className="w-4 h-4 text-slate-500" />
                 <span className="font-bold">Export Report</span>
               </Button>
             </PremiumGate>
             <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-44 h-11 rounded-xl border-slate-200 bg-white"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-44 h-11 rounded-xl border-slate-200 bg-white"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="7days">7 Hari Terakhir</SelectItem>
                 <SelectItem value="14days">14 Hari Terakhir</SelectItem>
@@ -115,9 +115,9 @@ export default function RevenueReports({ store }) {
       />
 
       <Tabs defaultValue="sales" className="w-full">
-        <TabsList className="bg-slate-100 p-1 rounded-xl mb-6">
-          <TabsTrigger value="sales" className="rounded-lg font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm px-6">Ringkasan Penjualan</TabsTrigger>
-          <TabsTrigger value="inventory" className="rounded-lg font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm px-6">Analisis Dead Stock</TabsTrigger>
+        <TabsList className="bg-slate-100 p-1 rounded-xl mb-6 w-full flex overflow-x-auto whitespace-nowrap scrollbar-none justify-start md:w-auto md:inline-flex md:justify-start">
+          <TabsTrigger value="sales" className="rounded-lg font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm px-6 flex-shrink-0">Ringkasan Penjualan</TabsTrigger>
+          <TabsTrigger value="inventory" className="rounded-lg font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm px-6 flex-shrink-0">Analisis Dead Stock</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sales" className="space-y-6">
@@ -234,7 +234,8 @@ export default function RevenueReports({ store }) {
           <CardTitle className="text-lg">Produk Terlaris dengan Margin Keuntungan</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
+          <div className="overflow-x-auto w-full -mx-4 px-4 sm:mx-0 sm:px-0">
+            <Table>
             <TableHeader>
               <TableRow className="bg-slate-50">
                 <TableHead className="w-12">No</TableHead>
@@ -290,6 +291,7 @@ export default function RevenueReports({ store }) {
               })()}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -445,52 +447,54 @@ export default function RevenueReports({ store }) {
                     <CardTitle className="text-lg font-black text-slate-800">Daftar Produk Dead Stock</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-slate-50">
-                          <TableHead className="w-12">No</TableHead>
-                          <TableHead >SKU & Produk</TableHead>
-                          <TableHead className="text-center">Sisa Stok</TableHead>
-                          <TableHead className="text-right">Harga Beli</TableHead>
-                          <TableHead className="text-right">Modal Tertahan</TableHead>
-                          <TableHead className="text-right pr-6">Rekomendasi Aksi</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {deadStock.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={6} className="text-center py-10 text-emerald-600 font-bold">
-                              <CheckCircle2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                              Luar biasa! Tidak ada Dead Stock untuk periode ini.
-                            </TableCell>
+                    <div className="overflow-x-auto w-full -mx-4 px-4 sm:mx-0 sm:px-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50">
+                            <TableHead className="w-12">No</TableHead>
+                            <TableHead >SKU & Produk</TableHead>
+                            <TableHead className="text-center">Sisa Stok</TableHead>
+                            <TableHead className="text-right">Harga Beli</TableHead>
+                            <TableHead className="text-right">Modal Tertahan</TableHead>
+                            <TableHead className="text-right pr-6">Rekomendasi Aksi</TableHead>
                           </TableRow>
-                        ) : (
-                          deadStock.slice(0, 50).map((product, idx) => {
-                            const lockedValue = product.stock * product.buy_price;
-                            return (
-                              <TableRow key={idx} className="hover:bg-red-50/20">
-                                <TableCell className="font-bold text-slate-400">{idx + 1}</TableCell>
-                                <TableCell>
-                                  <div className="font-bold text-slate-800">{product.name}</div>
-                                  <div className="text-[10px] text-slate-400 font-mono">{product.sku}</div>
-                                </TableCell>
-                                <TableCell className="text-center font-black text-red-600">{product.stock}</TableCell>
-                                <TableCell className="text-right text-slate-600">Rp {formatCurrency(product.buy_price)}</TableCell>
-                                <TableCell className="text-right font-bold text-red-700">Rp {formatCurrency(lockedValue)}</TableCell>
-                                <TableCell className="text-right pr-6">
-                                  <Badge 
-                                    className="bg-red-100 text-red-700 hover:bg-red-200 cursor-pointer text-[10px]"
-                                    onClick={() => navigate('/DiscountManagement', { state: { initialProduct: product.name } })}
-                                  >
-                                    Buat Diskon Clearance <ArrowRight className="w-3 h-3 ml-1" />
-                                  </Badge>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })
-                        )}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {deadStock.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-10 text-emerald-600 font-bold">
+                                <CheckCircle2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                Luar biasa! Tidak ada Dead Stock untuk periode ini.
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            deadStock.slice(0, 50).map((product, idx) => {
+                              const lockedValue = product.stock * product.buy_price;
+                              return (
+                                <TableRow key={idx} className="hover:bg-red-50/20">
+                                  <TableCell className="font-bold text-slate-400">{idx + 1}</TableCell>
+                                  <TableCell>
+                                    <div className="font-bold text-slate-800">{product.name}</div>
+                                    <div className="text-[10px] text-slate-400 font-mono">{product.sku}</div>
+                                  </TableCell>
+                                  <TableCell className="text-center font-black text-red-600">{product.stock}</TableCell>
+                                  <TableCell className="text-right text-slate-600">Rp {formatCurrency(product.buy_price)}</TableCell>
+                                  <TableCell className="text-right font-bold text-red-700">Rp {formatCurrency(lockedValue)}</TableCell>
+                                  <TableCell className="text-right pr-6">
+                                    <Badge 
+                                      className="bg-red-100 text-red-700 hover:bg-red-200 cursor-pointer text-[10px]"
+                                      onClick={() => navigate('/DiscountManagement', { state: { initialProduct: product.name } })}
+                                    >
+                                      Buat Diskon Clearance <ArrowRight className="w-3 h-3 ml-1" />
+                                    </Badge>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                 </Card>
               </div>

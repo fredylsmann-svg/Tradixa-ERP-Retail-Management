@@ -873,9 +873,9 @@ export default function PurchaseRequisition({ store }) {
               </div>
 
               {/* Main Layout: Split View */}
-              <div className="flex flex-col md:flex-row flex-1 overflow-y-auto md:overflow-hidden">
+              <div className="flex flex-col md:flex-row flex-1 md:overflow-hidden">
                 {/* Left Panel: Content */}
-                <div className="flex-1 overflow-y-auto p-8 space-y-8 border-b md:border-b-0 md:border-r bg-slate-50/30">
+                <div className="flex-1 overflow-y-visible md:overflow-y-auto p-8 space-y-8 border-b md:border-b-0 md:border-r bg-slate-50/30 h-auto md:h-full">
                   {/* Info Pemohon */}
                   <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-6">
                     <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">Informasi Pemohon</h3>
@@ -900,34 +900,36 @@ export default function PurchaseRequisition({ store }) {
                   {/* Items Table */}
                   <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
                     <h3 className="text-sm font-bold text-slate-800">Item yang Diminta</h3>
-                    <Table className="border rounded-xl">
-                      <TableHeader className="bg-slate-50">
-                        <TableRow>
-                          <TableHead >Deskripsi</TableHead>
-                          <TableHead >Kategori</TableHead>
-                          <TableHead className="text-center">Qty</TableHead>
-                          <TableHead className="text-right">Estimasi Harga</TableHead>
-                          <TableHead className="text-right">Total</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {viewingPr.items?.map((item, idx) => (
-                          <TableRow key={idx}>
-                            <TableCell className="font-medium text-slate-700 text-sm">
-                              {item.description}
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              <Badge variant="outline" className="bg-slate-50 text-[10px] uppercase font-bold text-slate-500">
-                                {item.category || 'Uncategorized'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center text-sm">{item.qty} {item.unit}</TableCell>
-                            <TableCell className="text-right text-sm">Rp {formatCurrency(item.price)}</TableCell>
-                            <TableCell className="text-right font-bold text-slate-900 border-l font-mono text-sm">Rp {formatCurrency(item.qty * item.price)}</TableCell>
+                    <div className="overflow-x-auto w-full -mx-4 px-4 sm:mx-0 sm:px-0">
+                      <Table className="border rounded-xl">
+                        <TableHeader className="bg-slate-50">
+                          <TableRow>
+                            <TableHead >Deskripsi</TableHead>
+                            <TableHead >Kategori</TableHead>
+                            <TableHead className="text-center">Qty</TableHead>
+                            <TableHead className="text-right">Estimasi Harga</TableHead>
+                            <TableHead className="text-right">Total</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {viewingPr.items?.map((item, idx) => (
+                            <TableRow key={idx}>
+                              <TableCell className="font-medium text-slate-700 text-sm">
+                                {item.description}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                <Badge variant="outline" className="bg-slate-50 text-[10px] uppercase font-bold text-slate-500">
+                                  {item.category || 'Uncategorized'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-center text-sm">{item.qty} {item.unit}</TableCell>
+                              <TableCell className="text-right text-sm">Rp {formatCurrency(item.price)}</TableCell>
+                              <TableCell className="text-right font-bold text-slate-900 border-l font-mono text-sm">Rp {formatCurrency(item.qty * item.price)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                     <div className="flex flex-col items-end gap-1 pt-2">
                       <div className="flex justify-between w-48 text-xs text-slate-400"><p>Subtotal</p><p className="font-mono">Rp {formatCurrency(viewingPr.subtotal)}</p></div>
                       <div className="flex justify-between w-48 text-lg font-bold text-slate-800"><p>Total</p><p className="font-mono text-slate-900 tracking-tight">Rp {formatCurrency(viewingPr.total_amount)}</p></div>
@@ -944,7 +946,7 @@ export default function PurchaseRequisition({ store }) {
                 </div>
 
                 {/* Right Panel: Approval Sidebar */}
-                <div className="w-full md:w-[380px] bg-white p-8 space-y-8 overflow-y-auto border-t md:border-t-0 md:border-l shadow-[-4px_0_12px_rgba(0,0,0,0.02)]">
+                <div className="w-full md:w-[380px] bg-white p-8 space-y-8 overflow-y-visible md:overflow-y-auto border-t md:border-t-0 md:border-l shadow-[-4px_0_12px_rgba(0,0,0,0.02)] h-auto md:h-full">
                   {/* Approval Form */}
                   {(viewingPr.status === 'Diajukan' || viewingPr.status === 'Menunggu Level 2') && (getApprovalStatus().allowed || getApprovalStatus().reason === 'already_approved' || getApprovalStatus().reason === 'exceeds_limit') && (
                     <div className="bg-blue-600 p-6 rounded-2xl border border-slate-800 space-y-6 shadow-xl">
