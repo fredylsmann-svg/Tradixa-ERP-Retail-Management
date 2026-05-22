@@ -62,10 +62,10 @@ function UsageCard({ icon: Icon, title, current, limit, color = 'blue', descript
   return (
     <div className={`relative p-5 rounded-2xl border backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 group
       ${isLocked
-        ? 'bg-slate-50/80 border-slate-200 opacity-60'
+        ? 'bg-slate-50/80 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800/80 opacity-60'
         : isReached
-          ? 'bg-gradient-to-br from-white to-slate-50/80 border-slate-200 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.04),0_10px_15px_-3px_rgba(0,0,0,0.06),0_20px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_12px_-2px_rgba(0,0,0,0.06),0_16px_24px_-4px_rgba(0,0,0,0.08),0_24px_32px_-6px_rgba(0,0,0,0.04)] ring-1 ring-slate-100'
-          : `bg-gradient-to-br from-white to-slate-50/80 border-slate-200/80 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.04),0_10px_15px_-3px_rgba(0,0,0,0.06),0_20px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_12px_-2px_rgba(0,0,0,0.06),0_16px_24px_-4px_rgba(0,0,0,0.08),0_24px_32px_-6px_rgba(0,0,0,0.04)] ${c.ring} ring-1`}`}
+          ? 'bg-gradient-to-br from-white to-slate-50/80 dark:from-slate-950 dark:to-slate-900/80 border-slate-200 dark:border-slate-800 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.04),0_10px_15px_-3px_rgba(0,0,0,0.06),0_20px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_12px_-2px_rgba(0,0,0,0.06),0_16px_24px_-4px_rgba(0,0,0,0.08),0_24px_32px_-6px_rgba(0,0,0,0.04)] ring-1 ring-slate-100 dark:ring-slate-900'
+          : `bg-gradient-to-br from-white to-slate-50/80 dark:from-slate-950 dark:to-slate-900/80 border-slate-200/80 dark:border-slate-800/80 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.04),0_10px_15px_-3px_rgba(0,0,0,0.06),0_20px_25px_-5px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_12px_-2px_rgba(0,0,0,0.06),0_16px_24px_-4px_rgba(0,0,0,0.08),0_24px_32px_-6px_rgba(0,0,0,0.04)] ${c.ring} dark:ring-slate-900 ring-1`}`}
     >
       {/* Subtle gradient overlay */}
       {!isLocked && !isReached && (
@@ -80,12 +80,12 @@ function UsageCard({ icon: Icon, title, current, limit, color = 'blue', descript
             <Icon className="w-4.5 h-4.5 text-white" />
           </div>
           <div>
-            <p className="text-sm font-black text-slate-900">{title}</p>
+            <p className="text-sm font-black text-slate-900 dark:text-white">{title}</p>
             {description && <p className="text-[10px] text-slate-400 font-medium">{description}</p>}
           </div>
         </div>
         <div className="text-right">
-          <span className={`text-xl font-black ${isReached ? 'text-red-600' : 'text-slate-900'}`}>{current}</span>
+          <span className={`text-xl font-black ${isReached ? 'text-red-600' : 'text-slate-900 dark:text-white'}`}>{current}</span>
           <span className="text-slate-400 font-bold text-sm ml-1">
             / {isLocked ? '✕' : isUnlimited ? '∞' : limit.toLocaleString()}
           </span>
@@ -393,13 +393,13 @@ export default function UsageStats({ store }) {
                 current={emailCurrent} limit={emailLimit}
                 description={emailDesc}
               />
-              <div className="p-5 rounded-2xl border bg-amber-50 border-amber-100 flex flex-col items-center justify-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-200 flex items-center justify-center">
-                  <MessageSquare className="w-4.5 h-4.5 text-amber-700" />
+              <div className="p-5 rounded-2xl border bg-amber-50 dark:bg-slate-900/60 border-amber-100 dark:border-slate-800/80 flex flex-col items-center justify-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-200 dark:bg-amber-950/40 flex items-center justify-center">
+                  <MessageSquare className="w-4.5 h-4.5 text-amber-700 dark:text-amber-500" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-black text-slate-900">WhatsApp Credits</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Coming Soon</p>
+                  <p className="text-sm font-black text-slate-900 dark:text-white">WhatsApp Credits</p>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Coming Soon</p>
                 </div>
               </div>
             </div>

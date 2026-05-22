@@ -568,27 +568,27 @@ export default function BankReconciliation({ store }) {
           </Dialog>
         }
         actions={
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5 mr-2">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <div className="flex items-center gap-1 w-full sm:w-auto justify-start sm:justify-end">
               <PremiumGate store={store} featureName="Export PDF & Print">
-                <Button variant="outline" size="sm" onClick={() => exportToPDF('Bank Reconciliation Report', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-bank-reconciliation')} className="gap-1.5 text-slate-600 border-slate-200 hover:bg-slate-50 text-xs h-11 px-3 rounded-xl">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Bank Reconciliation Report', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-bank-reconciliation')} className="gap-1.5 text-slate-600 border-slate-200 hover:bg-slate-50 text-xs h-11 px-3 rounded-xl flex-1 sm:flex-initial">
                   <Printer className="w-4 h-4" /><span className="hidden sm:inline">Print</span>
                 </Button>
               </PremiumGate>
               <PremiumGate store={store} featureName="Export PDF">
-                <Button variant="outline" size="sm" onClick={() => exportToPDF('Bank Reconciliation Report', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-bank-reconciliation')} className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 text-xs h-11 px-3 rounded-xl">
+                <Button variant="outline" size="sm" onClick={() => exportToPDF('Bank Reconciliation Report', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, store?.logo_url, 'print-bank-reconciliation')} className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 text-xs h-11 px-3 rounded-xl flex-1 sm:flex-initial">
                   <FileText className="w-4 h-4" /><span className="hidden sm:inline">PDF</span>
                 </Button>
               </PremiumGate>
               <PremiumGate store={store} featureName="Export Excel">
-                <Button variant="outline" size="sm" onClick={() => exportToExcel('Bank Reconciliation Report', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, 'print-bank-reconciliation')} className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs h-11 px-3 rounded-xl">
+                <Button variant="outline" size="sm" onClick={() => exportToExcel('Bank Reconciliation Report', new Date().toLocaleDateString('id-ID'), store?.store_name, store?.address, 'print-bank-reconciliation')} className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs h-11 px-3 rounded-xl flex-1 sm:flex-initial">
                   <FileSpreadsheet className="w-4 h-4" /><span className="hidden sm:inline">Excel</span>
                 </Button>
               </PremiumGate>
             </div>
             
             <Select value={selectedBankId} onValueChange={setSelectedBankId}>
-              <SelectTrigger className="w-64 h-11 rounded-xl">
+              <SelectTrigger className="w-full sm:w-64 h-11 rounded-xl">
                 <SelectValue placeholder="Pilih Rekening..." />
               </SelectTrigger>
               <SelectContent>
@@ -598,59 +598,61 @@ export default function BankReconciliation({ store }) {
               </SelectContent>
             </Select>
 
-            <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="h-11 rounded-xl bg-white border-slate-200 hover:bg-slate-50">
-                  <ArchiveRestore className="w-4 h-4 mr-2 text-slate-500" /> Riwayat
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-3xl rounded-3xl">
-                <DialogHeader>
-                  <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                    <History className="w-5 h-5 text-blue-600" /> Riwayat Upload Statement
-                  </DialogTitle>
-                  <DialogDescription>Muat kembali data mutasi dari sesi sebelumnya yang sudah di-scan.</DialogDescription>
-                </DialogHeader>
-                <div className="max-h-[60vh] overflow-y-auto mt-4 pr-2">
-                  {statementHistory.length === 0 ? (
-                    <div className="text-center py-10 text-slate-400">Belum ada riwayat unggahan statement.</div>
-                  ) : (
-                    <div className="space-y-3">
-                      {statementHistory.map((hist) => (
-                        <div key={hist.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-200 transition-colors">
-                          <div>
-                            <p className="font-bold text-slate-800">{hist.file_name}</p>
-                            <div className="flex gap-3 mt-1 text-xs text-slate-500 font-medium">
-                              <span className="flex items-center gap-1"><FileCheck className="w-3 h-3" /> {hist.file_type}</span>
-                              <span>•</span>
-                              <span>{hist.total_transactions} Baris</span>
-                              <span>•</span>
-                              <span>{new Date(hist.created_at).toLocaleString('id-ID')}</span>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="h-11 rounded-xl bg-white border-slate-200 hover:bg-slate-50 flex-1 sm:flex-initial">
+                    <ArchiveRestore className="w-4 h-4 mr-2 text-slate-500" /> Riwayat
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl rounded-3xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                      <History className="w-5 h-5 text-blue-600" /> Riwayat Upload Statement
+                    </DialogTitle>
+                    <DialogDescription>Muat kembali data mutasi dari sesi sebelumnya yang sudah di-scan.</DialogDescription>
+                  </DialogHeader>
+                  <div className="max-h-[60vh] overflow-y-auto mt-4 pr-2">
+                    {statementHistory.length === 0 ? (
+                      <div className="text-center py-10 text-slate-400">Belum ada riwayat unggahan statement.</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {statementHistory.map((hist) => (
+                          <div key={hist.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-200 transition-colors">
+                            <div>
+                              <p className="font-bold text-slate-800">{hist.file_name}</p>
+                              <div className="flex gap-3 mt-1 text-xs text-slate-500 font-medium">
+                                <span className="flex items-center gap-1"><FileCheck className="w-3 h-3" /> {hist.file_type}</span>
+                                <span>•</span>
+                                <span>{hist.total_transactions} Baris</span>
+                                <span>•</span>
+                                <span>{new Date(hist.created_at).toLocaleString('id-ID')}</span>
+                              </div>
                             </div>
+                            <Button 
+                              variant="secondary" 
+                              size="sm" 
+                              className="rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200"
+                              onClick={() => {
+                                setBankMutations(hist.parsed_data);
+                                setIsHistoryDialogOpen(false);
+                                toast.success(`Berhasil memuat ${hist.total_transactions} baris dari riwayat.`);
+                              }}
+                            >
+                              Muat Data
+                            </Button>
                           </div>
-                          <Button 
-                            variant="secondary" 
-                            size="sm" 
-                            className="rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200"
-                            onClick={() => {
-                              setBankMutations(hist.parsed_data);
-                              setIsHistoryDialogOpen(false);
-                              toast.success(`Berhasil memuat ${hist.total_transactions} baris dari riwayat.`);
-                            }}
-                          >
-                            Muat Data
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
 
-            <Button onClick={() => document.getElementById('file-up').click()} className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700">
-              <Upload className="w-4 h-4 mr-2" /> Upload Mutasi
-            </Button>
+              <Button onClick={() => document.getElementById('file-up').click()} className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-initial">
+                <Upload className="w-4 h-4 mr-2" /> Upload Mutasi
+              </Button>
+            </div>
             <input type="file" id="file-up" className="hidden" accept=".xlsx,.xls,.csv,.pdf,.png,.jpg,.jpeg" onChange={handleFileUpload} />
           </div>
         }
@@ -658,17 +660,17 @@ export default function BankReconciliation({ store }) {
 
       <div id="print-bank-reconciliation">
         <Card className="border-none shadow-sm rounded-2xl overflow-hidden mb-8">
-          <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 p-6 bg-slate-50/50">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-50 p-6 bg-slate-50/50">
           <CardTitle className="text-lg font-bold flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5 text-blue-600" /> Daftar Transaksi Statement
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setBankMutations([])} className="rounded-lg h-9">Reset</Button>
-            <Button size="sm" onClick={runAutoMatch} disabled={bankMutations.length === 0} className="bg-blue-600 hover:bg-blue-700 rounded-lg h-9">
-              <RefreshCw className="w-4 h-4 mr-2" /> Run Auto-Match
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <Button variant="outline" size="sm" onClick={() => setBankMutations([])} className="rounded-lg h-9 flex-1 sm:flex-initial text-xs">Reset</Button>
+            <Button size="sm" onClick={runAutoMatch} disabled={bankMutations.length === 0} className="bg-blue-600 hover:bg-blue-700 rounded-lg h-9 flex-1 sm:flex-initial text-xs gap-1">
+              <RefreshCw className="w-3.5 h-3.5" /> <span className="whitespace-nowrap">Run Auto-Match</span>
             </Button>
-            <Button size="sm" onClick={confirmReconcile} disabled={!bankMutations.some(m => m.status === 'matched')} className="bg-emerald-600 hover:bg-emerald-700 rounded-lg h-9 text-white">
-              <CheckCircle2 className="w-4 h-4 mr-2" /> Confirm Reconcile
+            <Button size="sm" onClick={confirmReconcile} disabled={!bankMutations.some(m => m.status === 'matched')} className="bg-emerald-600 hover:bg-emerald-700 rounded-lg h-9 text-white flex-1 sm:flex-initial text-xs gap-1 w-full sm:w-auto justify-center">
+              <CheckCircle2 className="w-3.5 h-3.5" /> <span className="whitespace-nowrap">Confirm Reconcile</span>
             </Button>
           </div>
         </CardHeader>
