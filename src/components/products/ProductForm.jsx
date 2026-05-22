@@ -163,8 +163,7 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
     let imageUrl = product?.image_url || '';
     if (imageFile) {
       // --- PHOTO LIMIT CHECK ---
-      const isNewPhoto = !product?.image_url;
-      if (isNewPhoto && limits.maxProductPhotos !== Infinity) {
+      if (limits.maxProductPhotos !== Infinity) {
         const { count: photoCount } = await supabase
           .from('products')
           .select('id', { count: 'exact', head: true })
