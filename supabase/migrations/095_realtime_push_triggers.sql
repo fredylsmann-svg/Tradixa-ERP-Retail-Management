@@ -25,6 +25,11 @@ BEGIN
       RETURN NEW;
     END IF;
     store_id_val := NEW.store_id::UUID;
+  ELSIF TG_TABLE_NAME = 'purchase_requisitions' THEN
+    IF NEW.store_id IS NULL OR NEW.store_id = '' THEN
+      RETURN NEW;
+    END IF;
+    store_id_val := NEW.store_id::UUID;
   ELSE
     RETURN NEW;
   END IF;
@@ -92,6 +97,41 @@ BEGIN
         body := payload
       );
     END IF;
+
+  -- =========================================================================
+  -- CASE C: Purchase Requisitions Table (PR Submitted / Status Change)
+  -- =========================================================================
+  ELSIF TG_TABLE_NAME = 'purchase_requisitions' THEN
+    IF (TG_OP = 'INSERT' AND NEW.status IN ('Diajukan', 'Menunggu Level 2')) OR
+       (TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status AND NEW.status IN ('Diajukan', 'Menunggu Level 2', 'Approved', 'Rejected')) THEN
+      
+      IF NEW.status = 'Diajukan' THEN
+        title_val := '📝 Pengajuan PR Baru';
+        body_val := 'PR #' || NEW.pr_number || ' telah diajukan oleh ' || COALESCE(NEW.requester, 'Staff') || ' dan memerlukan persetujuan.';
+      ELSIF NEW.status = 'Menunggu Level 2' THEN
+        title_val := '⏳ PR Menunggu Level 2';
+        body_val := 'PR #' || NEW.pr_number || ' membutuhkan persetujuan Level 2.';
+      ELSIF NEW.status = 'Approved' THEN
+        title_val := '✅ PR Disetujui';
+        body_val := 'PR #' || NEW.pr_number || ' telah disetujui oleh ' || COALESCE(NEW.approved_by, 'Manager') || '.';
+      ELSIF NEW.status = 'Rejected' THEN
+        title_val := '❌ PR Ditolak';
+        body_val := 'PR #' || NEW.pr_number || ' telah ditolak.';
+      END IF;
+
+      payload := jsonb_build_object(
+        'title', title_val,
+        'body', body_val,
+        'store_id', store_id_val
+      );
+
+      -- Perform Async HTTP POST using pg_net extension
+      PERFORM net.http_post(
+        url := 'https://yurickvpwbomqwjvffle.supabase.co/functions/v1/send-push-notification',
+        headers := '{"Content-Type": "application/json"}'::JSONB,
+        body := payload
+      );
+    END IF;
   END IF;
 
   RETURN NEW;
@@ -114,5 +154,12 @@ CREATE TRIGGER trg_low_stock_notification
 DROP TRIGGER IF EXISTS trg_po_status_notification ON public.purchase_orders;
 CREATE TRIGGER trg_po_status_notification
   AFTER UPDATE OF status ON public.purchase_orders
+  FOR EACH ROW
+  EXECUTE FUNCTION public.trigger_push_on_db_change();
+
+-- 5. Create the Trigger for purchase_requisitions (after insert or update)
+DROP TRIGGER IF EXISTS trg_pr_status_notification ON public.purchase_requisitions;
+CREATE TRIGGER trg_pr_status_notification
+  AFTER INSERT OR UPDATE ON public.purchase_requisitions
   FOR EACH ROW
   EXECUTE FUNCTION public.trigger_push_on_db_change();
