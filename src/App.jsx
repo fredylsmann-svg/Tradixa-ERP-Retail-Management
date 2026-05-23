@@ -41,7 +41,7 @@ const LoadingFallback = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
     <div className="text-center animate-in fade-in zoom-in duration-500 flex flex-col items-center max-md:gap-4 md:-mt-32">
       <img src={tradixaLogo} alt="Tradixa" className="w-48 md:w-60 h-auto mx-auto animate-pulse object-contain" />
-      <div className="flex items-center gap-1.5 md:-mt-16">
+      <div className="flex items-center gap-1.5 -mt-6 md:-mt-16">
         <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.3s]"></div>
         <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.15s]"></div>
         <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce"></div>

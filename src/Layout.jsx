@@ -125,7 +125,7 @@ export default function Layout({ children, currentPageName }) {
       <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
         <div className="text-center animate-in fade-in zoom-in duration-500 flex flex-col items-center -mt-32">
           <img src={tradixaLogo} alt="Tradixa" className="h-48 md:h-60 mx-auto animate-pulse" />
-          <div className="flex items-center gap-1.5 -mt-16">
+          <div className="flex items-center gap-1.5 -mt-6 md:-mt-16">
             <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.3s]"></div>
             <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.15s]"></div>
             <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce"></div>

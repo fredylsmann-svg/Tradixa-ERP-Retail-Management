@@ -308,7 +308,7 @@ export default function ProcurementWorkflow() {
             </div>
           </div>
 
-          <div className="mt-4 flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800/50">
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800/50">
             <div className="flex gap-2 items-center">
               <Info className="w-3.5 h-3.5 text-blue-500 shrink-0" />
               <p className="text-[11px] font-medium text-blue-700 dark:text-blue-300">
@@ -319,7 +319,7 @@ export default function ProcurementWorkflow() {
               variant="outline" 
               size="sm"
               onClick={() => navigate('/CompanySettings')}
-              className="ml-4 shrink-0 h-8 text-xs font-bold rounded-lg border-blue-200 text-blue-600 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/40"
+              className="w-full sm:w-auto shrink-0 h-8 text-xs font-bold rounded-lg border-blue-200 text-blue-600 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/40 flex items-center justify-center"
             >
               <Settings className="w-3.5 h-3.5 mr-1.5" />
               Atur di Company Settings
@@ -426,11 +426,11 @@ export default function ProcurementWorkflow() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-3">
-              <Button onClick={() => navigate('/InventoryGRN')} className="bg-white text-blue-600 hover:bg-blue-50 font-bold h-10 px-6 rounded-xl shadow-lg">
+            <div className="flex flex-wrap sm:flex-nowrap gap-3 w-full sm:w-auto">
+              <Button onClick={() => navigate('/InventoryGRN')} className="bg-white text-blue-600 hover:bg-blue-50 font-bold h-10 px-6 rounded-xl shadow-lg w-full sm:w-auto justify-center flex">
                 Cek IGRN
               </Button>
-              <Button onClick={() => navigate('/Payables')} variant="ghost" className="text-white hover:bg-white/10 font-bold h-10 px-6 rounded-xl border border-white/20">
+              <Button onClick={() => navigate('/Payables')} variant="ghost" className="text-white hover:bg-white/10 font-bold h-10 px-6 rounded-xl border border-white/20 w-full sm:w-auto justify-center flex">
                 Daftar Hutang
               </Button>
             </div>
