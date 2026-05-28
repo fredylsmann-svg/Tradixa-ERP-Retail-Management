@@ -41,6 +41,7 @@ export const ENTITY_TABLE_MAP = {
 
   // === SALES ===
   SalesTransaction:  'sales_transactions',
+  SalesReturn:       'sales_returns',
 
   // === FINANCIAL ===
   COA:               'coa',

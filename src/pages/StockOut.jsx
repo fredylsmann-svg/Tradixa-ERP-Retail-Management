@@ -20,7 +20,7 @@ import { Package } from 'lucide-react';
 import { toast as sonnerToast } from 'sonner';
 import { getEffectiveLimits } from '@/planConfig';
 
-const STOCK_OUT_TYPES = ['Sales', 'Damaged', 'Return', 'Adjustment', 'Transfer'];
+const STOCK_OUT_TYPES = ['Sales', 'Damaged', 'Adjustment', 'Transfer'];
 
 export default function StockOut({ store }) {
   const [allMovements, setAllMovements] = useState([]);

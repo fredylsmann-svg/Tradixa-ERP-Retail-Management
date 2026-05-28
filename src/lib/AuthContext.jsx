@@ -294,7 +294,19 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    // During Vite HMR, components can briefly render outside providers.
+    // Return safe defaults instead of throwing to prevent console errors.
+    console.warn('[Tradixa Auth] useAuth called outside AuthProvider (likely HMR). Returning safe defaults.');
+    return {
+      user: null,
+      isAuthenticated: false,
+      isLoadingAuth: true,
+      authError: null,
+      authTimedOut: false,
+      login: async () => ({ success: false, message: 'Auth not ready' }),
+      loginWithGoogle: async () => ({ success: false, message: 'Auth not ready' }),
+      logout: async () => {}
+    };
   }
   return context;
 };

@@ -55,14 +55,14 @@ export default function Layout({ children, currentPageName }) {
       if (stores.length > 0) {
         const currentStore = stores[0];
         setStore(currentStore);
-        
+
         // Auto-fix: If user is the store owner but role is still 'staff' (due to setup bug)
         const userIsOwner = currentStore.owner_user_id === user.id;
         if (userIsOwner && user.role === 'staff') {
           console.log('[Tradixa Layout] Auto-correcting owner role...');
           await api.auth.updateMe({ role: 'owner' });
           // Force context update would be better, but re-load works too
-          window.location.reload(); 
+          window.location.reload();
           return;
         }
 

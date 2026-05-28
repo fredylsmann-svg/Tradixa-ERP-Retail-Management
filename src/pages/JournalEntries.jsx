@@ -196,7 +196,8 @@ export default function JournalEntries({ store }) {
   const getStatusBadge = (status) => {
     switch (status?.toLowerCase()) {
       case 'posted': return <Badge className="bg-emerald-100 text-emerald-700 border-none px-3 py-1 rounded-full font-bold">Posted</Badge>;
-      case 'void': return <Badge className="bg-red-100 text-red-700 border-none px-3 py-1 rounded-full font-bold">Void</Badge>;
+      case 'void':
+      case 'voided': return <Badge className="bg-red-100 text-red-700 border-none px-3 py-1 rounded-full font-bold">Void</Badge>;
       default: return <Badge className="bg-amber-100 text-amber-700 border-none px-3 py-1 rounded-full font-bold">Draft</Badge>;
     }
   };

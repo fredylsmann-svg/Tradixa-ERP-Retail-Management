@@ -13,7 +13,7 @@ import {
   ArrowRightLeft, List, DollarSign, Settings, UserCircle, GitBranch, Network,
   Workflow, ChevronDown, Menu, X, MessageCircle, Award, Layers, Mail, Zap, Megaphone, Banknote, PieChart, Contact, Landmark, Coins,
   BookOpen, ReceiptText, LineChart, BarChart, Activity, Warehouse, ClipboardCheck, MapPin, Palette, Boxes, BarChart3, HandCoins, History,
-  Lock, CreditCard as CreditCardIcon, Calculator, FileSignature, PackageCheck
+  Lock, CreditCard as CreditCardIcon, Calculator, FileSignature, PackageCheck, RotateCcw
 } from 'lucide-react';
 import WarehouseTransferIcon from '@/components/icons/WarehouseTransferIcon';
 
@@ -88,6 +88,7 @@ const getFilteredMenuGroups = (isOwner) => {
       items: [
         { name: 'Sales Workflow', icon: Workflow, page: 'SalesWorkflow' },
         { name: 'Sales Transaction', icon: ShoppingCart, page: 'SalesTransaction' },
+        { name: 'Sales Return', icon: RotateCcw, page: 'SalesReturn' },
         { name: 'Sales Invoices', icon: Receipt, page: 'SalesInvoices' },
         { name: 'Revenue Reports', icon: BarChart3, page: 'RevenueReports' }
       ]

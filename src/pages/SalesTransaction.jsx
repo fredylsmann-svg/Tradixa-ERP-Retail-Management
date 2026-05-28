@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Eye, ShoppingCart, Receipt, CalendarClock, Wallet, Phone, User, CreditCard, X, ZoomIn, CheckCircle2, Clock, ArrowRight, Lock, Loader2, QrCode } from 'lucide-react';
+import { Plus, Eye, ShoppingCart, Receipt, CalendarClock, Wallet, Phone, User, CreditCard, X, ZoomIn, CheckCircle2, Clock, ArrowRight, Lock, Loader2, QrCode, MessageSquare, Ban } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import SalesTransactionForm from '@/components/product/SalesTransactionForm';
 import PrintInvoice from '@/components/invoice/PrintInvoice';
@@ -50,6 +50,12 @@ export default function SalesTransaction({ store }) {
   // QRIS Confirmation States
   const [qrisConfirmRrn, setQrisConfirmRrn] = useState('');
   const [isSavingQrisConfirm, setIsSavingQrisConfirm] = useState(false);
+
+  // Void Transaction States
+  const [voidingTransaction, setVoidingTransaction] = useState(null);
+  const [voidReason, setVoidReason] = useState('');
+  const [voidAuthorizer, setVoidAuthorizer] = useState('Owner');
+  const [isVoiding, setIsVoiding] = useState(false);
 
   useEffect(() => {
     if (viewingTransaction?.payment_method === 'Piutang / Termin' && store?.id) {
@@ -475,6 +481,166 @@ export default function SalesTransaction({ store }) {
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
 
+  // Check if transaction is from today (WIB)
+  const isTransactionToday = (tx) => {
+    if (!tx?.timestamp_wib) return false;
+    const txDatePart = tx.timestamp_wib.split(' ')[0];
+    const now = new Date();
+    const wibOffset = 7 * 60;
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const wibTime = new Date(utc + (wibOffset * 60000));
+    const todayStr = `${String(wibTime.getDate()).padStart(2, '0')}/${String(wibTime.getMonth() + 1).padStart(2, '0')}/${wibTime.getFullYear()}`;
+    return txDatePart === todayStr;
+  };
+
+  const handleVoidTransaction = async () => {
+    if (!voidingTransaction || !voidReason.trim()) {
+      toast({ title: 'Alasan Wajib', description: 'Silakan isi alasan pembatalan transaksi.', variant: 'destructive' });
+      return;
+    }
+    setIsVoiding(true);
+    try {
+      const tx = voidingTransaction;
+      const storeId = store.id;
+
+      // 1. Update transaction status to Voided
+      await api.entities.SalesTransaction.update(tx.id, {
+        payment_status: 'Voided',
+        void_reason: voidReason.trim(),
+        voided_at: new Date().toISOString(),
+        voided_by: voidAuthorizer === 'Owner' ? 'Owner / Pemilik Toko' : 'Manager Operasional'
+      });
+
+      // 2. Restore stock for each item
+      if (tx.items && tx.items.length > 0) {
+        for (const item of tx.items) {
+          try {
+            const products = await api.entities.Product.filter({ store_id: storeId, id: item.product_id });
+            if (products?.length > 0) {
+              const product = products[0];
+              const restoredStock = (product.stock || 0) + item.quantity;
+              const status = restoredStock > product.reorder_level ? 'In Stock' : restoredStock > 0 ? 'Low Stock' : 'Out of Stock';
+              await api.entities.Product.update(item.product_id, { stock: restoredStock, status });
+            }
+            // Create reverse stock movement
+            await api.entities.StockMovement.create({
+              store_id: storeId,
+              reference: `VOID-${tx.invoice_number}`,
+              product_id: item.product_id,
+              product_name: item.product_name,
+              movement_type: 'in',
+              stock_type: 'Void Reversal',
+              quantity: item.quantity,
+              timestamp_wib: getWIBTimestamp()
+            });
+          } catch (err) {
+            console.error(`[Void] Failed to restore stock for ${item.product_name}:`, err);
+          }
+        }
+      }
+
+      // 3. Reverse journal entries
+      try {
+        const journals = await api.entities.JournalEntry.filter({ store_id: storeId, transaction_id: tx.invoice_number });
+        if (journals?.length > 0) {
+          const origJournal = journals[0];
+          // Create reverse journal
+          const reverseJournal = await api.entities.JournalEntry.create({
+            store_id: storeId,
+            transaction_id: `VOID-${tx.invoice_number}`,
+            date: new Date().toLocaleDateString('en-CA'),
+            description: `[VOID] Pembatalan Penjualan - ${tx.customer_name} (${tx.invoice_number}) | Alasan: ${voidReason.trim()}`,
+            type: 'Void',
+            status: 'Voided',
+            total_debit: origJournal.total_debit,
+            total_credit: origJournal.total_credit,
+            created_by: 'Administrator'
+          });
+          // Get original journal lines and reverse them
+          const origLines = await api.entities.JournalLine.filter({ journal_id: origJournal.id });
+          for (const line of (origLines || [])) {
+            await api.entities.JournalLine.create({
+              journal_id: reverseJournal.id,
+              account_name: line.account_name,
+              description: `[VOID] ${line.description}`,
+              debit: line.credit,
+              credit: line.debit
+            });
+          }
+          // Mark original journal as voided
+          await api.entities.JournalEntry.update(origJournal.id, { status: 'Voided' });
+        }
+      } catch (err) {
+        console.error('[Void] Failed to reverse journal:', err);
+      }
+
+      // 4. Reverse bank transaction if applicable
+      if (tx.payment_method !== 'Cash' && tx.bank_account_id) {
+        try {
+          const bankTxs = await api.entities.BankTransaction.filter({ store_id: storeId, sales_transaction_id: tx.id });
+          if (bankTxs?.length > 0) {
+            const origBankTx = bankTxs[0];
+            
+            if (origBankTx.status === 'Pending') {
+              // Skenario A: Uang belum divalidasi/masuk. Cukup tolak antriannya.
+              await api.entities.BankTransaction.update(origBankTx.id, { status: 'Rejected' });
+            } else if (origBankTx.status === 'Approved' || origBankTx.status === 'Cleared') {
+              // Skenario B: Uang sudah telanjur masuk ke rekening. Harus ditarik kembali (Debit).
+              const bankAccounts = await api.entities.BankAccount.filter({ store_id: storeId, id: tx.bank_account_id });
+              if (bankAccounts?.length > 0) {
+                const bank = bankAccounts[0];
+                const newBalance = (bank.balance || 0) - (tx.paid_amount || tx.total);
+                await api.entities.BankTransaction.create({
+                  store_id: storeId,
+                  bank_account_id: tx.bank_account_id,
+                  bank_name: bank.bank_name,
+                  transaction_type: 'Debit',
+                  amount: tx.paid_amount || tx.total,
+                  description: `[VOID] Pembatalan ${tx.invoice_number} - ${tx.customer_name}`,
+                  reference: `VOID-${tx.invoice_number}`,
+                  balance_after: newBalance,
+                  status: 'Approved',
+                  timestamp_wib: getWIBTimestamp()
+                });
+                await api.entities.BankAccount.update(tx.bank_account_id, { balance: newBalance });
+              }
+            }
+          }
+        } catch (err) {
+          console.error('[Void] Failed to reverse bank transaction:', err);
+        }
+      }
+
+      // 5. Reverse receivable if Piutang
+      if (tx.payment_method === 'Piutang / Termin') {
+        try {
+          const receivables = await api.entities.Receivable.filter({ store_id: storeId, invoice_number: tx.invoice_number });
+          if (receivables?.length > 0) {
+            await api.entities.Receivable.update(receivables[0].id, { status: 'Voided' });
+          }
+        } catch (err) {
+          console.error('[Void] Failed to void receivable:', err);
+        }
+      }
+
+      toast({
+        title: '✅ Transaksi Dibatalkan',
+        description: `Invoice ${tx.invoice_number} berhasil di-void. Stok dan jurnal telah dikembalikan.`
+      });
+
+      setVoidingTransaction(null);
+      setVoidReason('');
+      setVoidAuthorizer('Owner');
+      setViewingTransaction(null);
+      loadTransactions();
+    } catch (err) {
+      console.error('[Void] Error:', err);
+      toast({ title: 'Gagal Membatalkan', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsVoiding(false);
+    }
+  };
+
   return (
     <>
     <div className="space-y-6">
@@ -575,12 +741,17 @@ export default function SalesTransaction({ store }) {
                     <TableRow key={tx.id} className="hover:bg-slate-50">
                       <TableCell>{idx + 1}</TableCell>
                       <TableCell>
-                        <button
-                          onClick={() => setViewingTransaction(tx)}
-                          className="font-bold text-blue-600 dark:text-blue-400 no-underline hover:underline decoration-blue-400 underline-offset-2 transition-colors cursor-pointer"
-                        >
-                          {tx.invoice_number}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => setViewingTransaction(tx)}
+                            className="font-bold text-blue-600 dark:text-blue-400 no-underline hover:underline decoration-blue-400 underline-offset-2 transition-colors cursor-pointer"
+                          >
+                            {tx.invoice_number}
+                          </button>
+                          {tx.internal_note && (
+                            <MessageSquare className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Ada catatan internal" />
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>{tx.timestamp_wib}</TableCell>
                       <TableCell>{tx.customer_name}</TableCell>
@@ -594,6 +765,7 @@ export default function SalesTransaction({ store }) {
                         <Badge className={
                           tx.payment_status === 'Paid' ? 'bg-emerald-100 text-emerald-700' :
                           tx.payment_status === 'Pending' ? 'bg-amber-100 text-amber-700' :
+                          tx.payment_status === 'Voided' ? 'bg-red-100 text-red-700 border-red-200' :
                           'bg-blue-100 text-blue-700'
                         }>{tx.payment_status}</Badge>
                       </TableCell>
@@ -613,6 +785,17 @@ export default function SalesTransaction({ store }) {
                           <Button variant="ghost" size="icon" onClick={() => setViewingTransaction(tx)} title="Lihat Detail">
                             <Eye className="w-4 h-4 text-slate-500" />
                           </Button>
+                          {tx.payment_status === 'Pending' && isTransactionToday(tx) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setVoidingTransaction(tx)}
+                              title="Batalkan Transaksi (Void)"
+                              className="text-red-650 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Ban className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -642,6 +825,7 @@ export default function SalesTransaction({ store }) {
               {viewingTransaction && (
                 <Badge className={
                   viewingTransaction.payment_status === 'Paid' ? 'bg-emerald-100 text-emerald-700 ml-auto' :
+                  viewingTransaction.payment_status === 'Voided' ? 'bg-red-100 text-red-700 ml-auto' :
                   viewingTransaction.payment_status === 'Partial' ? 'bg-blue-100 text-blue-700 ml-auto' :
                   'bg-amber-100 text-amber-700 ml-auto'
                 }>{viewingTransaction.payment_status}</Badge>
@@ -679,6 +863,35 @@ export default function SalesTransaction({ store }) {
                   )}
                 </div>
               </div>
+
+              {/* Void Info Display */}
+              {viewingTransaction.payment_status === 'Voided' && (
+                <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-100 dark:border-red-900/50">
+                  <div className="p-1.5 bg-red-100 dark:bg-red-900 rounded-lg mt-0.5 shrink-0">
+                    <Ban className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-red-700 dark:text-red-400 uppercase tracking-wider mb-1">Transaksi Dibatalkan (Voided)</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-350 font-medium">Alasan: {viewingTransaction.void_reason || '-'}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-450 mt-1">
+                      Oleh: {viewingTransaction.voided_by || 'Administrator'} | {viewingTransaction.voided_at ? new Date(viewingTransaction.voided_at).toLocaleString('id-ID') : '-'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Internal Note */}
+              {viewingTransaction.internal_note && (
+                <div className="flex items-start gap-3 p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border border-amber-100 dark:border-amber-900/50">
+                  <div className="p-1.5 bg-amber-100 dark:bg-amber-900 rounded-lg mt-0.5 shrink-0">
+                    <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1">Catatan Internal</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 font-medium whitespace-pre-wrap">{viewingTransaction.internal_note}</p>
+                  </div>
+                </div>
+              )}
 
               {/* === QRIS Pending Confirmation Section === */}
               {viewingTransaction.payment_method === 'QRIS' && viewingTransaction.payment_status === 'Pending' && (
@@ -924,6 +1137,18 @@ export default function SalesTransaction({ store }) {
                     <span>Rp {formatCurrency(viewingTransaction.items.reduce((sum, i) => sum + ((i.buy_price || 0) * i.quantity), 0))}</span>
                   </div>
                 )}
+
+                 {/* Detail Dialog Void Action */}
+                 {viewingTransaction.payment_status === 'Pending' && isTransactionToday(viewingTransaction) && (
+                   <div className="flex justify-end pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
+                     <Button
+                       onClick={() => setVoidingTransaction(viewingTransaction)}
+                       className="bg-red-600 hover:bg-red-700 text-white font-bold h-10 px-4 rounded-xl text-xs flex items-center gap-1.5"
+                     >
+                       <Ban className="w-4 h-4" /> Batalkan Transaksi (Void)
+                     </Button>
+                   </div>
+                 )}
               </div>
             </div>
           )}
@@ -1260,6 +1485,77 @@ export default function SalesTransaction({ store }) {
             />
           )}
         </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* === Dialog Void / Cancel Transaksi === */}
+    <Dialog open={!!voidingTransaction} onOpenChange={(open) => { if (!open) { setVoidingTransaction(null); setVoidReason(''); setVoidAuthorizer('Owner'); } }}>
+      <DialogContent className="max-w-md rounded-2xl p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold text-xl">
+            <Ban className="w-5 h-5" />
+            Batalkan Transaksi (Void)
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-4">
+          <div className="p-4 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300 rounded-xl border border-red-100 dark:border-red-900/30 text-xs leading-relaxed font-medium">
+            ⚠️ <b>Peringatan:</b> Tindakan ini akan membatalkan transaksi <b>{voidingTransaction?.invoice_number}</b> secara permanen. Stok produk akan dikembalikan, dan jurnal akuntansi akan dibalik secara otomatis.
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold text-slate-700 dark:text-slate-350">Alasan Pembatalan <span className="text-red-500">*</span></Label>
+            <textarea
+              value={voidReason}
+              onChange={(e) => setVoidReason(e.target.value)}
+              placeholder="Contoh: Salah input produk / Pelanggan membatalkan pesanan..."
+              rows={3}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-sm font-medium resize-none focus:ring-2 focus:ring-red-500/20 focus:border-red-300 outline-none transition-all placeholder:text-slate-400"
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold text-slate-700 dark:text-slate-350">Diotorisasi Oleh (Owner / Manager) <span className="text-red-500">*</span></Label>
+            <Select value={voidAuthorizer} onValueChange={setVoidAuthorizer}>
+              <SelectTrigger className="h-11 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-750 font-medium text-slate-800 dark:text-slate-200">
+                <SelectValue placeholder="Pilih otorisasi..." />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900">
+                <SelectItem value="Owner" className="font-medium rounded-lg">Owner / Pemilik Toko</SelectItem>
+                <SelectItem value="Manager" className="font-medium rounded-lg">Manager Operasional</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <DialogFooter className="pt-6 flex gap-2">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setVoidingTransaction(null);
+              setVoidReason('');
+            }}
+            className="rounded-xl h-11 font-bold text-slate-500 dark:text-slate-400"
+            disabled={isVoiding}
+          >
+            Batal
+          </Button>
+          <Button
+            onClick={handleVoidTransaction}
+            disabled={!voidReason.trim() || isVoiding}
+            className="rounded-xl h-11 px-6 font-bold bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-2"
+          >
+            {isVoiding ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Memproses Void...
+              </>
+            ) : (
+              'Batalkan Transaksi'
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
 

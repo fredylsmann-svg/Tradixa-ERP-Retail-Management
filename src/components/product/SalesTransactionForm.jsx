@@ -73,6 +73,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
   const [serialAssignments, setSerialAssignments] = useState({});
   const [serialTrackedItemsInCart, setSerialTrackedItemsInCart] = useState([]);
   const [deliveryCount, setDeliveryCount] = useState(0);
+  const [internalNote, setInternalNote] = useState('');
   
   // EDC Integration States
   const [edcIntegrationType, setEdcIntegrationType] = useState(settings?.defaultEdcIntegration || 'Manual'); // Manual | Local
@@ -767,7 +768,8 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
       sales_pic: salesPic,
       sale_location: saleLocation,
       sale_coordinates: capturedCoords,
-      timestamp_wib: getWIBTimestamp()
+      timestamp_wib: getWIBTimestamp(),
+      internal_note: internalNote.trim() || null
     });
 
     // AR Creation
@@ -1188,6 +1190,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
     setCompletedTransaction(null);
     setIsStaticQris(false);
     setQrisRrn('');
+    setInternalNote('');
     // EDC Reset
     setEdcIntegrationType('Manual');
     setTraceNumber('');
@@ -1931,6 +1934,18 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                     {needsDelivery && selectedCustomer === 'walk-in' && (
                       <p className="text-xs text-red-500 font-bold ml-8">⚠️ Anda harus memilih pelanggan (Customer Master) di bagian atas untuk mencatat alamat tujuan pengiriman.</p>
                     )}
+                  </div>
+
+                  {/* Internal Note */}
+                  <div className="mt-4">
+                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-2 block">Catatan Internal (Opsional)</Label>
+                    <textarea
+                      value={internalNote}
+                      onChange={(e) => setInternalNote(e.target.value)}
+                      placeholder="Catatan internal untuk staf kasir... (tidak tercetak di struk)"
+                      rows={2}
+                      className="w-full rounded-2xl border border-slate-100 bg-slate-50 p-3 text-sm font-medium resize-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 outline-none transition-all placeholder:text-slate-300"
+                    />
                   </div>
 
                   <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 mt-4">

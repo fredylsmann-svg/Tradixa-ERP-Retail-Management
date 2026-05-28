@@ -54,6 +54,7 @@ const SalesInvoices = lazy(() => import('./pages/SalesInvoices'));
 const SalesReport = lazy(() => import('./pages/SalesReport'));
 const SalesPerformance = lazy(() => import('./pages/SalesPerformance'));
 const SalesTransaction = lazy(() => import('./pages/SalesTransaction'));
+const SalesReturn = lazy(() => import('./pages/SalesReturn'));
 const ProductLocations = lazy(() => import('./pages/ProductLocations'));
 const StockIn = lazy(() => import('./pages/StockIn'));
 const StockOut = lazy(() => import('./pages/StockOut'));
@@ -129,6 +130,7 @@ export const PAGES = {
     "SalesReport": SalesReport,
     "SalesPerformance": SalesPerformance,
     "SalesTransaction": SalesTransaction,
+    "SalesReturn": SalesReturn,
     "ProductLocations": ProductLocations,
     "StockIn": StockIn,
     "StockOpname": StockOpname,
