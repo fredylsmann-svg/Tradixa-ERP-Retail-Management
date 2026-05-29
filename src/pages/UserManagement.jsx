@@ -49,7 +49,7 @@ const MODULE_GROUPS = [
   },
   {
     category: 'SALES',
-    modules: ['Sales Transaction', 'Sales Invoices', 'Revenue Reports', 'Sales Workflow']
+    modules: ['Sales Transaction', 'Sales Invoices', 'Sales Return', 'Revenue Reports', 'Sales Workflow']
   },
   {
     category: 'FINANCIAL & OPERATIONS',

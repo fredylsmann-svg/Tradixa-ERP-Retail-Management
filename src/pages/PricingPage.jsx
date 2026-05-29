@@ -49,6 +49,7 @@ const featureGroups = [
     icon: ShoppingCart,
     features: [
       { name: 'Sales Transaction', free: '50 / bulan', pro: 'Unlimited', premium: 'Unlimited', enterprise: 'Unlimited' },
+      { name: 'Sales Return', free: false, pro: true, premium: true, enterprise: true },
       { name: 'Sales Invoices', free: false, pro: true, premium: true, enterprise: true },
       { name: 'Revenue Reports', free: false, pro: true, premium: true, enterprise: true },
       { name: 'Sales Report', free: false, pro: true, premium: true, enterprise: true },

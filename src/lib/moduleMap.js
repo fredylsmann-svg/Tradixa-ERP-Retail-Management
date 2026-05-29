@@ -54,6 +54,7 @@ export const PAGE_TO_MODULE = {
   // Sales
   'SalesWorkflow': 'Sales Workflow',
   'SalesTransaction': 'Sales Transaction',
+  'SalesReturn': 'Sales Return',
   'SalesInvoices': 'Sales Invoices',
   'RevenueReports': 'Revenue Reports',
 
