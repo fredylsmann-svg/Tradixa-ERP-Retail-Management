@@ -13,7 +13,7 @@ import {
   ArrowRightLeft, List, DollarSign, Settings, UserCircle, GitBranch, Network,
   Workflow, ChevronDown, Menu, X, MessageCircle, Award, Layers, Mail, Zap, Megaphone, Banknote, PieChart, Contact, Landmark, Coins,
   BookOpen, ReceiptText, LineChart, BarChart, Activity, Warehouse, ClipboardCheck, MapPin, Palette, Boxes, BarChart3, HandCoins, History,
-  Lock, CreditCard as CreditCardIcon, Calculator, FileSignature, PackageCheck, RotateCcw
+  Lock, CreditCard as CreditCardIcon, Calculator, FileSignature, PackageCheck, RotateCcw, Bot
 } from 'lucide-react';
 import WarehouseTransferIcon from '@/components/icons/WarehouseTransferIcon';
 
@@ -154,7 +154,7 @@ const getFilteredMenuGroups = (isOwner) => {
     {
       title: 'AI Assistant',
       items: [
-        { name: 'Tradixa Assistant', icon: MessageCircle, page: 'TradixaAssistant' }
+        { name: 'Tradixa Assistant', icon: Bot, page: 'TradixaAssistant' }
       ]
     }
   ];
