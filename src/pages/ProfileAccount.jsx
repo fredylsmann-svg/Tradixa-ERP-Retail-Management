@@ -364,17 +364,17 @@ export default function ProfileAccount({ store }) {
       {/* Header Profile Section */}
       <div className="relative rounded-3xl bg-slate-900 shadow-2xl mb-8 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-black opacity-90"></div>
-        <div className="relative h-40 px-8 pb-6 flex items-end gap-6 z-10">
+        <div className="relative h-32 md:h-40 px-4 pb-4 md:px-8 md:pb-6 flex items-end gap-4 md:gap-6 z-10">
           <div className="relative group shrink-0">
-            <div className="w-24 h-24 rounded-3xl bg-white p-1 shadow-xl overflow-hidden border-2 border-slate-100">
+            <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl md:rounded-3xl bg-white p-1 shadow-xl overflow-hidden border border-slate-100 md:border-2">
               {avatarUrl ? (
                 <img 
                   src={avatarUrl} 
                   alt={user.full_name}
-                  className="w-full h-full rounded-2xl object-cover"
+                  className="w-full h-full rounded-xl md:rounded-2xl object-cover"
                 />
               ) : (
-                <div className="w-full h-full rounded-2xl bg-gradient-to-br from-[#74EB41] to-[#60D832] flex items-center justify-center text-slate-900 text-3xl font-black">
+                <div className="w-full h-full rounded-xl md:rounded-2xl bg-gradient-to-br from-[#74EB41] to-[#60D832] flex items-center justify-center text-slate-900 text-xl md:text-3xl font-black">
                   {initials}
                 </div>
               )}
@@ -391,10 +391,10 @@ export default function ProfileAccount({ store }) {
               )}
             </button>
           </div>
-          <div className="mb-2">
-            <h1 className="text-2xl font-black text-white tracking-tight">{user.full_name || 'Administrator'}</h1>
-            <p className="text-slate-300 font-medium flex items-center gap-2 text-sm mt-1">
-              <Mail className="w-4 h-4 text-slate-400" /> {user.email}
+          <div className="mb-1 md:mb-2 min-w-0 flex-1">
+            <h1 className="text-lg md:text-2xl font-black text-white tracking-tight truncate">{user.full_name || 'Administrator'}</h1>
+            <p className="text-slate-300 font-medium flex items-center gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm mt-0.5 md:mt-1 min-w-0">
+              <Mail className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400 shrink-0" /> <span className="truncate">{user.email}</span>
             </p>
           </div>
         </div>

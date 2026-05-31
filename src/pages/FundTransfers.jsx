@@ -450,7 +450,7 @@ export default function FundTransfers({ store }) {
                 <Clock className="w-6 h-6 text-white drop-shadow-md" />
               </div>
               <div className="text-white pr-16">
-                <p className="text-xs font-bold text-white/90 uppercase tracking-widest drop-shadow-sm">Pending Approval</p>
+                <p className="text-xs font-bold text-white/90 tracking-widest drop-shadow-sm">Pending Approval</p>
                 <h3 className="text-3xl font-black text-white mt-2 tracking-tight drop-shadow-md">
                   <AnimatedNumber value={pendingCount} suffix=" Permohonan" />
                 </h3>
@@ -459,7 +459,7 @@ export default function FundTransfers({ store }) {
             </div>
           </CardContent>
         </Card>
-
+ 
         <Card className="relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-emerald-500 to-emerald-700 border-none shadow-md hover:-translate-y-1 hover:brightness-105 active:scale-95">
           <div className="absolute inset-x-0 top-0 h-px bg-white/30" />
           <CardContent className="p-6 relative z-10">
@@ -468,7 +468,7 @@ export default function FundTransfers({ store }) {
                 <CheckCircle2 className="w-6 h-6 text-white drop-shadow-md" />
               </div>
               <div className="text-white pr-16">
-                <p className="text-xs font-bold text-white/90 uppercase tracking-widest drop-shadow-sm">Dana Disetujui (Approved)</p>
+                <p className="text-xs font-bold text-white/90 tracking-widest drop-shadow-sm">Dana Disetujui (Approved)</p>
                 <h3 className="text-3xl font-black text-white mt-2 tracking-tight drop-shadow-md">
                   <AnimatedNumber value={approvedTotal} prefix="Rp " />
                 </h3>
@@ -477,7 +477,7 @@ export default function FundTransfers({ store }) {
             </div>
           </CardContent>
         </Card>
-
+ 
         <Card className="relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-rose-500 to-rose-700 border-none shadow-md hover:-translate-y-1 hover:brightness-105 active:scale-95">
           <div className="absolute inset-x-0 top-0 h-px bg-white/30" />
           <CardContent className="p-6 relative z-10">
@@ -486,11 +486,11 @@ export default function FundTransfers({ store }) {
                 <XCircle className="w-6 h-6 text-white drop-shadow-md" />
               </div>
               <div className="text-white pr-16">
-                <p className="text-xs font-bold text-white/90 uppercase tracking-widest drop-shadow-sm">Permohonan Ditolak (Rejected)</p>
+                <p className="text-xs font-bold text-white/90 tracking-widest drop-shadow-sm">Permohonan Ditolak (Rejected)</p>
                 <h3 className="text-3xl font-black text-white mt-2 tracking-tight drop-shadow-md">
                   <AnimatedNumber value={rejectedCount} suffix=" Transaksi" />
                 </h3>
-                <p className="text-xs mt-2 text-white/80 drop-shadow-sm font-medium font-medium">Pengajuan dibatalkan/ditolak</p>
+                <p className="text-xs mt-2 text-white/80 drop-shadow-sm font-medium">Pengajuan dibatalkan/ditolak</p>
               </div>
             </div>
           </CardContent>

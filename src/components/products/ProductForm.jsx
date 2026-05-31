@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Upload, Scan, Loader2, X, PackageOpen, LayoutGrid, Info, Plus, Boxes, Calendar, Clock, ArrowDownUp, Camera, Package, Sparkles, ScanBarcode, Barcode, Calculator } from 'lucide-react';
+import { Upload, Scan, Loader2, X, PackageOpen, LayoutGrid, Info, Plus, Boxes, Calendar, Clock, ArrowDownUp, Camera, Package, Sparkles, ScanBarcode, Barcode, Calculator, Trash2, DollarSign, Layers } from 'lucide-react';
 import BarcodeScanner from '@/components/barcode/BarcodeScanner';
 import { NumberInput } from '@/components/ui/number-input';
 import imageCompression from 'browser-image-compression';
@@ -24,6 +24,10 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
   const [imagePreview, setImagePreview] = useState(product?.image_url || null);
   const [showScanner, setShowScanner] = useState(false);
   const [locations, setLocations] = useState([]);
+  const [uomPrices, setUomPrices] = useState(product?.uom_prices || []);
+  const [customUnitInput, setCustomUnitInput] = useState('');
+  const [showCustomUnitInput, setShowCustomUnitInput] = useState(false);
+  const [showUomHelp, setShowUomHelp] = useState(false);
   const [formData, setFormData] = useState({
     barcode: product?.barcode || '', 
     sku: product?.sku || '', 
@@ -64,10 +68,24 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
         default_shelf_life: product?.default_shelf_life || 365,
         issue_method: product?.issue_method || 'FIFO'
       });
+      setUomPrices(product?.uom_prices || []);
       setImagePreview(product?.image_url || null);
       setImageFile(null);
+      setCustomUnitInput('');
+      setShowCustomUnitInput(false);
     }
   }, [open, product]);
+
+  // Sync base unit entry in uomPrices whenever sell_unit or sell_price changes
+  useEffect(() => {
+    if (!open) return;
+    setUomPrices(prev => {
+      const baseEntry = { unit: formData.sell_unit, qty_per_base: 1, sell_price: Number(formData.sell_price) || 0 };
+      if (prev.length === 0) return [baseEntry];
+      // Always update the first entry (base unit) to match sell_unit/sell_price
+      return [baseEntry, ...prev.slice(1)];
+    });
+  }, [open, formData.sell_unit, formData.sell_price]);
 
   // Auto Generate SKU
   useEffect(() => {
@@ -189,6 +207,15 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
     const wibTime = new Date(utc + (7 * 60 * 60000));
     const timestamp_wib = `${String(wibTime.getDate()).padStart(2, '0')}/${String(wibTime.getMonth() + 1).padStart(2, '0')}/${wibTime.getFullYear()}, ${String(wibTime.getHours()).padStart(2, '0')}:${String(wibTime.getMinutes()).padStart(2, '0')} WIB`;
     
+    // Clean uom_prices: ensure numbers and filter out invalid entries
+    const cleanUomPrices = uomPrices
+      .filter(u => u.unit && Number(u.qty_per_base) > 0)
+      .map(u => ({
+        unit: u.unit,
+        qty_per_base: Number(u.qty_per_base),
+        sell_price: Number(u.sell_price) || 0
+      }));
+
     const productData = { 
       ...formData, 
       store_id: storeId, 
@@ -200,6 +227,7 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
       cogs_per_unit: cogsPerUnit,
       stock: Number(formData.stock), 
       reorder_level: Number(formData.reorder_level),
+      uom_prices: cleanUomPrices,
       timestamp_wib
     };
 
@@ -507,6 +535,281 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
               <span>Margin 1 {formData.sell_unit}: <b className={(Number(formData.sell_price) - (Number(formData.buy_price) / Number(formData.conversion_rate))) < 0 ? 'text-red-500' : 'text-emerald-500'}>Rp {(Number(formData.sell_price) - (Number(formData.buy_price) / Number(formData.conversion_rate))).toLocaleString('id-ID')}</b></span>
             </div>
           </div>
+
+          {/* === MULTI-UOM BULK PRICING SECTION === */}
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-4 border border-emerald-200 rounded-xl space-y-4">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              <Layers className="w-4 h-4 text-emerald-600"/>
+              Harga Grosir / Bulk Pricing
+              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Opsional</span>
+              <div className="relative ml-1 inline-block">
+                <Info 
+                  className="w-4 h-4 text-slate-400 cursor-pointer hover:text-emerald-500 transition-colors" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowUomHelp(prev => !prev);
+                  }}
+                />
+                {showUomHelp && (
+                  <div className="absolute z-50 w-[90vw] md:w-[480px] p-4 mt-1 text-xs text-white bg-slate-950/95 border border-slate-700 rounded-xl shadow-2xl left-1/2 -translate-x-1/2 top-full text-left space-y-3 backdrop-blur-sm">
+                    <p className="font-semibold text-sm border-b border-slate-700 pb-1.5 text-emerald-400 flex items-center justify-between gap-1.5">
+                      <span className="flex items-center gap-1.5">
+                        Panduan Lengkap Konsep Multi-UoM
+                      </span>
+                      <button 
+                        type="button" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowUomHelp(false);
+                        }}
+                        className="text-slate-400 hover:text-white hover:bg-slate-800 text-xs px-2 py-0.5 rounded transition-colors"
+                      >
+                        ✕ Tutup
+                      </button>
+                    </p>
+                    <div className="space-y-2.5 text-[11px] leading-relaxed">
+                      <p className="text-slate-300">
+                        Fitur ini memungkinkan Anda menjual produk dalam berbagai jenis satuan kemasan (Eceran, Pack, Dus, dll) secara dinamis, sementara <strong>stok fisik gudang tetap terhitung otomatis dalam satuan terkecil (Base Unit)</strong>.
+                      </p>
+                      
+                      <div className="bg-slate-800/70 p-2.5 rounded-lg border border-slate-700/50 space-y-1">
+                        <p className="font-semibold text-emerald-300">Studi Kasus & Contoh Simulasi: "Kopi ABC"</p>
+                        
+                        <div className="text-[10px] bg-slate-900/60 p-2 rounded text-slate-300 border border-slate-700/30 mb-2 leading-relaxed">
+                          <strong>1. Alur Kulakan (Beli) dari Supplier:</strong>
+                          <br/>Toko membeli Kopi ABC per <strong>Dus</strong> seharga <strong>Rp 120.000</strong> dengan konversi isi <strong>24 Pcs</strong>.
+                          <br/>
+                          <span className="text-emerald-400 font-semibold font-mono">&rarr; Modal HPP per Pcs = Rp 120.000 / 24 = Rp 5.000</span>
+                        </div>
+
+                        <p className="font-medium text-slate-200 text-[10px] pt-1"><strong>2. Pendaftaran Satuan Jual & Tingkat Grosir:</strong></p>
+                        <ul className="list-disc pl-4 space-y-1.5 text-slate-300">
+                          <li><strong>Eceran (Base)</strong>: Dijual per <strong>Pcs</strong> seharga <strong>Rp 6.000</strong>.
+                            <br/><span className="text-[10px] text-slate-400 font-mono">Modal HPP: Rp 5.000 | Untung/Margin: Rp 1.000</span>
+                          </li>
+                          <li><strong>Grosir Sedang (Pack)</strong>: Isi <strong>6 Pcs</strong> seharga <strong>Rp 33.000</strong>.
+                            <br/><span className="text-[10px] text-slate-400 font-mono">Modal HPP: 6 × Rp 5.000 = Rp 30.000 | Untung: Rp 3.000</span>
+                          </li>
+                          <li><strong>Grosir Besar (Dus)</strong>: Isi <strong>24 Pcs</strong> seharga <strong>Rp 130.000</strong>.
+                            <br/><span className="text-[10px] text-slate-400 font-mono">Modal HPP: 24 × Rp 5.000 = Rp 120.000 | Untung: Rp 10.000</span>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className="bg-slate-800/40 p-2.5 rounded-lg border border-slate-800/80 space-y-1 text-slate-300">
+                        <p className="font-semibold text-slate-300">Kenapa Margin Bisa Rp 0 atau Minus?</p>
+                        <ul className="list-disc pl-4 space-y-1">
+                          <li><strong>Minus (Merah)</strong>: Terjadi jika Anda baru menambah baris satuan tapi <strong>Harga Jual belum diisi</strong> (sistem menghitung: Harga Jual Rp 0 - Modal HPP = Minus/Rugi).</li>
+                          <li><strong>Rp 0 (Hijau)</strong>: Terjadi jika Anda menjual barang grosir dengan harga yang <strong>sama persis dengan harga modal kulakan</strong> (Break Even Point / Pulang Modal).</li>
+                        </ul>
+                      </div>
+                      
+                      <p className="text-[10px] text-slate-400 italic">
+                        *Sistem kasir POS dan pemotongan stok otomatis di gudang akan berjalan sinkron berdasarkan rasio konversi di atas.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </h4>
+
+            {/* UoM Pricing Rows */}
+            <div className="space-y-2">
+              {uomPrices.map((uom, index) => {
+                const isBase = index === 0;
+                const hppPerBase = Number(formData.buy_price) / Number(formData.conversion_rate || 1);
+                const hppForUom = hppPerBase * Number(uom.qty_per_base || 1);
+                const marginForUom = Number(uom.sell_price || 0) - hppForUom;
+                const hargaPerUnit = Number(uom.qty_per_base) > 0 ? (Number(uom.sell_price) / Number(uom.qty_per_base)) : 0;
+
+                return (
+                  <div key={index} className={`flex items-end gap-2 p-3 rounded-lg border ${
+                    isBase 
+                      ? 'bg-white/80 border-emerald-200' 
+                      : 'bg-white border-slate-200'
+                  }`}>
+                    {/* Unit Name */}
+                    <div className="flex-1 min-w-[100px]">
+                      <Label className="text-[11px] text-slate-500">
+                        Satuan {isBase && <span className="text-emerald-600 font-bold">(Base)</span>}
+                      </Label>
+                      {isBase ? (
+                        <div className="mt-1.5 h-9 flex items-center px-3 bg-emerald-50 border border-emerald-200 rounded-md text-sm font-semibold text-emerald-700">
+                          {uom.unit}
+                        </div>
+                      ) : (
+                        <Select value={uom.unit} onValueChange={(v) => {
+                          const updated = [...uomPrices];
+                          updated[index] = { ...updated[index], unit: v };
+                          setUomPrices(updated);
+                        }}>
+                          <SelectTrigger className="mt-1.5 bg-white h-9 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+
+                    {/* Qty per Base */}
+                    <div className="w-[90px]">
+                      <Label className="text-[11px] text-slate-500">Isi / Base</Label>
+                      {isBase ? (
+                        <div className="mt-1.5 h-9 flex items-center justify-center bg-emerald-50 border border-emerald-200 rounded-md text-sm font-semibold text-emerald-700">1</div>
+                      ) : (
+                        <NumberInput
+                          value={uom.qty_per_base}
+                          onChange={(e) => {
+                            const updated = [...uomPrices];
+                            updated[index] = { ...updated[index], qty_per_base: e.target.value };
+                            setUomPrices(updated);
+                          }}
+                          className="mt-1.5 bg-white h-9 text-sm"
+                          placeholder="6"
+                        />
+                      )}
+                    </div>
+
+                    {/* Sell Price */}
+                    <div className="flex-1 min-w-[120px]">
+                      <Label className="text-[11px] text-slate-500">Harga Jual</Label>
+                      {isBase ? (
+                        <div className="mt-1.5 h-9 flex items-center px-3 bg-emerald-50 border border-emerald-200 rounded-md text-sm font-semibold text-emerald-700">
+                          Rp {Number(uom.sell_price || 0).toLocaleString('id-ID')}
+                        </div>
+                      ) : (
+                        <NumberInput
+                          value={uom.sell_price}
+                          onChange={(e) => {
+                            const updated = [...uomPrices];
+                            updated[index] = { ...updated[index], sell_price: e.target.value };
+                            setUomPrices(updated);
+                          }}
+                          className="mt-1.5 bg-white h-9 text-sm"
+                          placeholder="Rp"
+                        />
+                      )}
+                    </div>
+
+                    {/* Margin Info */}
+                    <div className="w-[100px] text-center">
+                      <Label className="text-[11px] text-slate-500">Margin</Label>
+                      <div className={`mt-1.5 h-9 flex items-center justify-center rounded-md text-xs font-semibold ${
+                        marginForUom < 0 ? 'text-red-600 bg-red-50' : 'text-emerald-600 bg-emerald-50'
+                      }`}>
+                        Rp {marginForUom.toLocaleString('id-ID')}
+                      </div>
+                    </div>
+
+                    {/* Delete Button */}
+                    <div className="w-[36px]">
+                      {!isBase ? (
+                        <button
+                          type="button"
+                          onClick={() => setUomPrices(prev => prev.filter((_, i) => i !== index))}
+                          className="h-9 w-9 flex items-center justify-center rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      ) : <div className="h-9" />}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Harga Per Unit Perbandingan */}
+            {uomPrices.length > 1 && (
+              <div className="text-[11px] text-slate-500 bg-white/60 rounded-lg p-2 border border-slate-100 space-y-0.5">
+                <p className="font-medium text-slate-600 mb-1">Perbandingan harga per {formData.sell_unit}:</p>
+                {uomPrices.map((uom, i) => {
+                  const pricePerBase = Number(uom.qty_per_base) > 0 ? (Number(uom.sell_price) / Number(uom.qty_per_base)) : 0;
+                  const basePrice = Number(uomPrices[0]?.sell_price) || 1;
+                  const discount = basePrice > 0 ? ((1 - (pricePerBase / basePrice)) * 100) : 0;
+                  return (
+                    <div key={i} className="flex justify-between">
+                      <span>{uom.unit} ({uom.qty_per_base} {formData.sell_unit})</span>
+                      <span>
+                        Rp {pricePerBase.toLocaleString('id-ID')}/{formData.sell_unit}
+                        {i > 0 && discount > 0 && (
+                          <span className="ml-1 text-emerald-600 font-medium">(-{discount.toFixed(1)}%)</span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Add UoM Row Button */}
+            <div className="flex items-center gap-2">
+              {!showCustomUnitInput ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUomPrices(prev => [...prev, { unit: 'Pack', qty_per_base: '', sell_price: '' }]);
+                    }}
+                    className="flex items-center gap-1.5 text-xs text-emerald-600 hover:text-emerald-800 font-semibold py-1.5 px-3 rounded-lg hover:bg-emerald-100 transition-colors border border-dashed border-emerald-300"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Tambah Satuan Grosir
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomUnitInput(true)}
+                    className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium py-1.5 px-3 rounded-lg hover:bg-blue-50 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Satuan Custom
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center gap-2 w-full">
+                  <Input
+                    value={customUnitInput}
+                    onChange={(e) => setCustomUnitInput(e.target.value)}
+                    placeholder="Ketik nama satuan baru (misal: Slop, Renceng)"
+                    className="h-8 text-sm flex-1 bg-white"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (customUnitInput.trim()) {
+                          setUomPrices(prev => [...prev, { unit: customUnitInput.trim(), qty_per_base: '', sell_price: '' }]);
+                          setCustomUnitInput('');
+                          setShowCustomUnitInput(false);
+                        }
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs"
+                    onClick={() => {
+                      if (customUnitInput.trim()) {
+                        setUomPrices(prev => [...prev, { unit: customUnitInput.trim(), qty_per_base: '', sell_price: '' }]);
+                        setCustomUnitInput('');
+                        setShowCustomUnitInput(false);
+                      }
+                    }}
+                  >
+                    Tambah
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 text-xs"
+                    onClick={() => { setShowCustomUnitInput(false); setCustomUnitInput(''); }}
+                  >
+                    Batal
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+          {/* === END MULTI-UOM SECTION === */}
 
           <div className="grid grid-cols-2 gap-4">
             <div>

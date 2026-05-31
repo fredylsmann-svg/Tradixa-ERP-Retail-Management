@@ -342,27 +342,29 @@ export default function Notifications({ store }) {
       if (initialLoadDone.current && document.visibilityState === 'visible') {
         alerts.forEach(alert => {
           if (!knownNotificationIds.current.has(alert.id)) {
-            // 1. Toast
-            toast({
-              title: alert.title,
-              description: alert.message,
-              duration: 5000,
-            });
+            // 1. Toast (Skip new sale alerts to optimize POS cashier flow and avoid egress overhead)
+            if (alert.type !== 'new_sale' && alert.type !== 'sale_pending') {
+              toast({
+                title: alert.title,
+                description: alert.message,
+                duration: 5000,
+              });
 
-            // 2. Sound
-            try {
-              playSound('success');
-            } catch (e) {
-              console.log("Audio play blocked by browser policy");
-            }
-
-            // 3. Native Notification
-            if ("Notification" in window && Notification.permission === "granted") {
+              // 2. Sound
               try {
-                new Notification(alert.title, {
-                  body: alert.message
-                });
-              } catch (e) { }
+                playSound('success');
+              } catch (e) {
+                console.log("Audio play blocked by browser policy");
+              }
+
+              // 3. Native Notification
+              if ("Notification" in window && Notification.permission === "granted") {
+                try {
+                  new Notification(alert.title, {
+                    body: alert.message
+                  });
+                } catch (e) { }
+              }
             }
           }
         });

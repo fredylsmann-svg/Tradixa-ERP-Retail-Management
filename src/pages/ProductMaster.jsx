@@ -466,6 +466,52 @@ export default function ProductMaster({ store }) {
                 </div>
               </div>
 
+              {/* Multi-UoM Pricing Table */}
+              {viewingProduct.uom_prices && viewingProduct.uom_prices.length > 1 && (
+                <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 p-4 rounded-xl space-y-3">
+                  <h4 className="font-semibold text-emerald-900 dark:text-emerald-300 text-sm border-b border-emerald-200 dark:border-emerald-700 pb-2 flex items-center gap-2">
+                    <Boxes className="w-4 h-4" /> Harga Jual Multi-UoM (Grosir)
+                  </h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-xs text-slate-500 dark:text-slate-400 border-b border-emerald-200 dark:border-emerald-700">
+                          <th className="pb-2 font-medium">Satuan</th>
+                          <th className="pb-2 font-medium text-center">Isi per Base</th>
+                          <th className="pb-2 font-medium text-right">Harga Jual</th>
+                          <th className="pb-2 font-medium text-right">HPP</th>
+                          <th className="pb-2 font-medium text-right">Margin</th>
+                          <th className="pb-2 font-medium text-right">Per {viewingProduct.sell_unit || 'Pcs'}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {viewingProduct.uom_prices.map((uom, idx) => {
+                          const hppPerBase = (viewingProduct.buy_price || 0) / (viewingProduct.conversion_rate || 1);
+                          const hppForUom = hppPerBase * (uom.qty_per_base || 1);
+                          const marginForUom = (uom.sell_price || 0) - hppForUom;
+                          const pricePerBase = uom.qty_per_base > 0 ? (uom.sell_price / uom.qty_per_base) : 0;
+                          return (
+                            <tr key={idx} className={`border-b border-emerald-100 dark:border-emerald-800 last:border-0 ${idx === 0 ? 'bg-emerald-100/50 dark:bg-emerald-900/50 font-semibold' : ''}`}>
+                              <td className="py-2">
+                                {uom.unit}
+                                {idx === 0 && <span className="ml-1.5 text-[10px] bg-emerald-200 dark:bg-emerald-700 text-emerald-800 dark:text-emerald-200 px-1.5 py-0.5 rounded-full">Base</span>}
+                              </td>
+                              <td className="py-2 text-center">{uom.qty_per_base} {viewingProduct.sell_unit || 'Pcs'}</td>
+                              <td className="py-2 text-right">Rp {formatCurrency(uom.sell_price)}</td>
+                              <td className="py-2 text-right text-slate-500">Rp {formatCurrency(hppForUom)}</td>
+                              <td className={`py-2 text-right font-medium ${marginForUom < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                Rp {formatCurrency(marginForUom)}
+                              </td>
+                              <td className="py-2 text-right text-slate-500">Rp {formatCurrency(pricePerBase)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
         </DialogContent>

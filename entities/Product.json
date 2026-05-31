@@ -78,6 +78,11 @@
         "Out of Stock"
       ],
       "default": "Out of Stock"
+    },
+    "uom_prices": {
+      "type": "array",
+      "description": "Daftar harga jual multi-UoM (eceran + grosir bertingkat). Format: [{unit, qty_per_base, sell_price}]",
+      "default": []
     }
   },
   "required": [

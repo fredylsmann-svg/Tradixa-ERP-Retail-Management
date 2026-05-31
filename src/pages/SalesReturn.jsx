@@ -63,7 +63,7 @@ export default function SalesReturn({ store }) {
     const now = new Date();
     const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
     const wib = new Date(utc + (7 * 60 * 60000));
-    return `${String(wib.getDate()).padStart(2,'0')}/${String(wib.getMonth()+1).padStart(2,'0')}/${wib.getFullYear()} ${String(wib.getHours()).padStart(2,'0')}:${String(wib.getMinutes()).padStart(2,'0')} WIB`;
+    return `${String(wib.getDate()).padStart(2, '0')}/${String(wib.getMonth() + 1).padStart(2, '0')}/${wib.getFullYear()} ${String(wib.getHours()).padStart(2, '0')}:${String(wib.getMinutes()).padStart(2, '0')} WIB`;
   };
 
   // Search invoice
@@ -210,7 +210,7 @@ export default function SalesReturn({ store }) {
           total_credit: totalRefund,
           created_by: 'System'
         });
-        const creditAccount = refundMethod === 'Transfer Bank' 
+        const creditAccount = refundMethod === 'Transfer Bank'
           ? `Kas Bank - ${bankAccounts.find(b => b.id === selectedBankId)?.bank_name || 'Bank'}`
           : 'Kas Tangan';
         await Promise.all([

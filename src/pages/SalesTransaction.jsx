@@ -518,7 +518,8 @@ export default function SalesTransaction({ store }) {
             const products = await api.entities.Product.filter({ store_id: storeId, id: item.product_id });
             if (products?.length > 0) {
               const product = products[0];
-              const restoredStock = (product.stock || 0) + item.quantity;
+              const baseQtyToRestore = item.quantity * (item.qty_per_base || 1);
+              const restoredStock = (product.stock || 0) + baseQtyToRestore;
               const status = restoredStock > product.reorder_level ? 'In Stock' : restoredStock > 0 ? 'Low Stock' : 'Out of Stock';
               await api.entities.Product.update(item.product_id, { stock: restoredStock, status });
             }
@@ -530,7 +531,7 @@ export default function SalesTransaction({ store }) {
               product_name: item.product_name,
               movement_type: 'in',
               stock_type: 'Void Reversal',
-              quantity: item.quantity,
+              quantity: baseQtyToRestore,
               timestamp_wib: getWIBTimestamp()
             });
           } catch (err) {
@@ -1098,7 +1099,14 @@ export default function SalesTransaction({ store }) {
                     {viewingTransaction.items?.map((item, idx) => (
                       <TableRow key={idx}>
                         <TableCell>{item.product_name}</TableCell>
-                        <TableCell className="text-center">{item.quantity}</TableCell>
+                        <TableCell className="text-center">
+                          <span className="font-bold">{item.quantity} {item.uom || 'Pcs'}</span>
+                          {item.qty_per_base && item.qty_per_base > 1 && (
+                            <span className="text-[10px] text-slate-400 block mt-0.5">
+                              ({item.quantity * item.qty_per_base} Pcs)
+                            </span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">Rp {formatCurrency(item.unit_price)}</TableCell>
                         <TableCell className="text-right">Rp {formatCurrency(item.subtotal)}</TableCell>
                       </TableRow>

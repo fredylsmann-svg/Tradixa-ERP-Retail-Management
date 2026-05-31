@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { Search, ShoppingCart, Plus, Minus, Trash2, Loader2, Upload, X, Package, ShieldCheck, CheckCircle2, Info, Receipt, CreditCard, Truck, AlertTriangle, QrCode } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, Loader2, Upload, X, Package, ShieldCheck, CheckCircle2, Info, Receipt, CreditCard, Truck, AlertTriangle, QrCode, Boxes } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { NumberInput } from '@/components/ui/number-input';
 import { formatNumber } from '@/components/utils/currencyFormatter';
@@ -74,6 +74,10 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
   const [serialTrackedItemsInCart, setSerialTrackedItemsInCart] = useState([]);
   const [deliveryCount, setDeliveryCount] = useState(0);
   const [internalNote, setInternalNote] = useState('');
+
+  // Multi-UoM POS Selection States
+  const [showUomModal, setShowUomModal] = useState(false);
+  const [selectedProductForUom, setSelectedProductForUom] = useState(null);
   
   // EDC Integration States
   const [edcIntegrationType, setEdcIntegrationType] = useState(settings?.defaultEdcIntegration || 'Manual'); // Manual | Local
@@ -367,56 +371,162 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
   );
 
   const addToCart = (product) => {
-    const existing = cart.find(item => item.product_id === product.id);
+    // If the product has multiple UoM pricing options (uom_prices length > 1)
+    if (product.uom_prices && product.uom_prices.length > 1) {
+      setSelectedProductForUom(product);
+      setShowUomModal(true);
+    } else {
+      // Direct insertion with base unit
+      const baseUnit = product.sell_unit || product.unit || 'Pcs';
+      const cartItemId = product.id + '-' + baseUnit;
+      const existing = cart.find(item => item.cart_item_id === cartItemId);
+      if (existing) {
+        const totalBaseQtyInCart = cart
+          .filter(item => item.product_id === product.id)
+          .reduce((sum, item) => sum + (item.quantity * (item.qty_per_base || 1)), 0);
+        if (totalBaseQtyInCart < product.stock) {
+          setCart(cart.map(item =>
+            item.cart_item_id === cartItemId
+              ? { ...item, quantity: item.quantity + 1, subtotal: (item.quantity + 1) * item.unit_price }
+              : item
+          ));
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Stok Tidak Cukup",
+            description: `Stok produk ini tidak mencukupi untuk ditambahkan lagi.`
+          });
+        }
+      } else {
+        if (product.stock >= 1) {
+          setCart([...cart, {
+            cart_item_id: cartItemId,
+            product_id: product.id,
+            product_name: product.name,
+            quantity: 1,
+            unit_price: product.sell_price,
+            buy_price: product.buy_price,
+            subtotal: product.sell_price,
+            max_stock: product.stock,
+            uom: baseUnit,
+            qty_per_base: 1
+          }]);
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Stok Habis",
+            description: "Stok produk ini kosong."
+          });
+        }
+      }
+    }
+  };
+
+  const addToCartWithUom = (product, chosenUom) => {
+    const cartItemId = product.id + '-' + chosenUom.unit;
+    const existing = cart.find(item => item.cart_item_id === cartItemId);
+
+    // Calculate maximum allowed stock in this UoM based on sisa stok fisik (Pcs)
+    const totalBaseQtyInCartOfOtherUnits = cart
+      .filter(item => item.product_id === product.id && item.cart_item_id !== cartItemId)
+      .reduce((sum, item) => sum + (item.quantity * (item.qty_per_base || 1)), 0);
+    
+    const availablePhysicalPcs = product.stock - totalBaseQtyInCartOfOtherUnits;
+    const maxQtyAllowed = Math.floor(availablePhysicalPcs / chosenUom.qty_per_base);
+
+    if (maxQtyAllowed <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Stok Tidak Mencukupi",
+        description: `Sisa stok fisik (${availablePhysicalPcs} Pcs) tidak mencukupi untuk satuan ${chosenUom.unit} (butuh ${chosenUom.qty_per_base} Pcs).`
+      });
+      return;
+    }
+
+    // Dynamic HPP for this UoM:
+    const hppPerBase = (product.buy_price || 0) / (product.conversion_rate || 1);
+    const resolvedBuyPrice = hppPerBase * chosenUom.qty_per_base;
+
     if (existing) {
-      if (existing.quantity < product.stock) {
+      if (existing.quantity < maxQtyAllowed) {
         setCart(cart.map(item =>
-          item.product_id === product.id
-            ? { ...item, quantity: item.quantity + 1, subtotal: (item.quantity + 1) * item.unit_price }
+          item.cart_item_id === cartItemId
+            ? { ...item, quantity: item.quantity + 1, subtotal: (item.quantity + 1) * item.unit_price, max_stock: maxQtyAllowed }
             : item
         ));
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Batas Stok Tercapai",
+          description: `Batas stok maksimum untuk satuan ${chosenUom.unit} adalah ${maxQtyAllowed} unit.`
+        });
       }
     } else {
       setCart([...cart, {
+        cart_item_id: cartItemId,
         product_id: product.id,
         product_name: product.name,
         quantity: 1,
-        unit_price: product.sell_price,
-        buy_price: product.buy_price,
-        subtotal: product.sell_price,
-        max_stock: product.stock
+        unit_price: chosenUom.sell_price,
+        buy_price: resolvedBuyPrice,
+        subtotal: chosenUom.sell_price,
+        max_stock: maxQtyAllowed,
+        uom: chosenUom.unit,
+        qty_per_base: chosenUom.qty_per_base
       }]);
     }
   };
 
-  const updateQuantity = (productId, delta) => {
-    setCart(cart.map(item => {
-      if (item.product_id === productId) {
-        const newQty = Math.max(1, Math.min(item.max_stock, item.quantity + delta));
-        return { ...item, quantity: newQty, subtotal: newQty * item.unit_price };
+  const updateQuantity = (cartItemId, delta) => {
+    setCart(prevCart => prevCart.map(item => {
+      if (item.cart_item_id === cartItemId) {
+        const product = products.find(p => p.id === item.product_id);
+        if (!product) return item;
+        
+        // Calculate total physical base pcs in cart excluding this specific item
+        const otherBaseQty = prevCart
+          .filter(x => x.product_id === item.product_id && x.cart_item_id !== cartItemId)
+          .reduce((sum, x) => sum + (x.quantity * (x.qty_per_base || 1)), 0);
+          
+        const availableBase = product.stock - otherBaseQty;
+        const maxUomQty = Math.floor(availableBase / (item.qty_per_base || 1));
+        
+        const newQty = Math.max(1, Math.min(maxUomQty, item.quantity + delta));
+        return { ...item, quantity: newQty, subtotal: newQty * item.unit_price, max_stock: maxUomQty };
       }
       return item;
     }));
   };
 
-  const setExactQuantity = (productId, value) => {
-    setCart(cart.map(item => {
-      if (item.product_id === productId) {
+  const setExactQuantity = (cartItemId, value) => {
+    setCart(prevCart => prevCart.map(item => {
+      if (item.cart_item_id === cartItemId) {
         if (value === '') {
           return { ...item, quantity: '', subtotal: 0 };
         }
+        
+        const product = products.find(p => p.id === item.product_id);
+        if (!product) return item;
+        
+        const otherBaseQty = prevCart
+          .filter(x => x.product_id === item.product_id && x.cart_item_id !== cartItemId)
+          .reduce((sum, x) => sum + (x.quantity * (x.qty_per_base || 1)), 0);
+          
+        const availableBase = product.stock - otherBaseQty;
+        const maxUomQty = Math.floor(availableBase / (item.qty_per_base || 1));
+        
         let newQty = parseInt(value, 10);
         if (isNaN(newQty) || newQty < 0) newQty = 0;
-        newQty = Math.min(item.max_stock, newQty);
-        return { ...item, quantity: newQty, subtotal: newQty * item.unit_price };
+        newQty = Math.min(maxUomQty, newQty);
+        return { ...item, quantity: newQty, subtotal: newQty * item.unit_price, max_stock: maxUomQty };
       }
       return item;
     }));
   };
 
-  const handleBlurQuantity = (productId) => {
+  const handleBlurQuantity = (cartItemId) => {
     setCart(cart.map(item => {
-      if (item.product_id === productId) {
+      if (item.cart_item_id === cartItemId) {
         if (item.quantity === '' || item.quantity <= 0) {
           return { ...item, quantity: 1, subtotal: 1 * item.unit_price };
         }
@@ -425,9 +535,8 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
     }));
   };
 
-
-  const removeFromCart = (productId) => {
-    setCart(cart.filter(item => item.product_id !== productId));
+  const removeFromCart = (cartItemId) => {
+    setCart(cart.filter(item => item.cart_item_id !== cartItemId));
   };
 
   const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
@@ -751,7 +860,9 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
         quantity: item.quantity,
         unit_price: item.unit_price,
         buy_price: item.buy_price,
-        subtotal: item.subtotal
+        subtotal: item.subtotal,
+        uom: item.uom || 'Pcs',
+        qty_per_base: item.qty_per_base || 1
       })),
       subtotal,
       discount: discount + numManualDiscount,
@@ -894,13 +1005,14 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
     for (const item of cart) {
       const product = products.find(p => p.id === item.product_id);
       if (product) {
-        const newStock = product.stock - item.quantity;
+        const baseQtyToDeduct = item.quantity * (item.qty_per_base || 1);
+        const newStock = product.stock - baseQtyToDeduct;
         const status = newStock <= 0 ? 'Out of Stock' : newStock <= product.reorder_level ? 'Low Stock' : 'In Stock';
         await api.entities.Product.update(item.product_id, { stock: newStock, status });
 
         if (product.tracking_type === 'Batch') {
           // FEFO Logic
-          const allocationResult = await allocateBatches(storeId, item.product_id, item.quantity);
+          const allocationResult = await allocateBatches(storeId, item.product_id, baseQtyToDeduct);
           
           // Collect near-expiry warnings
           if (allocationResult.warnings?.length > 0) {
@@ -936,7 +1048,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
               product_name: item.product_name,
               movement_type: 'out',
               stock_type: 'Sales',
-              quantity: item.quantity,
+              quantity: baseQtyToDeduct,
               timestamp_wib: getWIBTimestamp()
             });
           }
@@ -974,7 +1086,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
             product_name: item.product_name,
             movement_type: 'out',
             stock_type: 'Sales',
-            quantity: item.quantity,
+            quantity: baseQtyToDeduct,
             timestamp_wib: getWIBTimestamp()
           });
         }
@@ -1281,8 +1393,10 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                   <div className="p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 gap-6 pb-10">
                       {filteredProducts.map(product => {
-                        const cartItem = cart.find(item => item.product_id === product.id);
-                        const availableStock = product.stock - (cartItem ? cartItem.quantity : 0);
+                        const totalBaseQtyInCart = cart
+                          .filter(item => item.product_id === product.id)
+                          .reduce((sum, item) => sum + (item.quantity * (item.qty_per_base || 1)), 0);
+                        const availableStock = product.stock - totalBaseQtyInCart;
                         const isOutOfStock = availableStock <= 0;
 
                         return (
@@ -1562,30 +1676,37 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                         :
                         <div className="space-y-3">
                           {cart.map((item) => (
-                            <div key={item.product_id} className="flex flex-col gap-3 p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-200 transition-all">
+                            <div key={item.cart_item_id} className="flex flex-col gap-3 p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-200 transition-all">
                               <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1 min-w-0">
-                                  <p className="font-black text-slate-900 text-sm leading-tight">{item.product_name}</p>
-                                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">@ Rp {formatCurrency(item.unit_price)}</p>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="font-black text-slate-900 text-sm leading-tight">{item.product_name}</p>
+                                    {item.uom && (
+                                      <Badge className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80 text-[10px] font-black rounded-lg px-2 py-0.5 uppercase tracking-wide">
+                                        {item.uom} {item.qty_per_base > 1 && `(${item.qty_per_base} Pcs)`}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">@ Rp {formatCurrency(item.unit_price)} / {item.uom || 'Pcs'}</p>
                                 </div>
-                                <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50" onClick={() => removeFromCart(item.product_id)}>
+                                <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50" onClick={() => removeFromCart(item.cart_item_id)}>
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
                               </div>
 
                               <div className="flex items-center justify-between pt-3 border-t border-slate-50">
                                 <div className="flex items-center bg-slate-50 rounded-xl p-1 gap-1 border">
-                                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg hover:bg-white text-slate-600 shadow-sm" onClick={() => updateQuantity(item.product_id, -1)}>
+                                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg hover:bg-white text-slate-600 shadow-sm" onClick={() => updateQuantity(item.cart_item_id, -1)}>
                                     <Minus className="w-4 h-4" />
                                   </Button>
                                   <Input
                                     type="number"
                                     className="w-12 h-8 border-none bg-transparent text-center font-black text-sm p-0 focus-visible:ring-0"
                                     value={item.quantity}
-                                    onChange={(e) => setExactQuantity(item.product_id, e.target.value)}
-                                    onBlur={() => handleBlurQuantity(item.product_id)}
+                                    onChange={(e) => setExactQuantity(item.cart_item_id, e.target.value)}
+                                    onBlur={() => handleBlurQuantity(item.cart_item_id)}
                                   />
-                                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg hover:bg-white text-slate-600 shadow-sm" onClick={() => updateQuantity(item.product_id, 1)}>
+                                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg hover:bg-white text-slate-600 shadow-sm" onClick={() => updateQuantity(item.cart_item_id, 1)}>
                                     <Plus className="w-4 h-4" />
                                   </Button>
                                 </div>
@@ -2169,6 +2290,134 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                 </div>
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Pemilihan Multi-UoM */}
+      <Dialog open={showUomModal} onOpenChange={(val) => { if (!val) { setShowUomModal(false); setSelectedProductForUom(null); } }}>
+        <DialogContent className="max-w-md p-0 overflow-hidden rounded-[32px] bg-white dark:bg-slate-900 border-none shadow-2xl">
+          <div className="p-6 space-y-6">
+            <DialogHeader className="space-y-1.5 text-left">
+              <DialogTitle className="text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                <Boxes className="w-5 h-5 text-emerald-600" /> Pilih Satuan Jual
+              </DialogTitle>
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                Multi-UoM & Harga Grosir
+              </p>
+            </DialogHeader>
+
+            {selectedProductForUom && (
+              <div className="space-y-4">
+                {/* Product Summary Header */}
+                <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border dark:border-slate-800">
+                  {selectedProductForUom.image_url ? (
+                    <img
+                      src={selectedProductForUom.image_url}
+                      alt={selectedProductForUom.name}
+                      className="w-14 h-14 rounded-xl object-cover border bg-white dark:bg-slate-700"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center border dark:border-slate-700">
+                      <Package className="w-6 h-6 text-slate-300 dark:text-slate-600" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-black text-slate-800 dark:text-white text-base leading-tight truncate">
+                      {selectedProductForUom.name}
+                    </h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs font-bold text-slate-400 dark:text-slate-500">Stok Utama:</span>
+                      <Badge className="bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-black text-[10px] rounded-lg px-2 py-0.5">
+                        {selectedProductForUom.stock} {selectedProductForUom.sell_unit || selectedProductForUom.unit || 'Pcs'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {/* UoM Pricing List */}
+                <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                  {selectedProductForUom.uom_prices?.map((uom, idx) => {
+                    const totalBaseQtyInCart = cart
+                      .filter(x => x.product_id === selectedProductForUom.id)
+                      .reduce((sum, x) => sum + (x.quantity * (x.qty_per_base || 1)), 0);
+                    const remainingBaseStock = selectedProductForUom.stock - totalBaseQtyInCart;
+                    
+                    const convertedStock = Math.floor(remainingBaseStock / uom.qty_per_base);
+                    const remainderPcs = remainingBaseStock % uom.qty_per_base;
+                    const isAvailable = convertedStock > 0;
+                    
+                    return (
+                      <button
+                        key={idx}
+                        disabled={!isAvailable}
+                        onClick={() => {
+                          addToCartWithUom(selectedProductForUom, uom);
+                          setShowUomModal(false);
+                          setSelectedProductForUom(null);
+                        }}
+                        className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
+                          isAvailable
+                            ? 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-lg active:scale-[0.99] cursor-pointer'
+                            : 'bg-slate-50/50 dark:bg-slate-800/10 border-slate-50 dark:border-slate-800/20 opacity-50 cursor-not-allowed'
+                        }`}
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-slate-800 dark:text-white text-base">
+                              {uom.unit}
+                            </span>
+                            {idx === 0 && (
+                              <Badge className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[9px] px-1.5 py-0">
+                                Base
+                              </Badge>
+                            )}
+                            <span className="text-xs text-slate-400 dark:text-slate-500">
+                              (Isi: {uom.qty_per_base} Pcs)
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
+                            <span>Sisa Stok:</span>
+                            <span className={`font-black ${isAvailable ? 'text-slate-700 dark:text-slate-300' : 'text-slate-400'}`}>
+                              {convertedStock} {uom.unit}
+                              {remainderPcs > 0 && ` + ${remainderPcs} Pcs`}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-right flex flex-col items-end gap-1 flex-shrink-0">
+                          <span className="font-black text-emerald-600 dark:text-emerald-400 text-base">
+                            Rp {formatCurrency(uom.sell_price)}
+                          </span>
+                          {isAvailable ? (
+                            <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                              Pilih <Plus className="w-3.5 h-3.5" />
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-black text-red-500 uppercase tracking-wider">
+                              Stok Kurang
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowUomModal(false);
+                  setSelectedProductForUom(null);
+                }}
+                className="rounded-xl font-bold"
+              >
+                Batal
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

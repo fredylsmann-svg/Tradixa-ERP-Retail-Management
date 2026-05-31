@@ -341,22 +341,22 @@ export const getDocumentTemplate = ({
                     <div style="font-size: 13px; color: #0f172a; font-weight: 700;">${item.name || item.product_name}</div>
                   </td>
                   <td style="padding: 12px 10px; text-align: center; vertical-align: top;">
-                    ${item.tracking_type === 'Batch' && item.batches?.length > 0 ? 
-                      item.batches.map(b => `
+                    ${item.tracking_type === 'Batch' && item.batches?.length > 0 ?
+        item.batches.map(b => `
                         <div style="display: block; padding: 2px 6px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px; font-size: 9px; color: #1d4ed8; font-weight: 700; margin-bottom: 2px; text-align: center;">
                           ${b.batch_number}
                         </div>
-                      `).join('') 
-                    : '<span style="font-size: 10px; color: #94a3b8;">-</span>'}
+                      `).join('')
+        : '<span style="font-size: 10px; color: #94a3b8;">-</span>'}
                   </td>
                   <td style="padding: 12px 10px; text-align: center; vertical-align: top;">
-                    ${item.tracking_type === 'Batch' && item.batches?.length > 0 ? 
-                      item.batches.map(b => `
+                    ${item.tracking_type === 'Batch' && item.batches?.length > 0 ?
+        item.batches.map(b => `
                         <div style="display: block; padding: 2px 6px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 9px; color: #475569; font-weight: 600; margin-bottom: 2px; text-align: center;">
                           ${b.expiry_date ? new Date(b.expiry_date).toLocaleDateString('en-GB') : '-'}
                         </div>
-                      `).join('') 
-                    : (item.expired_date ? `<span style="font-size: 9px; color: #475569; font-weight: 600;">${new Date(item.expired_date).toLocaleDateString('en-GB')}</span>` : '<span style="font-size: 10px; color: #94a3b8;">-</span>')}
+                      `).join('')
+        : (item.expired_date ? `<span style="font-size: 9px; color: #475569; font-weight: 600;">${new Date(item.expired_date).toLocaleDateString('en-GB')}</span>` : '<span style="font-size: 10px; color: #94a3b8;">-</span>')}
                   </td>
                   <td style="padding: 12px 15px; text-align: center; font-size: 14px; color: #0f172a; font-weight: 800;">${item.proposed_qty || item.qty || item.quantity || item.warehouse_qty || 0}</td>
                   <td style="padding: 12px 15px; text-align: center; font-size: 14px; color: #ef4444; font-weight: 800;">${item.reject_qty || 0}</td>
@@ -419,11 +419,15 @@ export const getDocumentTemplate = ({
   }
 
   if (layout === 'Thermal') {
+    const thermalAddress = data.store_address && data.store_address !== 'Alamat Toko Belum Diatur' ? `<div style="font-size: 10px; margin-bottom: 2px; color: #333; line-height: 1.2;">${data.store_address}</div>` : '';
+    const thermalPhone = data.store_phone && data.store_phone !== '-' ? `<div style="font-size: 10px; margin-bottom: 4px; color: #333;">Telp: ${data.store_phone}</div>` : '';
     return `
       <div style="font-family: 'Courier New', Courier, monospace; width: 100%; max-width: 300px; margin: 0 auto; background: white; color: #000; font-size: 12px; line-height: 1.4; padding: 10px;">
         <div style="text-align: center; margin-bottom: 10px;">
-          <div style="font-weight: bold; font-size: 16px; margin-bottom: 2px;">${storeName}</div>
-          <div style="font-size: 10px;">RECEIPT</div>
+          <div style="font-weight: bold; font-size: 16px; margin-bottom: 4px;">${storeName}</div>
+          ${thermalAddress}
+          ${thermalPhone}
+          <div style="font-size: 10px; margin-top: 4px;">RECEIPT</div>
         </div>
         
         <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 5px 0; margin-bottom: 10px; font-size: 11px;">
@@ -455,6 +459,12 @@ export const getDocumentTemplate = ({
           <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
             <span>Discount</span>
             <span>-${discount.toLocaleString()}</span>
+          </div>
+          ` : ''}
+          ${data.tax_amount > 0 ? `
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>PPN (${data.tax_percentage || 12}%)</span>
+            <span>${data.tax_amount.toLocaleString()}</span>
           </div>
           ` : ''}
           <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-top: 5px;">

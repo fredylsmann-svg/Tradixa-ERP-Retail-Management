@@ -75,7 +75,7 @@ export default function DesignStudio({ store }) {
     setSignatureUrl(dataUrl);
     setShowSignatureDialog(false);
     toast.success('Tanda tangan dibuat! Sedang menyimpan...');
-    
+
     try {
       let finalUrl = dataUrl;
       // Upload to Supabase Storage if it's a new drawing (data URL)
@@ -84,11 +84,11 @@ export default function DesignStudio({ store }) {
         const blob = await res.blob();
         const fileName = `${store.id}/signature-${Date.now()}.png`;
         const { error: uploadError } = await supabase.storage.from('logos').upload(fileName, blob, { upsert: true });
-        
+
         if (!uploadError) {
-           const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(fileName);
-           finalUrl = publicUrl;
-           setSignatureUrl(finalUrl);
+          const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(fileName);
+          finalUrl = publicUrl;
+          setSignatureUrl(finalUrl);
         }
       }
 
@@ -97,24 +97,24 @@ export default function DesignStudio({ store }) {
         updatedHistory = [finalUrl, ...updatedHistory].slice(0, 5);
         setSignatureHistory(updatedHistory);
       }
-      
+
       await supabase.from('stores').update({
         signature_url: finalUrl,
         signature_history: updatedHistory,
         owner_name: ownerName,
         owner_position: ownerPosition
       }).eq('id', store.id);
-      
+
       window.dispatchEvent(new Event('refresh_data'));
-      
+
     } catch (e) {
-       console.error("Gagal auto-save signature:", e);
+      console.error("Gagal auto-save signature:", e);
     }
   };
 
   const handleSaveBranding = async () => {
     if (!store?.id) return;
-    
+
     setIsSaving(true);
     try {
       let finalLogoUrl = logoUrl;
@@ -133,13 +133,13 @@ export default function DesignStudio({ store }) {
         const fileName = `${store.id}/signature-${Date.now()}.png`;
         const { error: uploadError } = await supabase.storage.from('logos').upload(fileName, blob, { upsert: true });
         if (!uploadError) {
-           const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(fileName);
-           finalSignatureUrl = publicUrl;
+          const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(fileName);
+          finalSignatureUrl = publicUrl;
         }
       }
 
       let updatedHistory = Array.isArray(signatureHistory) ? [...signatureHistory] : [];
-      
+
       if (finalSignatureUrl && !updatedHistory.includes(finalSignatureUrl)) {
         updatedHistory = [finalSignatureUrl, ...updatedHistory].slice(0, 5); // Simpan 5 history terakhir
         setSignatureHistory(updatedHistory);
@@ -185,8 +185,8 @@ export default function DesignStudio({ store }) {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
 
-      
-      <PageHeader 
+
+      <PageHeader
         title="Design Studio"
         subtitle="Kelola identitas visual dan template dokumen bisnis Anda."
         icon={Palette}
@@ -195,8 +195,8 @@ export default function DesignStudio({ store }) {
             <Button variant="outline" className="gap-2">
               <Eye className="w-4 h-4" /> Preview All
             </Button>
-            <Button 
-              onClick={handleSaveBranding} 
+            <Button
+              onClick={handleSaveBranding}
               className="bg-blue-600 gap-2"
               disabled={isSaving}
             >
@@ -229,7 +229,7 @@ export default function DesignStudio({ store }) {
                 <CardContent className="p-6 space-y-6">
                   <div className="space-y-4">
                     <Label>Logo Toko</Label>
-                    <label 
+                    <label
                       htmlFor="logo-upload"
                       className="flex items-center gap-4 p-4 border-2 border-dashed border-slate-200 rounded-2xl hover:border-blue-400 transition-colors cursor-pointer group bg-white"
                     >
@@ -247,9 +247,9 @@ export default function DesignStudio({ store }) {
                     </label>
 
                     <div className="flex items-center space-x-2 pt-1">
-                      <Checkbox 
-                        id="showMarketingLogo" 
-                        checked={showMarketingLogo} 
+                      <Checkbox
+                        id="showMarketingLogo"
+                        checked={showMarketingLogo}
                         onCheckedChange={setShowMarketingLogo}
                       />
                       <Label htmlFor="showMarketingLogo" className="text-[11px] font-semibold text-slate-500 cursor-pointer">Tampilkan Logo di Email Marketing</Label>
@@ -300,8 +300,8 @@ export default function DesignStudio({ store }) {
                     <Label>Tanda Tangan Digital</Label>
                     <div className="flex flex-col gap-4">
                       <div className="space-y-2">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="w-full justify-center h-12 border-dashed font-semibold"
                           onClick={() => setShowSignatureDialog(true)}
                         >
@@ -334,30 +334,30 @@ export default function DesignStudio({ store }) {
                         </div>
                       ))}
                       {/* Custom Color Circle */}
-                      <label 
-                        className={`w-10 h-10 rounded-full cursor-pointer transition-all hover:scale-110 flex items-center justify-center ring-offset-2 relative overflow-hidden border-2 border-slate-200 ${![ '#2563eb', '#ef4444', '#10b981', '#f59e0b', '#7c3aed', '#1e293b', '#ec4899', '#06b6d4', '#8b5cf6', '#f97316', '#14b8a6', '#475569'].includes(brandColor) ? 'ring-2' : ''}`}
+                      <label
+                        className={`w-10 h-10 rounded-full cursor-pointer transition-all hover:scale-110 flex items-center justify-center ring-offset-2 relative overflow-hidden border-2 border-slate-200 ${!['#2563eb', '#ef4444', '#10b981', '#f59e0b', '#7c3aed', '#1e293b', '#ec4899', '#06b6d4', '#8b5cf6', '#f97316', '#14b8a6', '#475569'].includes(brandColor) ? 'ring-2' : ''}`}
                         style={{ ringColor: brandColor }}
                       >
                         <div className="absolute inset-0 bg-gradient-to-tr from-red-500 via-green-500 to-blue-500 opacity-20" />
                         <Palette className="w-5 h-5 text-slate-400" />
-                        <input 
-                          type="color" 
-                          value={brandColor} 
+                        <input
+                          type="color"
+                          value={brandColor}
                           onChange={(e) => setBrandColor(e.target.value)}
                           className="absolute inset-0 opacity-0 cursor-pointer"
                         />
                       </label>
                     </div>
                     <div className="flex gap-2 items-center mt-2">
-                      <Input 
-                        type="text" 
-                        value={brandColor} 
+                      <Input
+                        type="text"
+                        value={brandColor}
                         onChange={(e) => setBrandColor(e.target.value)}
                         className="font-mono text-sm uppercase h-10"
                       />
                       <div className="w-10 h-10 rounded-lg shrink-0 border shadow-sm" style={{ backgroundColor: brandColor }} />
                     </div>
-                    
+
                     <Label className="text-xs text-slate-400 mt-2 block">Warna Gradient (Premium)</Label>
                     <div className="grid grid-cols-6 gap-3">
                       {[
@@ -396,15 +396,15 @@ export default function DesignStudio({ store }) {
                         </div>
                       ))}
                       {/* Custom Title Color Circle */}
-                      <label 
-                        className={`w-10 h-10 rounded-full cursor-pointer transition-all hover:scale-110 flex items-center justify-center ring-offset-2 relative overflow-hidden border-2 border-slate-200 ${![ '#0f172a', '#1e293b', '#2563eb', '#ef4444', '#10b981', '#7c3aed'].includes(titleColor) ? 'ring-2' : ''}`}
+                      <label
+                        className={`w-10 h-10 rounded-full cursor-pointer transition-all hover:scale-110 flex items-center justify-center ring-offset-2 relative overflow-hidden border-2 border-slate-200 ${!['#0f172a', '#1e293b', '#2563eb', '#ef4444', '#10b981', '#7c3aed'].includes(titleColor) ? 'ring-2' : ''}`}
                         style={{ ringColor: titleColor }}
                       >
                         <div className="absolute inset-0 bg-gradient-to-tr from-slate-400 to-slate-900 opacity-20" />
                         <Palette className="w-5 h-5 text-slate-400" />
-                        <input 
-                          type="color" 
-                          value={titleColor} 
+                        <input
+                          type="color"
+                          value={titleColor}
                           onChange={(e) => setTitleColor(e.target.value)}
                           className="absolute inset-0 opacity-0 cursor-pointer"
                         />
@@ -454,17 +454,17 @@ export default function DesignStudio({ store }) {
                     <div className="pt-4 border-t space-y-4">
                       <Label>Preview Status</Label>
                       <div className="flex bg-slate-100 p-1 rounded-xl">
-                        <Button 
-                          variant={!previewPaid ? 'secondary' : 'ghost'} 
-                          size="sm" 
+                        <Button
+                          variant={!previewPaid ? 'secondary' : 'ghost'}
+                          size="sm"
                           className="flex-1 rounded-lg text-xs"
                           onClick={() => setPreviewPaid(false)}
                         >
                           Belum Bayar
                         </Button>
-                        <Button 
-                          variant={previewPaid ? 'secondary' : 'ghost'} 
-                          size="sm" 
+                        <Button
+                          variant={previewPaid ? 'secondary' : 'ghost'}
+                          size="sm"
                           className="flex-1 rounded-lg text-xs"
                           onClick={() => setPreviewPaid(true)}
                         >
@@ -496,63 +496,63 @@ export default function DesignStudio({ store }) {
             <TabsContent value="templates" className="mt-6 space-y-6">
               <div className="grid grid-cols-1 gap-4">
                 {[
-                  { 
-                    id: 'Marketing', 
-                    icon: Mail, 
-                    count: 3, 
-                    desc: 'Digunakan untuk pengiriman promosi, pengumuman, dan update otomatis ke email pelanggan.' 
+                  {
+                    id: 'Marketing',
+                    icon: Mail,
+                    count: 3,
+                    desc: 'Digunakan untuk pengiriman promosi, pengumuman, dan update otomatis ke email pelanggan.'
                   },
-                  { 
-                    id: 'Invoices', 
-                    icon: FileText, 
-                    count: 2, 
-                    desc: 'Digunakan pada modul Penjualan (Sales) untuk penagihan dan bukti pembayaran (Payment Receipt).' 
+                  {
+                    id: 'Invoices',
+                    icon: FileText,
+                    count: 2,
+                    desc: 'Digunakan pada modul Penjualan (Sales) untuk penagihan dan bukti pembayaran (Payment Receipt).'
                   },
-                  { 
-                    id: 'Invoice Piutang (AR)', 
-                    icon: FileText, 
-                    count: 2, 
-                    desc: 'Digunakan pada modul Account Receivable untuk tagihan piutang usaha ke pelanggan.' 
+                  {
+                    id: 'Invoice Piutang (AR)',
+                    icon: FileText,
+                    count: 2,
+                    desc: 'Digunakan pada modul Account Receivable untuk tagihan piutang usaha ke pelanggan.'
                   },
-                  { 
-                    id: 'Invoice Hutang (AP)', 
-                    icon: FileText, 
-                    count: 2, 
-                    desc: 'Digunakan pada modul Account Payable untuk pencatatan hutang usaha ke supplier.' 
+                  {
+                    id: 'Invoice Hutang (AP)',
+                    icon: FileText,
+                    count: 2,
+                    desc: 'Digunakan pada modul Account Payable untuk pencatatan hutang usaha ke supplier.'
                   },
-                  { 
-                    id: 'Delivery Orders', 
-                    icon: Truck, 
-                    count: 2, 
-                    desc: 'Digunakan pada modul Logistik & Gudang sebagai Surat Jalan resmi pengiriman barang.' 
+                  {
+                    id: 'Delivery Orders',
+                    icon: Truck,
+                    count: 2,
+                    desc: 'Digunakan pada modul Logistik & Gudang sebagai Surat Jalan resmi pengiriman barang.'
                   },
-                  { 
-                    id: 'Purchase Orders', 
-                    icon: ShoppingCart, 
-                    count: 2, 
-                    desc: 'Digunakan pada modul Procurement untuk pesanan resmi ke Supplier / Vendor.' 
+                  {
+                    id: 'Purchase Orders',
+                    icon: ShoppingCart,
+                    count: 2,
+                    desc: 'Digunakan pada modul Procurement untuk pesanan resmi ke Supplier / Vendor.'
                   },
-                  { 
-                    id: 'Inventory GRN', 
-                    icon: Layout, 
-                    count: 2, 
-                    desc: 'Digunakan pada modul Logistik & Gudang sebagai bukti penerimaan barang di gudang.' 
+                  {
+                    id: 'Inventory GRN',
+                    icon: Layout,
+                    count: 2,
+                    desc: 'Digunakan pada modul Logistik & Gudang sebagai bukti penerimaan barang di gudang.'
                   },
-                  { 
-                    id: 'Goods Receipt Note', 
-                    icon: Layout, 
-                    count: 2, 
-                    desc: 'Dokumen bukti penerimaan barang profesional dengan SLA Tracking dan detail item lengkap.' 
+                  {
+                    id: 'Goods Receipt Note',
+                    icon: Layout,
+                    count: 2,
+                    desc: 'Dokumen bukti penerimaan barang profesional dengan SLA Tracking dan detail item lengkap.'
                   },
                 ].map(item => (
-                  <div 
+                  <div
                     key={item.id}
                     onClick={() => setPreviewMode(item.id)}
                     className={`p-5 border rounded-2xl flex items-start justify-between transition-all cursor-pointer ${previewMode === item.id ? 'shadow-lg' : 'bg-white border-slate-200 hover:border-slate-300'}`}
                     style={previewMode === item.id ? { borderColor: brandColor, backgroundColor: `${brandColor}05`, ringColor: brandColor } : {}}
                   >
                     <div className="flex gap-4">
-                      <div 
+                      <div
                         className={`p-3 rounded-xl shrink-0 ${previewMode === item.id ? 'text-white' : 'bg-slate-100 text-slate-400'}`}
                         style={previewMode === item.id ? { backgroundColor: brandColor } : {}}
                       >
@@ -562,8 +562,8 @@ export default function DesignStudio({ store }) {
                         <p className="font-bold text-slate-900">{item.id}</p>
                         <p className="text-xs text-slate-500 leading-relaxed max-w-[240px]">{item.desc}</p>
                         <div className="flex items-center gap-2 mt-2">
-                           <Badge variant="outline" className="text-[10px] py-0 h-5">{item.count} Layouts</Badge>
-                           {previewMode === item.id && <Badge className="text-[10px] py-0 h-5" style={{ backgroundColor: brandColor }}>Active Preview</Badge>}
+                          <Badge variant="outline" className="text-[10px] py-0 h-5">{item.count} Layouts</Badge>
+                          {previewMode === item.id && <Badge className="text-[10px] py-0 h-5" style={{ backgroundColor: brandColor }}>Active Preview</Badge>}
                         </div>
                       </div>
                     </div>
@@ -584,7 +584,7 @@ export default function DesignStudio({ store }) {
               <div className="flex gap-2">
                 {previewMode === 'Marketing' ? (
                   ['Standard', 'Promotion', 'Announcement'].map(tpl => (
-                    <Button 
+                    <Button
                       key={tpl}
                       variant={selectedTemplate === tpl ? 'default' : 'outline'}
                       size="sm"
@@ -596,7 +596,7 @@ export default function DesignStudio({ store }) {
                   ))
                 ) : (
                   ['Modern', 'Classic'].map(lyt => (
-                    <Button 
+                    <Button
                       key={lyt}
                       variant={selectedTemplate === lyt ? 'default' : 'outline'}
                       size="sm"
@@ -611,8 +611,8 @@ export default function DesignStudio({ store }) {
               {previewMode === 'Marketing' && selectedTemplate === 'Promotion' && (
                 <div className="flex items-center gap-2 mt-4 bg-white p-3 rounded-2xl border border-slate-200 animate-in fade-in slide-in-from-top-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Custom CTA:</span>
-                  <Input 
-                    value={previewCtaText} 
+                  <Input
+                    value={previewCtaText}
                     onChange={(e) => setPreviewCtaText(e.target.value)}
                     placeholder="Contoh: AMBIL DISKON"
                     className="h-8 text-xs border-none bg-slate-50 focus-visible:ring-1 focus-visible:ring-blue-500"
@@ -624,12 +624,12 @@ export default function DesignStudio({ store }) {
             <div className="rounded-3xl border border-slate-200 bg-slate-100 p-4 md:p-8 min-h-[700px] flex items-start justify-start md:justify-center overflow-x-auto overflow-y-auto shadow-inner group relative">
               {/* Mockup Frame Decor */}
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
-              
+
               <div className="w-full min-w-[700px] md:min-w-0 animate-in zoom-in-95 duration-500 origin-top">
                 {previewMode === 'Marketing' ? (
-                  <div 
+                  <div
                     className="max-w-[500px] mx-auto shadow-2xl"
-                    dangerouslySetInnerHTML={{ 
+                    dangerouslySetInnerHTML={{
                       __html: getEmailTemplate({
                         storeName: store?.store_name || 'TOKO ANDA',
                         html: `
@@ -645,19 +645,19 @@ export default function DesignStudio({ store }) {
                         logoAlign: marketingLogoAlign,
                         logoSize: marketingLogoSize
                       })
-                    }} 
+                    }}
                   />
                 ) : (
-                  <div 
+                  <div
                     className="max-w-[600px] mx-auto shadow-2xl bg-white"
-                    dangerouslySetInnerHTML={{ 
+                    dangerouslySetInnerHTML={{
                       __html: getDocumentTemplate({
-                        type: previewMode === 'Invoice Piutang (AR)' ? 'INVOICE AR' : 
-                              previewMode === 'Invoice Hutang (AP)' ? 'INVOICE AP' :
-                              previewMode === 'Invoices' ? 'INVOICE' : 
-                              previewMode === 'Purchase Orders' ? 'PURCHASE ORDER' : 
-                              previewMode === 'Goods Receipt Note' ? 'GOODS RECEIPT NOTE' :
-                              previewMode === 'Inventory GRN' ? 'INVENTORY GRN' : 'DELIVERY ORDER',
+                        type: previewMode === 'Invoice Piutang (AR)' ? 'INVOICE AR' :
+                          previewMode === 'Invoice Hutang (AP)' ? 'INVOICE AP' :
+                            previewMode === 'Invoices' ? 'INVOICE' :
+                              previewMode === 'Purchase Orders' ? 'PURCHASE ORDER' :
+                                previewMode === 'Goods Receipt Note' ? 'GOODS RECEIPT NOTE' :
+                                  previewMode === 'Inventory GRN' ? 'INVENTORY GRN' : 'DELIVERY ORDER',
                         storeName: store?.store_name || 'TOKO ANDA',
                         logoUrl: logoUrl,
                         brandColor: brandColor,
@@ -670,10 +670,10 @@ export default function DesignStudio({ store }) {
                         fontFamily: fontFamily,
                         total: previewMode === 'Inventory GRN' ? 9999 : 500000,
                         data: {
-                          status: previewMode.includes('Invoice') ? (previewPaid ? 'Paid' : 'Unpaid') : 
-                                  previewMode === 'Purchase Orders' ? 'Draft' : 
-                                  previewMode === 'Goods Receipt Note' ? 'Received' :
-                                  previewMode === 'Delivery Orders' ? 'Released' : 'Draft',
+                          status: previewMode.includes('Invoice') ? (previewPaid ? 'Paid' : 'Unpaid') :
+                            previewMode === 'Purchase Orders' ? 'Draft' :
+                              previewMode === 'Goods Receipt Note' ? 'Received' :
+                                previewMode === 'Delivery Orders' ? 'Released' : 'Draft',
                           timestamp_wib: '29/04/2026 12:23 WIB',
                           full_timestamp: 'Rabu, 29 April 2026 12:23 WIB',
                           store_address: 'Jl. Jendral Sudirman No. 45, Jakarta Selatan, 12190',
@@ -723,8 +723,8 @@ export default function DesignStudio({ store }) {
                             { name: 'Contoh Produk B', qty: 5, unit: 'box', price: 100000, total: 500000 }
                           ]
                         }
-                      }) 
-                    }} 
+                      })
+                    }}
                   />
                 )}
               </div>
@@ -755,18 +755,18 @@ export default function DesignStudio({ store }) {
           <div className="grid grid-cols-2 gap-4 my-4">
             <div className="space-y-2">
               <Label>Nama Lengkap *</Label>
-              <Input 
-                value={ownerName} 
-                onChange={(e) => setOwnerName(e.target.value)} 
-                placeholder="Contoh: Administrator" 
+              <Input
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
+                placeholder="Contoh: Administrator"
               />
             </div>
             <div className="space-y-2">
               <Label>Jabatan (Opsional)</Label>
-              <Input 
-                value={ownerPosition} 
-                onChange={(e) => setOwnerPosition(e.target.value)} 
-                placeholder="Contoh: Jabatan / Posisi" 
+              <Input
+                value={ownerPosition}
+                onChange={(e) => setOwnerPosition(e.target.value)}
+                placeholder="Contoh: Jabatan / Posisi"
               />
             </div>
           </div>
@@ -776,29 +776,29 @@ export default function DesignStudio({ store }) {
               <Label className="text-xs text-slate-500 uppercase tracking-wider font-bold">Pilih dari Riwayat</Label>
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {signatureHistory.map((url, idx) => (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     onClick={() => handleConfirmSignature(url)}
                     className="w-16 h-12 bg-white border border-slate-200 rounded-lg flex-shrink-0 cursor-pointer hover:border-blue-500 hover:ring-2 hover:ring-blue-100 overflow-hidden flex items-center justify-center p-1 transition-all"
                   >
-                     <img src={url} alt="history" className="max-w-full max-h-full object-contain mix-blend-multiply dark:invert dark:mix-blend-screen" />
+                    <img src={url} alt="history" className="max-w-full max-h-full object-contain mix-blend-multiply dark:invert dark:mix-blend-screen" />
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          <SignaturePad 
+          <SignaturePad
             title="Tanda Tangan Baru"
             onSave={handleConfirmSignature}
           />
         </DialogContent>
       </Dialog>
-      <input 
-        type="file" 
-        id="logo-upload" 
-        className="hidden" 
-        accept="image/*" 
+      <input
+        type="file"
+        id="logo-upload"
+        className="hidden"
+        accept="image/*"
         onChange={handleLogoChange}
         disabled={getLogoUploadCount() >= MAX_LOGO_UPLOADS}
       />

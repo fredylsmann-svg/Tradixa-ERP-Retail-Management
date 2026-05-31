@@ -37,7 +37,10 @@ export default function PrintPayment({ payment, store, onClose }) {
       items: mappedItems,
       total: payment.amount,
       payment_method: payment.bank_name || 'Transfer',
-      status: 'Paid'
+      status: 'Paid',
+      store_address: store?.address || 'Alamat Toko Belum Diatur',
+      store_phone: store?.phone || '-',
+      store_email: store?.email || '-'
     }
   });
 
