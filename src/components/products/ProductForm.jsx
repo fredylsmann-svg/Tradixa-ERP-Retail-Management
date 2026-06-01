@@ -260,7 +260,7 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
   return (
     <>
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] md:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 md:p-6">
         <DialogHeader>
           <DialogTitle>{product ? 'Edit Produk' : 'Tambah Produk Baru'}</DialogTitle>
           <DialogDescription>Masukkan detail barang belanjaan, atur konversi dari harga grosir ke eceran.</DialogDescription>
@@ -284,7 +284,7 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
           </div>
           <BarcodeScanner open={showScanner} onClose={() => setShowScanner(false)} onBarcodeScanned={(barcode) => setFormData({ ...formData, barcode })} />
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>SKU (Kode Barang)</Label>
               <Input value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className="mt-1.5 font-mono text-sm" />
@@ -420,7 +420,7 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
                 Pengaturan ini menentukan bagaimana batch diperlakukan saat barang masuk dan keluar gudang.
               </p>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Track Expiry */}
                 <div>
                   <Label className="text-xs flex items-center gap-1">
@@ -488,38 +488,42 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
                 </div>
               </div>
             </h4>
-            <div className="grid grid-cols-3 gap-4 border-b border-slate-200 pb-4">
-              <div>
-                <Label className="text-xs">Satuan Kulakan (Beli)</Label>
-                <Select value={formData.buy_unit} onValueChange={(v) => setFormData({ ...formData, buy_unit: v })}>
-                  <SelectTrigger className="mt-1.5 bg-white"><SelectValue /></SelectTrigger>
-                  <SelectContent>{UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col justify-end pb-1 text-center text-slate-400 font-bold">
-                DIKEMAS MENJADI &rarr;
-              </div>
-              <div>
-                <Label className="text-xs">Satuan Jual (Eceran)</Label>
-                <Select value={formData.sell_unit} onValueChange={(v) => setFormData({ ...formData, sell_unit: v })}>
-                  <SelectTrigger className="mt-1.5 bg-white"><SelectValue /></SelectTrigger>
-                  <SelectContent>{UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
-                </Select>
+            <div className="overflow-x-auto pb-4 border-b border-slate-200 -mx-4 px-4 md:mx-0 md:px-0">
+              <div className="grid grid-cols-3 gap-4 min-w-[480px] md:min-w-0">
+                <div>
+                  <Label className="text-xs">Satuan Kulakan (Beli)</Label>
+                  <Select value={formData.buy_unit} onValueChange={(v) => setFormData({ ...formData, buy_unit: v })}>
+                    <SelectTrigger className="mt-1.5 bg-white"><SelectValue /></SelectTrigger>
+                    <SelectContent>{UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col justify-end pb-1 text-center text-slate-400 font-bold">
+                  DIKEMAS MENJADI &rarr;
+                </div>
+                <div>
+                  <Label className="text-xs">Satuan Jual (Eceran)</Label>
+                  <Select value={formData.sell_unit} onValueChange={(v) => setFormData({ ...formData, sell_unit: v })}>
+                    <SelectTrigger className="mt-1.5 bg-white"><SelectValue /></SelectTrigger>
+                    <SelectContent>{UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label className="text-xs">Harga Beli (per {formData.buy_unit})</Label>
-                <NumberInput value={formData.buy_price} onChange={(e) => setFormData({ ...formData, buy_price: e.target.value })} className="mt-1.5 bg-white" placeholder="Rp / Grosir" required />
-              </div>
-              <div>
-                <Label className="text-xs text-blue-700 font-semibold">Konversi: 1 {formData.buy_unit} = X {formData.sell_unit}</Label>
-                <NumberInput value={formData.conversion_rate} onChange={(e) => setFormData({ ...formData, conversion_rate: e.target.value })} className="mt-1.5 bg-blue-50 border-blue-200 focus-visible:ring-blue-500" required />
-              </div>
-              <div>
-                <Label className="text-xs">Harga Jual (1 {formData.sell_unit})</Label>
-                <NumberInput value={formData.sell_price} onChange={(e) => setFormData({ ...formData, sell_price: e.target.value })} className="mt-1.5 bg-white font-bold" placeholder="Rp / Eceran" required />
+            <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+              <div className="grid grid-cols-3 gap-4 min-w-[480px] md:min-w-0">
+                <div>
+                  <Label className="text-xs">Harga Beli (per {formData.buy_unit})</Label>
+                  <NumberInput value={formData.buy_price} onChange={(e) => setFormData({ ...formData, buy_price: e.target.value })} className="mt-1.5 bg-white" placeholder="Rp / Grosir" required />
+                </div>
+                <div>
+                  <Label className="text-xs text-blue-700 font-semibold">Konversi: 1 {formData.buy_unit} = X {formData.sell_unit}</Label>
+                  <NumberInput value={formData.conversion_rate} onChange={(e) => setFormData({ ...formData, conversion_rate: e.target.value })} className="mt-1.5 bg-blue-50 border-blue-200 focus-visible:ring-blue-500" required />
+                </div>
+                <div>
+                  <Label className="text-xs">Harga Jual (1 {formData.sell_unit})</Label>
+                  <NumberInput value={formData.sell_price} onChange={(e) => setFormData({ ...formData, sell_price: e.target.value })} className="mt-1.5 bg-white font-bold" placeholder="Rp / Eceran" required />
+                </div>
               </div>
             </div>
 
@@ -614,108 +618,110 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
             </h4>
 
             {/* UoM Pricing Rows */}
-            <div className="space-y-2">
-              {uomPrices.map((uom, index) => {
-                const isBase = index === 0;
-                const hppPerBase = Number(formData.buy_price) / Number(formData.conversion_rate || 1);
-                const hppForUom = hppPerBase * Number(uom.qty_per_base || 1);
-                const marginForUom = Number(uom.sell_price || 0) - hppForUom;
-                const hargaPerUnit = Number(uom.qty_per_base) > 0 ? (Number(uom.sell_price) / Number(uom.qty_per_base)) : 0;
+            <div className="overflow-x-auto pb-2 -mx-4 px-4 md:overflow-visible md:pb-0 md:mx-0 md:px-0">
+              <div className="space-y-2 min-w-[500px] md:min-w-0">
+                {uomPrices.map((uom, index) => {
+                  const isBase = index === 0;
+                  const hppPerBase = Number(formData.buy_price) / Number(formData.conversion_rate || 1);
+                  const hppForUom = hppPerBase * Number(uom.qty_per_base || 1);
+                  const marginForUom = Number(uom.sell_price || 0) - hppForUom;
+                  const hargaPerUnit = Number(uom.qty_per_base) > 0 ? (Number(uom.sell_price) / Number(uom.qty_per_base)) : 0;
 
-                return (
-                  <div key={index} className={`flex items-end gap-2 p-3 rounded-lg border ${
-                    isBase 
-                      ? 'bg-white/80 border-emerald-200' 
-                      : 'bg-white border-slate-200'
-                  }`}>
-                    {/* Unit Name */}
-                    <div className="flex-1 min-w-[100px]">
-                      <Label className="text-[11px] text-slate-500">
-                        Satuan {isBase && <span className="text-emerald-600 font-bold">(Base)</span>}
-                      </Label>
-                      {isBase ? (
-                        <div className="mt-1.5 h-9 flex items-center px-3 bg-emerald-50 border border-emerald-200 rounded-md text-sm font-semibold text-emerald-700">
-                          {uom.unit}
-                        </div>
-                      ) : (
-                        <Select value={uom.unit} onValueChange={(v) => {
-                          const updated = [...uomPrices];
-                          updated[index] = { ...updated[index], unit: v };
-                          setUomPrices(updated);
-                        }}>
-                          <SelectTrigger className="mt-1.5 bg-white h-9 text-sm"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-
-                    {/* Qty per Base */}
-                    <div className="w-[90px]">
-                      <Label className="text-[11px] text-slate-500">Isi / Base</Label>
-                      {isBase ? (
-                        <div className="mt-1.5 h-9 flex items-center justify-center bg-emerald-50 border border-emerald-200 rounded-md text-sm font-semibold text-emerald-700">1</div>
-                      ) : (
-                        <NumberInput
-                          value={uom.qty_per_base}
-                          onChange={(e) => {
+                  return (
+                    <div key={index} className={`flex items-end gap-2 p-3 rounded-lg border ${
+                      isBase 
+                        ? 'bg-white/80 border-emerald-200' 
+                        : 'bg-white border-slate-200'
+                    }`}>
+                      {/* Unit Name */}
+                      <div className="flex-1 min-w-[100px]">
+                        <Label className="text-[11px] text-slate-500">
+                          Satuan {isBase && <span className="text-emerald-600 font-bold">(Base)</span>}
+                        </Label>
+                        {isBase ? (
+                          <div className="mt-1.5 h-9 flex items-center px-3 bg-emerald-50 border border-emerald-200 rounded-md text-sm font-semibold text-emerald-700">
+                            {uom.unit}
+                          </div>
+                        ) : (
+                          <Select value={uom.unit} onValueChange={(v) => {
                             const updated = [...uomPrices];
-                            updated[index] = { ...updated[index], qty_per_base: e.target.value };
+                            updated[index] = { ...updated[index], unit: v };
                             setUomPrices(updated);
-                          }}
-                          className="mt-1.5 bg-white h-9 text-sm"
-                          placeholder="6"
-                        />
-                      )}
-                    </div>
+                          }}>
+                            <SelectTrigger className="mt-1.5 bg-white h-9 text-sm"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
 
-                    {/* Sell Price */}
-                    <div className="flex-1 min-w-[120px]">
-                      <Label className="text-[11px] text-slate-500">Harga Jual</Label>
-                      {isBase ? (
-                        <div className="mt-1.5 h-9 flex items-center px-3 bg-emerald-50 border border-emerald-200 rounded-md text-sm font-semibold text-emerald-700">
-                          Rp {Number(uom.sell_price || 0).toLocaleString('id-ID')}
+                      {/* Qty per Base */}
+                      <div className="w-[90px]">
+                        <Label className="text-[11px] text-slate-500">Isi / Base</Label>
+                        {isBase ? (
+                          <div className="mt-1.5 h-9 flex items-center justify-center bg-emerald-50 border border-emerald-200 rounded-md text-sm font-semibold text-emerald-700">1</div>
+                        ) : (
+                          <NumberInput
+                            value={uom.qty_per_base}
+                            onChange={(e) => {
+                              const updated = [...uomPrices];
+                              updated[index] = { ...updated[index], qty_per_base: e.target.value };
+                              setUomPrices(updated);
+                            }}
+                            className="mt-1.5 bg-white h-9 text-sm"
+                            placeholder="6"
+                          />
+                        )}
+                      </div>
+
+                      {/* Sell Price */}
+                      <div className="flex-1 min-w-[120px]">
+                        <Label className="text-[11px] text-slate-500">Harga Jual</Label>
+                        {isBase ? (
+                          <div className="mt-1.5 h-9 flex items-center px-3 bg-emerald-50 border border-emerald-200 rounded-md text-sm font-semibold text-emerald-700">
+                            Rp {Number(uom.sell_price || 0).toLocaleString('id-ID')}
+                          </div>
+                        ) : (
+                          <NumberInput
+                            value={uom.sell_price}
+                            onChange={(e) => {
+                              const updated = [...uomPrices];
+                              updated[index] = { ...updated[index], sell_price: e.target.value };
+                              setUomPrices(updated);
+                            }}
+                            className="mt-1.5 bg-white h-9 text-sm"
+                            placeholder="Rp"
+                          />
+                        )}
+                      </div>
+
+                      {/* Margin Info */}
+                      <div className="w-[100px] text-center">
+                        <Label className="text-[11px] text-slate-500">Margin</Label>
+                        <div className={`mt-1.5 h-9 flex items-center justify-center rounded-md text-xs font-semibold ${
+                          marginForUom < 0 ? 'text-red-600 bg-red-50' : 'text-emerald-600 bg-emerald-50'
+                        }`}>
+                          Rp {marginForUom.toLocaleString('id-ID')}
                         </div>
-                      ) : (
-                        <NumberInput
-                          value={uom.sell_price}
-                          onChange={(e) => {
-                            const updated = [...uomPrices];
-                            updated[index] = { ...updated[index], sell_price: e.target.value };
-                            setUomPrices(updated);
-                          }}
-                          className="mt-1.5 bg-white h-9 text-sm"
-                          placeholder="Rp"
-                        />
-                      )}
-                    </div>
+                      </div>
 
-                    {/* Margin Info */}
-                    <div className="w-[100px] text-center">
-                      <Label className="text-[11px] text-slate-500">Margin</Label>
-                      <div className={`mt-1.5 h-9 flex items-center justify-center rounded-md text-xs font-semibold ${
-                        marginForUom < 0 ? 'text-red-600 bg-red-50' : 'text-emerald-600 bg-emerald-50'
-                      }`}>
-                        Rp {marginForUom.toLocaleString('id-ID')}
+                      {/* Delete Button */}
+                      <div className="w-[36px]">
+                        {!isBase ? (
+                          <button
+                            type="button"
+                            onClick={() => setUomPrices(prev => prev.filter((_, i) => i !== index))}
+                            className="h-9 w-9 flex items-center justify-center rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        ) : <div className="h-9" />}
                       </div>
                     </div>
-
-                    {/* Delete Button */}
-                    <div className="w-[36px]">
-                      {!isBase ? (
-                        <button
-                          type="button"
-                          onClick={() => setUomPrices(prev => prev.filter((_, i) => i !== index))}
-                          className="h-9 w-9 flex items-center justify-center rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      ) : <div className="h-9" />}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
 
             {/* Harga Per Unit Perbandingan */}
@@ -811,7 +817,7 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
           </div>
           {/* === END MULTI-UOM SECTION === */}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Stok Barang Aktif (Dalam {formData.sell_unit})</Label>
               <NumberInput value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} className="mt-1.5" />
