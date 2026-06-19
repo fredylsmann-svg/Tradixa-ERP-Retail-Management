@@ -35,7 +35,7 @@ export default function SubscriptionBanner({ store }) {
     const daysLeft = Math.ceil((graceEndDate - now) / (1000 * 60 * 60 * 24));
 
     return (
-      <div className="mx-4 mb-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 text-white px-5 py-4 shadow-xl shadow-red-200/50 dark:shadow-red-900/30 animate-in fade-in slide-in-from-top-2 duration-500">
+      <div className="mx-4 mb-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 text-white px-5 py-4 shadow-lg animate-in fade-in slide-in-from-top-2 duration-500">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
             <AlertTriangle className="w-5 h-5 text-white" />
@@ -63,7 +63,7 @@ export default function SubscriptionBanner({ store }) {
   // === PERINGATAN: Mendekati expired (H-7 atau kurang) ===
   if (daysUntilExpiry > 0 && daysUntilExpiry <= 7) {
     return (
-      <div className="mx-4 mb-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-3.5 shadow-xl shadow-amber-200/50 dark:shadow-amber-900/30 animate-in fade-in slide-in-from-top-2 duration-500">
+      <div className="mx-4 mb-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-3.5 shadow-lg animate-in fade-in slide-in-from-top-2 duration-500">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
             <Clock className="w-4.5 h-4.5 text-white" />
