@@ -322,7 +322,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
 
   const renderContent = () => (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none z-10 flex-shrink-0">
+      <div className="px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] border-b border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none z-10 flex-shrink-0">
         <div className="flex items-center gap-4">
           <img src="/logo-tradixa.png" alt="Tradixa" className="w-14 h-14 rounded-2xl object-cover shadow-sm mix-blend-multiply dark:bg-white dark:p-1 dark:mix-blend-normal" />
           <div>
