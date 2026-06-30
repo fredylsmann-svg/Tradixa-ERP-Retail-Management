@@ -45,6 +45,20 @@ export default function Login() {
   ];
 
   useEffect(() => {
+    // Make iOS status bar transparent for Login video
+    const meta = document.querySelector('meta[name="viewport"]');
+    if (meta) {
+      meta.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+    }
+    return () => {
+      // Revert to normal for Dashboard
+      if (meta) {
+        meta.setAttribute('content', 'width=device-width, initial-scale=1.0');
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     let timer = setTimeout(() => {
       handleType();
     }, typingSpeed);
