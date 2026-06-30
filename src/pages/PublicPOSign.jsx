@@ -668,7 +668,7 @@ export default function PublicPOSign() {
                     {po.status === 'Approved' ? 'Fase 2 — Shipping Details' : 'Fase 1 — Price Approval'}
                   </span>
                 </div>
-                <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2">Purchase Order</h1>
+                <h1 className="text-3xl font-black text-slate-900 tracking-wide leading-none mb-2">Purchase Order</h1>
                 <p className="text-slate-500 font-bold text-lg mb-4">No: <span className="text-blue-600 tracking-tight">{po.po_number}</span></p>
 
                 <div className="flex items-start gap-2 bg-slate-50/80 p-3 rounded-2xl border border-slate-100 w-fit">

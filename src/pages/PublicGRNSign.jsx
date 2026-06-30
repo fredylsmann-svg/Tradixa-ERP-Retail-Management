@@ -396,7 +396,7 @@ export default function PublicGRNSign() {
           <Card className="border-none shadow-xl rounded-3xl bg-white p-8 overflow-hidden relative">
             <div className="max-w-md mx-auto space-y-6 text-center">
               <div>
-                <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Konfirmasi Penerimaan Barang</h2>
+                <h2 className="text-xl font-black text-slate-800 uppercase tracking-wide">Konfirmasi Penerimaan Barang</h2>
                 <p className="text-sm text-slate-500 mt-2">Dengan menandatangani di bawah ini, Anda menyatakan bahwa barang di atas telah diserahterimakan sesuai dengan rincian GRN ini.</p>
               </div>
               <div className="bg-white p-4 rounded-3xl shadow-inner border border-slate-100">

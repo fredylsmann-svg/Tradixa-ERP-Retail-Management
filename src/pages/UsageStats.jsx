@@ -308,7 +308,7 @@ export default function UsageStats({ store }) {
             <Badge className="bg-white/20 text-white border-none font-black text-[10px] tracking-widest uppercase py-1 px-3">
               {store?.plan} Plan Status
             </Badge>
-            <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
+            <h2 className="text-3xl font-black tracking-wide flex items-center gap-3">
               {isTrial ? 'Masa Percobaan Pro' : `${plan.name} Edition`}
               <Sparkles className="w-6 h-6 text-yellow-300 fill-yellow-300" />
             </h2>

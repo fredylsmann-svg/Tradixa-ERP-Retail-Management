@@ -392,7 +392,7 @@ export default function ProfileAccount({ store }) {
             </button>
           </div>
           <div className="mb-1 md:mb-2 min-w-0 flex-1">
-            <h1 className="text-lg md:text-2xl font-black text-white tracking-tight truncate">{user.full_name || 'Administrator'}</h1>
+            <h1 className="text-lg md:text-2xl font-black text-white tracking-wide truncate">{user.full_name || 'Administrator'}</h1>
             <p className="text-slate-300 font-medium flex items-center gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm mt-0.5 md:mt-1 min-w-0">
               <Mail className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400 shrink-0" /> <span className="truncate">{user.email}</span>
             </p>

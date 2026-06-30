@@ -694,7 +694,7 @@ export default function StoreSetup({ onComplete }) {
               <motion.div key="step5" custom={5} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
                 <div className="p-8 text-center sm:p-12">
                   <div className="mb-6" />
-                  <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Selamat Datang di Tradixa!</h1>
+                  <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-wide">Selamat Datang di Tradixa!</h1>
                   <p className="text-slate-500 mb-8 max-w-sm mx-auto">Akun dan Toko Anda berhasil didaftarkan. Silakan pilih opsi di bawah ini untuk memulai.</p>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">

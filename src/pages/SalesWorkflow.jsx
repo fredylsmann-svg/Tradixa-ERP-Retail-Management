@@ -158,7 +158,7 @@ export default function SalesWorkflow() {
             <Workflow className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">Sales Workflow</h1>
+            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-wide">Sales Workflow</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">Alur transaksi kasir (Didukung Real-Time Sales Tracking), otomasi integrasi EDC lokal, hingga pelaporan laba rugi</p>
           </div>
         </div>

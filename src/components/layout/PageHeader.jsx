@@ -22,7 +22,7 @@ export default function PageHeader({
         )}
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tighter">{title}</h1>
+            <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-wide">{title}</h1>
             {children}
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{subtitle}</p>

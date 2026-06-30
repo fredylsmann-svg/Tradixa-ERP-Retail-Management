@@ -93,7 +93,7 @@ export default function FinancialAgentWorkflow() {
             <Workflow className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight">Financial Agent Workflow</h1>
+            <h1 className="text-xl font-black text-slate-900 tracking-wide">Financial Agent Workflow</h1>
             <p className="text-sm text-slate-500">Alur kerja agen pembayaran BRILINK & payment point</p>
           </div>
         </div>

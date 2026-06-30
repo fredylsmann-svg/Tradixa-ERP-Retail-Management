@@ -143,7 +143,7 @@ export default function JournalDetail() {
           </Button>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Journal Entry</h1>
+              <h1 className="text-3xl font-black text-slate-900 tracking-wide">Journal Entry</h1>
               <Badge className={
                 entry.status === 'Posted' ? 'bg-emerald-100 text-emerald-700' :
                   entry.status === 'Void' ? 'bg-red-100 text-red-700' :

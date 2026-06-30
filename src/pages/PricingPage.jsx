@@ -247,7 +247,7 @@ export default function PricingPage({ store }) {
         <Badge className="bg-blue-100 text-blue-700 font-bold px-4 py-1.5 text-xs">
           <Sparkles className="w-3 h-3 mr-1" /> Pricing Plans
         </Badge>
-        <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+        <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-wide">
           Pilih Paket yang Tepat untuk Bisnis Anda
         </h1>
         <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-sm">

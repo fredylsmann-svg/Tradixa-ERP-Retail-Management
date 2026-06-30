@@ -149,7 +149,7 @@ export default function PublicCourierPortal() {
           >
             <CheckCircle2 className="w-12 h-12" />
           </motion.div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">PENGIRIMAN SELESAI</h1>
+          <h1 className="text-2xl font-black text-slate-900 tracking-wide">PENGIRIMAN SELESAI</h1>
           <p className="text-slate-500 mt-2">Barang sudah diterima oleh customer.</p>
           <div className="mt-6 p-4 bg-white rounded-2xl shadow-sm border w-full max-w-sm text-left">
             <p className="text-[10px] font-bold text-slate-400 uppercase">Diterima pada</p>
@@ -179,7 +179,7 @@ export default function PublicCourierPortal() {
           </div>
           <Badge className="bg-blue-500 text-white border-blue-400 font-bold">{delivery.status}</Badge>
         </div>
-        <h1 className="text-2xl font-black tracking-tight">{delivery.sales_transactions?.invoice_number || 'OUTBOUND'}</h1>
+        <h1 className="text-2xl font-black tracking-wide">{delivery.sales_transactions?.invoice_number || 'OUTBOUND'}</h1>
         <p className="text-sm text-blue-100 opacity-80 mt-1">Lakukan pengiriman ke alamat tujuan di bawah ini.</p>
       </div>
 

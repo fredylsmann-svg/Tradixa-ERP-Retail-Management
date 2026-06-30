@@ -266,7 +266,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
         <div className="flex items-center gap-4">
           <img src="/logo-tradixa.png" alt="Tradixa" className="w-14 h-14 rounded-2xl object-cover shadow-sm mix-blend-multiply dark:bg-white dark:p-1 dark:mix-blend-normal" />
           <div>
-            <h1 className="font-black text-xl text-slate-900 dark:text-slate-100 leading-none tracking-tighter">Tradixa</h1>
+            <h1 className="font-black text-xl text-slate-900 dark:text-slate-100 leading-none tracking-wide">Tradixa</h1>
             <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1 tracking-tight">Management Retail System</p>
           </div>
         </div>
@@ -277,7 +277,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
           <div key={group.title} className="mb-2">
             <button
               onClick={(e) => toggleGroup(e, group.title)}
-              className="w-full flex items-center justify-between px-4 py-3 text-base font-black text-slate-900 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors tracking-tight text-left"
+              className="w-full flex items-center justify-between px-4 py-3 text-base font-black text-slate-900 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors tracking-wide text-left"
             >
               <span>{group.title}</span>
               <ChevronDown
@@ -318,7 +318,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
                           }
                         }}
                         className={cn(
-                          "group relative flex items-center gap-3 px-4 py-2.5 rounded-xl text-[14.5px] font-medium transition-all tracking-tight",
+                          "group relative flex items-center gap-3 px-4 py-2.5 rounded-xl text-[14.5px] font-medium transition-all tracking-normal",
                           showProductMasterGuide && item.name === 'Product Master' 
                             ? "z-[60] bg-blue-600 text-white shadow-xl ring-4 ring-white/20"
                             : isActive

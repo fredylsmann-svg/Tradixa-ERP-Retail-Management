@@ -471,7 +471,7 @@ export default function StockOpname({ store }) {
             <PackageCheck className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">Stock Opname</h1>
+            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-wide">Stock Opname</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">Verifikasi stok fisik vs stok sistem</p>
           </div>
         </div>

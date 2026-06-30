@@ -151,7 +151,7 @@ export default function WMSWorkflow() {
             <Workflow className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight">WMS Workflow</h1>
+            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-wide">WMS Workflow</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">Standard Operating Procedure — Warehouse Management System</p>
           </div>
         </div>

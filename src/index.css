@@ -84,16 +84,16 @@
 
   h1,
   .font-black {
-    @apply tracking-tight;
+    @apply tracking-wide;
   }
 
-  /* Subtler tracking for other headings to prevent squeezing */
+  /* Subtler tracking for other headings */
   h2,
   h3,
   h4,
   .font-bold,
   .font-semibold {
-    letter-spacing: -0.01em;
+    letter-spacing: 0.015em;
   }
 }
 

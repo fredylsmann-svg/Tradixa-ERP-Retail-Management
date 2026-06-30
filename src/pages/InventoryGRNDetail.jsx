@@ -116,7 +116,7 @@ export default function InventoryGRNDetail({ store }) {
           </Button>
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight">{igrn.igrn_number}</h1>
+              <h1 className="text-2xl font-black text-slate-900 tracking-wide">{igrn.igrn_number}</h1>
               <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-bold px-3">
                 {igrn.status}
               </Badge>
