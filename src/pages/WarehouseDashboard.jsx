@@ -118,8 +118,8 @@ export default function WarehouseDashboard({ store }) {
                 <card.icon className="w-5 h-5 text-white drop-shadow-md" />
               </div>
               <p className="text-xs sm:text-sm font-medium text-white/80 pr-12 leading-tight min-h-[32px] sm:min-h-0">{card.label}</p>
-              <p className="text-lg sm:text-2xl font-black text-white mt-1 tracking-tight truncate">{card.value}</p>
-              <p className="text-[10px] sm:text-xs text-white/60 mt-0.5 truncate">{card.sub}</p>
+              <p className="text-lg sm:text-2xl font-black text-white mt-1 tracking-tight break-words leading-tight sm:truncate">{card.value}</p>
+              <p className="text-[10px] sm:text-xs text-white/60 mt-0.5 sm:mt-1 truncate">{card.sub}</p>
             </CardContent>
           </Card>
         ))}
