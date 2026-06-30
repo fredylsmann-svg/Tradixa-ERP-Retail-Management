@@ -692,7 +692,7 @@ export default function ProfileAccount({ store }) {
                       {remainingDays !== null && (
                         <div>
                           <div className="flex justify-between items-center mb-1.5">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">⏳ Sisa Waktu</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sisa Waktu</span>
                             <span className={`text-xs font-black ${
                               isGracePeriod ? 'text-red-600' :
                               isExpiringSoon ? 'text-amber-600' : 'text-emerald-600'
