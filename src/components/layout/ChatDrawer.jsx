@@ -254,7 +254,10 @@ export default function ChatDrawer({ isOpen, onOpenChange, store }) {
       <SheetContent side="right" className="w-full sm:max-w-[500px] p-0 flex flex-col border-l-0 shadow-2xl">
 
         {/* Header */}
-        <SheetHeader className="p-4 border-b bg-white dark:bg-slate-900 flex-shrink-0">
+        <SheetHeader 
+          className="border-b bg-white dark:bg-slate-900 flex-shrink-0"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}
+        >
           <div className="flex items-center gap-3">
             {selectedContact ? (
               <>
