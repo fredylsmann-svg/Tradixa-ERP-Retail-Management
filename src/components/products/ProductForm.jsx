@@ -541,11 +541,11 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
           </div>
 
           {/* === MULTI-UOM BULK PRICING SECTION === */}
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-4 border border-emerald-200 rounded-xl space-y-4">
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 p-4 border border-emerald-200 dark:border-emerald-800/60 rounded-xl space-y-4">
             <h4 className="text-sm font-semibold flex items-center gap-2">
-              <Layers className="w-4 h-4 text-emerald-600"/>
+              <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400"/>
               Harga Grosir / Bulk Pricing
-              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Opsional</span>
+              <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">Opsional</span>
               <div className="relative ml-1 inline-block">
                 <Info 
                   className="w-4 h-4 text-slate-400 cursor-pointer hover:text-emerald-500 transition-colors" 
@@ -630,8 +630,8 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
                   return (
                     <div key={index} className={`flex items-end gap-2 p-3 rounded-lg border ${
                       isBase 
-                        ? 'bg-white/80 border-emerald-200' 
-                        : 'bg-white border-slate-200'
+                        ? 'bg-white/80 dark:bg-slate-900/50 border-emerald-200 dark:border-emerald-800/60' 
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
                     }`}>
                       {/* Unit Name */}
                       <div className="flex-1 min-w-[100px]">
@@ -639,7 +639,7 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
                           Satuan {isBase && <span className="text-emerald-600 font-bold">(Base)</span>}
                         </Label>
                         {isBase ? (
-                          <div className="mt-1.5 h-9 flex items-center px-3 bg-emerald-50 border border-emerald-200 rounded-md text-sm font-semibold text-emerald-700">
+                          <div className="mt-1.5 h-9 flex items-center px-3 bg-emerald-50 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800/60 rounded-md text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                             {uom.unit}
                           </div>
                         ) : (

@@ -41,21 +41,21 @@ const DialogContent = React.forwardRef(({ className, children, hideClose = false
         )}
         {...props}>
         {children}
-        <div className="absolute right-3 top-3 z-50 flex items-center gap-2">
+        <div className="absolute right-2 top-2 sm:right-3 sm:top-3 z-50 flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-1 rounded-full shadow-sm border border-slate-200 dark:border-slate-800">
           {!hideFullscreen && (
             <button
               type="button"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 opacity-80 ring-offset-background transition-all hover:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+              className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-slate-800 opacity-80 ring-offset-background transition-all hover:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
             >
-              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              {isFullscreen ? <Minimize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Maximize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
               <span className="sr-only">Toggle Fullscreen</span>
             </button>
           )}
           {!hideClose && (
             <DialogPrimitive.Close
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 opacity-80 ring-offset-background transition-all hover:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-              <X className="h-4 w-4" />
+              className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-slate-800 opacity-80 ring-offset-background transition-all hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+              <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span className="sr-only">Close</span>
             </DialogPrimitive.Close>
           )}
