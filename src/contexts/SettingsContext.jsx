@@ -124,11 +124,20 @@ export const SettingsProvider = ({ children }) => {
 
     const applyTheme = (val) => {
       html.classList.remove('light', 'dark');
-      if (val === 'system') {
-        html.classList.add(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      } else {
-        html.classList.add(val || 'light');
+      const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDark = val === 'system' ? isSystemDark : val === 'dark';
+      
+      html.classList.add(isDark ? 'dark' : 'light');
+
+      // Update theme-color meta tag for PWA mobile header
+      let metaThemeColor = document.querySelector("meta[name=theme-color]");
+      if (!metaThemeColor) {
+        metaThemeColor = document.createElement("meta");
+        metaThemeColor.name = "theme-color";
+        document.head.appendChild(metaThemeColor);
       }
+      // slate-950 (#020617) for dark mode, white (#ffffff) for light mode
+      metaThemeColor.content = isDark ? "#020617" : "#ffffff";
     };
     applyTheme(settings.theme);
   }, [settings.fontSize, settings.theme]);
