@@ -191,7 +191,7 @@ export default function DesignStudio({ store }) {
         subtitle="Kelola identitas visual dan template dokumen bisnis Anda."
         icon={Palette}
         actions={
-          <div className="flex gap-2">
+          <>
             <Button variant="outline" className="gap-2">
               <Eye className="w-4 h-4" /> Preview All
             </Button>
@@ -203,7 +203,7 @@ export default function DesignStudio({ store }) {
               {isSaving ? <Zap className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
             </Button>
-          </div>
+          </>
         }
       />
 
