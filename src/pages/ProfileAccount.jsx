@@ -32,7 +32,8 @@ import {
   MessageCircle,
   Bell,
   BellOff,
-  Smartphone
+  Smartphone,
+  Calendar
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { PLAN_TIERS } from '@/planConfig';
@@ -678,11 +679,11 @@ export default function ProfileAccount({ store }) {
                     <div className="space-y-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📅 Mulai</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5"><Calendar className="w-3 h-3" /> Mulai</p>
                           <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDate(startedAt)}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📅 Berakhir</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5"><Calendar className="w-3 h-3" /> Berakhir</p>
                           <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDate(expiresAt)}</p>
                         </div>
                       </div>
@@ -806,37 +807,7 @@ export default function ProfileAccount({ store }) {
             );
           })()}
 
-          {/* Usage Stats for Free Plan */}
-          {(!store?.plan || store?.plan === 'free') && (
-            <Card className="border-slate-200 rounded-3xl shadow-sm bg-white">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-slate-800">Batas Penggunaan (Free Plan)</h3>
-                  <Badge className="bg-slate-100 text-slate-600 border-none">{outboundUsage} / 5</Badge>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between text-[11px] font-bold mb-1.5">
-                      <span className="text-slate-500 uppercase">Outbound Delivery</span>
-                      <span className={outboundUsage >= 5 ? 'text-red-500' : 'text-slate-700'}>{outboundUsage} dari 5 Data</span>
-                    </div>
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all ${outboundUsage >= 5 ? 'bg-red-500' : 'bg-blue-500'}`}
-                        style={{ width: `${Math.min(100, (outboundUsage / 5) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                {outboundUsage >= 5 && (
-                  <div className="mt-4 p-3 bg-red-50 rounded-xl border border-red-100 flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                    <p className="text-xs text-red-700 font-medium">Batas data maksimal tercapai. Anda tidak dapat membuat data pengiriman baru. Silakan upgrade ke Pro Plan.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+
 
           <Card className="border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-950 dark:to-slate-900/80">
             <CardContent className="p-8">
