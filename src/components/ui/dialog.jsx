@@ -71,7 +71,7 @@ const DialogHeader = ({
   ...props
 }) => (
   <div
-    className={cn("flex flex-col space-y-1.5 text-center sm:text-left pr-12", className)}
+    className={cn("flex flex-col space-y-1.5 text-center sm:text-left pr-20", className)}
     {...props} />
 )
 DialogHeader.displayName = "DialogHeader"

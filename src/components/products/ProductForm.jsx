@@ -488,41 +488,42 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
                 </div>
               </div>
             </h4>
-            <div className="overflow-x-auto pb-4 border-b border-slate-200 -mx-4 px-4 md:mx-0 md:px-0">
-              <div className="grid grid-cols-3 gap-4 min-w-[480px] md:min-w-0">
+            <div className="pb-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-xs">Satuan Kulakan (Beli)</Label>
                   <Select value={formData.buy_unit} onValueChange={(v) => setFormData({ ...formData, buy_unit: v })}>
-                    <SelectTrigger className="mt-1.5 bg-white"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="mt-1.5 bg-white dark:bg-slate-900"><SelectValue /></SelectTrigger>
                     <SelectContent>{UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="flex flex-col justify-end pb-1 text-center text-slate-400 font-bold">
-                  DIKEMAS MENJADI &rarr;
+                <div className="flex flex-col justify-center items-center py-1 md:pb-1 md:py-0 md:justify-end text-center text-slate-400 font-bold">
+                  <span className="md:hidden text-xs bg-slate-100 dark:bg-slate-800 px-4 py-1.5 rounded-full mt-2 mb-1 shadow-sm border border-slate-200 dark:border-slate-700">DIKEMAS MENJADI &darr;</span>
+                  <span className="hidden md:block">DIKEMAS MENJADI &rarr;</span>
                 </div>
                 <div>
                   <Label className="text-xs">Satuan Jual (Eceran)</Label>
                   <Select value={formData.sell_unit} onValueChange={(v) => setFormData({ ...formData, sell_unit: v })}>
-                    <SelectTrigger className="mt-1.5 bg-white"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="mt-1.5 bg-white dark:bg-slate-900"><SelectValue /></SelectTrigger>
                     <SelectContent>{UNITS.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
             </div>
 
-            <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-              <div className="grid grid-cols-3 gap-4 min-w-[480px] md:min-w-0">
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-xs">Harga Beli (per {formData.buy_unit})</Label>
-                  <NumberInput value={formData.buy_price} onChange={(e) => setFormData({ ...formData, buy_price: e.target.value })} className="mt-1.5 bg-white" placeholder="Rp / Grosir" required />
+                  <NumberInput value={formData.buy_price} onChange={(e) => setFormData({ ...formData, buy_price: e.target.value })} className="mt-1.5 bg-white dark:bg-slate-900" placeholder="Rp / Grosir" required />
                 </div>
                 <div>
-                  <Label className="text-xs text-blue-700 font-semibold">Konversi: 1 {formData.buy_unit} = X {formData.sell_unit}</Label>
-                  <NumberInput value={formData.conversion_rate} onChange={(e) => setFormData({ ...formData, conversion_rate: e.target.value })} className="mt-1.5 bg-blue-50 border-blue-200 focus-visible:ring-blue-500" required />
+                  <Label className="text-xs text-blue-700 dark:text-blue-400 font-semibold">Konversi: 1 {formData.buy_unit} = X {formData.sell_unit}</Label>
+                  <NumberInput value={formData.conversion_rate} onChange={(e) => setFormData({ ...formData, conversion_rate: e.target.value })} className="mt-1.5 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 focus-visible:ring-blue-500" required />
                 </div>
                 <div>
                   <Label className="text-xs">Harga Jual (1 {formData.sell_unit})</Label>
-                  <NumberInput value={formData.sell_price} onChange={(e) => setFormData({ ...formData, sell_price: e.target.value })} className="mt-1.5 bg-white font-bold" placeholder="Rp / Eceran" required />
+                  <NumberInput value={formData.sell_price} onChange={(e) => setFormData({ ...formData, sell_price: e.target.value })} className="mt-1.5 bg-white dark:bg-slate-900 font-bold" placeholder="Rp / Eceran" required />
                 </div>
               </div>
             </div>
