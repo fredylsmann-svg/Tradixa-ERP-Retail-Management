@@ -431,53 +431,55 @@ export default function SupplierReturn({ store }) {
 
       <Card>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50">
-                <TableHead className="pl-6 w-[50px]">No.</TableHead>
-                <TableHead>No. Retur</TableHead>
-                <TableHead>Tanggal & Waktu</TableHead>
-                <TableHead>Nama Supplier</TableHead>
-                <TableHead className="text-center">Total Items</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-center pr-6">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array(5).fill(0).map((_, i) => <TableRow key={i}><TableCell colSpan={7}><Skeleton className="h-12 w-full" /></TableCell></TableRow>)
-              ) : filteredReturns.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-slate-500">
-                    <ArrowRightLeft className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                    Belum ada riwayat retur untuk tanggal ini
-                  </TableCell>
+          <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none">
+            <Table className="min-w-[700px]">
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead className="pl-6 w-[50px]">No.</TableHead>
+                  <TableHead>No. Retur</TableHead>
+                  <TableHead>Tanggal & Waktu</TableHead>
+                  <TableHead>Nama Supplier</TableHead>
+                  <TableHead className="text-center">Total Items</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-center pr-6">Aksi</TableHead>
                 </TableRow>
-              ) : (
-                filteredReturns.map((r, idx) => (
-                  <TableRow key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                    <TableCell className="pl-6 text-slate-400 font-bold">{idx + 1}</TableCell>
-                    <TableCell className="font-black text-slate-900">{r.return_number}</TableCell>
-                    <TableCell className="text-slate-500 text-xs font-medium">{r.timestamp_wib}</TableCell>
-                    <TableCell className="font-bold text-slate-800">{r.supplier_name}</TableCell>
-                    <TableCell className="text-center font-bold text-slate-600">{r.items?.length || 0} Produk</TableCell>
-                    <TableCell className="text-center">
-                      <Badge className={`px-3 py-1 rounded-full text-[10px] font-bold ${r.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' :
-                          r.status === 'Rejected' ? 'bg-red-100 text-red-700' :
-                            r.status === 'Completed' ? 'bg-blue-100 text-blue-700' :
-                              'bg-amber-100 text-amber-700'
-                        }`}>
-                        {r.status || 'Pending'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Button variant="ghost" size="icon" onClick={() => setViewingReturn(r)}><Eye className="w-4 h-4 text-slate-500" /></Button>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array(5).fill(0).map((_, i) => <TableRow key={i}><TableCell colSpan={7}><Skeleton className="h-12 w-full" /></TableCell></TableRow>)
+                ) : filteredReturns.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-12 text-slate-500">
+                      <ArrowRightLeft className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                      Belum ada riwayat retur untuk tanggal ini
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  filteredReturns.map((r, idx) => (
+                    <TableRow key={r.id} className="hover:bg-slate-50/50 transition-colors">
+                      <TableCell className="pl-6 text-slate-400 font-bold">{idx + 1}</TableCell>
+                      <TableCell className="font-black text-slate-900">{r.return_number}</TableCell>
+                      <TableCell className="text-slate-500 text-xs font-medium">{r.timestamp_wib}</TableCell>
+                      <TableCell className="font-bold text-slate-800">{r.supplier_name}</TableCell>
+                      <TableCell className="text-center font-bold text-slate-600">{r.items?.length || 0} Produk</TableCell>
+                      <TableCell className="text-center">
+                        <Badge className={`px-3 py-1 rounded-full text-[10px] font-bold ${r.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' :
+                            r.status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                              r.status === 'Completed' ? 'bg-blue-100 text-blue-700' :
+                                'bg-amber-100 text-amber-700'
+                          }`}>
+                          {r.status || 'Pending'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="ghost" size="icon" onClick={() => setViewingReturn(r)}><Eye className="w-4 h-4 text-slate-500" /></Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -486,7 +488,8 @@ export default function SupplierReturn({ store }) {
           <DialogHeader>
             <DialogTitle className="text-xl font-black text-slate-900">Buat Retur Supplier Baru</DialogTitle>
           </DialogHeader>
-          <div className="space-y-6 pt-4">
+          <div className="overflow-x-auto">
+          <div className="space-y-6 pt-4 min-w-[500px]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pilih Supplier Tujuan *</Label>
@@ -667,6 +670,7 @@ export default function SupplierReturn({ store }) {
               </Button>
             </div>
           </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -800,8 +804,8 @@ export default function SupplierReturn({ store }) {
                   <ArrowRightLeft className="w-5 h-5 text-slate-400" />
                   <h4 className="font-black text-sm text-slate-800 uppercase tracking-wider">Item Yang Dikembalikan</h4>
                 </div>
-                <div className="border border-slate-100 rounded-2xl overflow-hidden">
-                  <Table>
+                <div className="border border-slate-100 rounded-2xl overflow-x-auto max-w-[85vw] sm:max-w-none w-full">
+                  <Table className="min-w-[500px]">
                     <TableHeader className="bg-slate-50/50">
                       <TableRow>
                         <TableHead >Produk</TableHead>

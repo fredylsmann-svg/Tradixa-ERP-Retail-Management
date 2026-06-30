@@ -1084,7 +1084,7 @@ export default function PurchaseRequisition({ store }) {
             </div>
 
             {selectedItems.length > 0 && (
-              <div className="h-64 flex-shrink-0 border-t pt-4 overflow-y-auto space-y-4">
+              <div className="min-h-[200px] max-h-[40vh] flex-shrink-0 border-t pt-4 overflow-y-auto space-y-4 pb-4">
                 <div className="text-sm font-bold text-slate-800 flex items-center justify-between mb-2">Detail Kuantitas & Harga (Estimasi) <Badge className="bg-blue-600 text-white">{selectedItems.length} Item</Badge></div>
                 <div className="grid grid-cols-1 gap-3">
                   {selectedItems.map(item => (
