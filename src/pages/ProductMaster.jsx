@@ -77,6 +77,7 @@ export default function ProductMaster({ store }) {
 
   const dismissActionGuide = () => {
     setShowActionColumnGuide(false);
+    setReadyForActionGuide(false); // Fix: Mencegah popover muncul lagi terus-terusan
     if (store?.id) {
       localStorage.setItem(`erp_tour_step_${store.id}`, 'completed');
     }
@@ -200,8 +201,8 @@ export default function ProductMaster({ store }) {
               </Button>
 
               {showAddProductGuide && (
-                <div className="absolute top-full right-0 mt-4 w-[300px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl z-[60] cursor-default border border-slate-700/50 animate-in fade-in zoom-in-95 duration-300 text-left">
-                  <div className="absolute -top-1.5 right-[20px] w-3 h-3 bg-slate-900 border-t border-l border-slate-700/50 rotate-45" />
+                <div className="absolute top-full right-1/2 translate-x-1/2 sm:translate-x-0 sm:right-0 mt-4 w-[calc(100vw-2rem)] max-w-[300px] sm:w-[300px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl z-[60] cursor-default border border-slate-700/50 animate-in fade-in zoom-in-95 duration-300 text-left">
+                  <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 sm:left-auto sm:right-[20px] sm:translate-x-0 w-3 h-3 bg-slate-900 border-t border-l border-slate-700/50 rotate-45" />
                   <div className="flex flex-col gap-3">
                     <div className="relative z-10 space-y-2">
                       <h4 className="text-xs font-black text-white tracking-wider uppercase">Input Data Master</h4>
@@ -347,9 +348,9 @@ export default function ProductMaster({ store }) {
                             </div>
                           </PopoverTrigger>
                           <PopoverContent 
-                            side="bottom" 
-                            align="end" 
-                            sideOffset={12}
+                            side="left" 
+                            align="center" 
+                            sideOffset={16}
                             className="z-[70] w-[calc(100vw-2rem)] sm:w-[320px] max-w-[320px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl border-slate-700/50 animate-in fade-in zoom-in-95 duration-300 pointer-events-auto"
                             collisionPadding={16}
                             onPointerDownOutside={(e) => e.preventDefault()}

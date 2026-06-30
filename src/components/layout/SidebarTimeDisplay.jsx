@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { Zap } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
-export default function SidebarTimeDisplay() {
+export default function SidebarTimeDisplay({ isCollapsed }) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { user } = useAuth();
   const [store, setStore] = useState(null);
@@ -38,6 +38,14 @@ export default function SidebarTimeDisplay() {
 
   const timeDisplay = formatWIBTime(currentTime);
 
+  if (isCollapsed) {
+    return (
+      <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex-shrink-0 flex justify-center">
+        <Clock className="w-4 h-4 text-slate-400" />
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 border-t border-slate-100 bg-slate-50 dark:bg-slate-950 flex-shrink-0">
       <p className="text-xs text-slate-500 dark:text-slate-400">{timeDisplay.date}</p>
@@ -48,3 +56,4 @@ export default function SidebarTimeDisplay() {
     </div>
   );
 }
+

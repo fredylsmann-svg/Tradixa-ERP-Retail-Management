@@ -13,7 +13,8 @@ import {
   ArrowRightLeft, List, DollarSign, Settings, UserCircle, GitBranch, Network,
   Workflow, ChevronDown, Menu, X, MessageCircle, Award, Layers, Mail, Zap, Megaphone, Banknote, PieChart, Contact, Landmark, Coins,
   BookOpen, ReceiptText, LineChart, BarChart, Activity, Warehouse, ClipboardCheck, MapPin, Palette, Boxes, BarChart3, HandCoins, History,
-  Lock, CreditCard as CreditCardIcon, Calculator, FileSignature, PackageCheck, RotateCcw, Bot
+  Lock, CreditCard as CreditCardIcon, Calculator, FileSignature, PackageCheck, RotateCcw, Bot,
+  PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import WarehouseTransferIcon from '@/components/icons/WarehouseTransferIcon';
 
@@ -174,7 +175,7 @@ const getFilteredMenuGroups = (isOwner) => {
   return allGroups;
 };
 
-export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpen, setIsMobileOpen, storePlan, userEmail, store }) {
+export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpen, setIsMobileOpen, storePlan, userEmail, store, isCollapsed = false, setIsCollapsed }) {
   const [isOwner, setIsOwner] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [userModules, setUserModules] = React.useState(null);
@@ -259,6 +260,65 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
       [title]: !prev[title]
     }));
   };
+
+  // Collapsed icon-only content for desktop
+  const renderCollapsedContent = () => (
+    <div className="flex flex-col h-full">
+      {/* Logo area - icon only */}
+      <div className="p-3 border-b border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none z-10 flex-shrink-0 flex justify-center">
+        <img src="/logo-tradixa.png" alt="Tradixa" className="w-10 h-10 rounded-xl object-cover shadow-sm mix-blend-multiply dark:bg-white dark:p-0.5 dark:mix-blend-normal" />
+      </div>
+
+      {/* Menu items - icons only with tooltip */}
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto py-2 min-h-0">
+        {menuGroups.map((group) => (
+          <div key={group.title} className="mb-1">
+            {/* Divider line between groups */}
+            <div className="mx-3 my-1.5 h-px bg-slate-100 dark:bg-slate-800" />
+
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentPage === item.page;
+              const isLocked = !isModuleAccessible(currentStorePlan, item.page, userEmail);
+
+              return (
+                <div key={item.name} className="relative group/tooltip px-2 py-0.5">
+                  <Link
+                    to={createPageUrl(item.page)}
+                    onClick={() => setIsMobileOpen(false)}
+                    className={cn(
+                      "flex items-center justify-center w-12 h-10 rounded-xl transition-all mx-auto",
+                      isActive
+                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
+                        : isLocked
+                          ? "text-slate-400 hover:bg-slate-50 dark:text-slate-500 dark:hover:bg-slate-800/30"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-blue-300"
+                    )}
+                  >
+                    <Icon className={cn(
+                      "w-5 h-5 transition-all duration-200",
+                      isActive ? "text-blue-600 dark:text-blue-400" : isLocked ? "text-slate-300 dark:text-slate-600" : ""
+                    )} />
+                    {isLocked && (
+                      <Lock className="w-2.5 h-2.5 text-slate-300 absolute top-1 right-2" />
+                    )}
+                  </Link>
+
+                  {/* Tooltip */}
+                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-lg opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 whitespace-nowrap z-[100] pointer-events-none shadow-lg">
+                    {item.name}
+                    <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      <SidebarTimeDisplay isCollapsed={true} />
+    </div>
+  );
 
   const renderContent = () => (
     <div className="flex flex-col h-full">
@@ -367,7 +427,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
         ))}
       </div>
 
-      <SidebarTimeDisplay />
+      <SidebarTimeDisplay isCollapsed={false} />
     </div>
   );
 
@@ -390,8 +450,31 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
         {renderContent()}
       </aside>
 
-      <aside className={`hidden lg:flex lg:flex-col w-72 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 h-screen fixed top-0 left-0 transition-transform duration-300 z-40 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        {renderContent()}
+      {/* Desktop sidebar */}
+      <aside className={cn(
+        "hidden lg:flex lg:flex-col bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 h-screen fixed top-0 left-0 transition-all duration-300 z-40",
+        isSidebarOpen ? '' : '-translate-x-full',
+        isCollapsed ? 'w-[72px]' : 'w-72'
+      )}>
+        {isCollapsed ? renderCollapsedContent() : renderContent()}
+
+        {/* Toggle button — positioned at bottom edge */}
+        {isSidebarOpen && setIsCollapsed && (
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={cn(
+              "absolute bottom-16 -right-3.5 z-50 w-7 h-7 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center",
+              "shadow-md hover:shadow-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-all duration-200",
+              "text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400"
+            )}
+          >
+            {isCollapsed ? (
+              <PanelLeftOpen className="w-3.5 h-3.5" />
+            ) : (
+              <PanelLeftClose className="w-3.5 h-3.5" />
+            )}
+          </button>
+        )}
       </aside>
     </>
   );

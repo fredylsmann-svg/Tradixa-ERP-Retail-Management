@@ -20,6 +20,7 @@ export default function Layout({ children, currentPageName }) {
   const [isLoading, setIsLoading] = useState(true);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [userEmail, setUserEmail] = useState(null);
   const [userModules, setUserModules] = useState(null);
@@ -150,12 +151,14 @@ export default function Layout({ children, currentPageName }) {
           storePlan={store?.plan || 'free'}
           userEmail={userEmail}
           store={store}
+          isCollapsed={isCollapsed}
+          setIsCollapsed={setIsCollapsed}
         />
       </div>
       <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 print:ml-0 
-        ${isSidebarOpen ? 'lg:pl-72' : 'lg:pl-0'}`}>
+        ${isSidebarOpen ? (isCollapsed ? 'lg:pl-[72px]' : 'lg:pl-72') : 'lg:pl-0'}`}>
         <div className={`fixed top-0 right-0 z-40 print:hidden transition-all duration-300 
-          ${isSidebarOpen ? 'lg:left-72' : 'lg:left-0'} 
+          ${isSidebarOpen ? (isCollapsed ? 'lg:left-[72px]' : 'lg:left-72') : 'lg:left-0'} 
           ${isMobileOpen ? 'left-72' : 'left-0'}`}>
           <Header
             store={store}

@@ -338,7 +338,7 @@ export default function Suppliers({ store }) {
                       <TableCell className="text-slate-500 font-medium text-sm">{supplier.email || '-'}</TableCell>
                       <TableCell className="text-right">
                         {Number(supplier.advance_balance || 0) > 0 ? (
-                          <span className="text-sm font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">
+                          <span className="text-sm font-black text-amber-600">
                             Rp {new Intl.NumberFormat('id-ID').format(supplier.advance_balance)}
                           </span>
                         ) : (
