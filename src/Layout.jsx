@@ -168,7 +168,10 @@ export default function Layout({ children, currentPageName }) {
             setIsMobileOpen={setIsMobileOpen}
           />
         </div>
-        <main className="flex-1 p-4 md:p-6 bg-slate-50 dark:bg-slate-950 mt-16 print:p-0 print:bg-white flex flex-col">
+        <main 
+          className="flex-1 p-4 md:p-6 bg-slate-50 dark:bg-slate-950 print:p-0 print:bg-white flex flex-col"
+          style={{ marginTop: 'calc(env(safe-area-inset-top) + 64px)' }}
+        >
           <div className="-mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-6 print:hidden">
             <TrialNotificationBanner store={store} />
             <SubscriptionBanner store={store} />
