@@ -1085,8 +1085,8 @@ export default function SalesTransaction({ store }) {
                 </>
               )}
 
-              <div className="border rounded-lg overflow-x-auto w-full">
-                <Table>
+              <div className="border rounded-lg overflow-x-auto max-w-[85vw] sm:max-w-none w-full">
+                <Table className="min-w-[500px]">
                   <TableHeader>
                     <TableRow className="bg-slate-50">
                       <TableHead>Produk</TableHead>
