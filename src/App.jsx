@@ -154,9 +154,17 @@ const AppVisibilityCover = () => {
 
 function App() {
   useEffect(() => {
-    const unsubscribe = onForegroundMessage();
+    let unsubscribe = null;
+    
+    // Tunggu sampai Firebase selesai inisialisasi
+    onForegroundMessage().then((unsub) => {
+      if (unsub) unsubscribe = unsub;
+    });
+    
     return () => {
-      if (unsubscribe) unsubscribe();
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
     };
   }, []);
 

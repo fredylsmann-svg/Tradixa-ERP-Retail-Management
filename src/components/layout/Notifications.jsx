@@ -451,8 +451,8 @@ export default function Notifications({ store }) {
         table: 'purchase_requisitions',
         filter: `store_id=eq.${store.id}`
       }, () => {
-        // console.log('Realtime PR: PR updated/created!');
-        // loadNotifications();
+        console.log('Realtime PR: PR updated/created!');
+        loadNotifications();
       })
       .subscribe();
 

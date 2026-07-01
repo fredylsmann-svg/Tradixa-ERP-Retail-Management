@@ -18,14 +18,18 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase Cloud Messaging safely
 export let messaging = null;
-
-isSupported().then((supported) => {
+let messagingPromise = isSupported().then((supported) => {
   if (supported) {
     messaging = getMessaging(app);
+    return messaging;
   } else {
     console.warn('Firebase Messaging tidak didukung di browser ini (harus HTTPS atau localhost).');
+    return null;
   }
-}).catch(err => console.error("Error checking FCM support:", err));
+}).catch(err => {
+  console.error("Error checking FCM support:", err);
+  return null;
+});
 
 export const requestNotificationPermission = async () => {
   if (!messaging) return null;
@@ -52,10 +56,11 @@ export const requestNotificationPermission = async () => {
 };
 
 // Fungsi untuk mendengarkan pesan saat aplikasi sedang terbuka di layar (Foreground)
-export const onForegroundMessage = () => {
-  if (!messaging) return;
+export const onForegroundMessage = async () => {
+  const msg = await messagingPromise;
+  if (!msg) return null;
   
-  return onMessage(messaging, (payload) => {
+  return onMessage(msg, (payload) => {
     console.log('Pesan FCM diterima saat aplikasi terbuka: ', payload);
     
     // KITA MATIKAN TOAST FCM DI DESKTOP AGAR TIDAK DOUBLE DENGAN NOTIFICATIONS.JSX
