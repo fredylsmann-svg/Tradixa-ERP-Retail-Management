@@ -1,6 +1,6 @@
 module tradixa-backend
 
-go 1.26.4
+go 1.21
 
 require (
 	firebase.google.com/go/v4 v4.20.0
