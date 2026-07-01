@@ -112,16 +112,6 @@ export default function ProfileAccount({ store }) {
         setPushToken(token);
         setIsPushEnabled(true);
         sonnerToast.success('Notifikasi push berhasil diaktifkan untuk perangkat ini!');
-        
-        // Send a test notification immediately
-        await supabase.functions.invoke('send-push-notification', {
-          body: {
-            title: 'Notifikasi Berhasil Aktif!',
-            body: `Perangkat Anda sekarang terdaftar untuk menerima notifikasi push Tradixa ERP.`,
-            store_id: store.id,
-            target_user_id: user.id || user.auth_id
-          }
-        });
       }
     } catch (err) {
       console.error('Failed to toggle push notifications:', err);
@@ -530,25 +520,7 @@ export default function ProfileAccount({ store }) {
               )}
             </CardHeader>
             <CardContent className="p-8">
-              {store?.plan !== 'premium' ? (
-                // Premium Gating Banner
-                <div className="p-6 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-200/50 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
-                  <div className="flex flex-col md:flex-row items-center gap-4">
-                    <div className="text-left">
-                      <h4 className="font-black text-slate-900 text-sm">Fitur Khusus Paket Premium</h4>
-                      <p className="text-slate-500 text-xs mt-1 max-w-md">
-                        Notifikasi Push PWA hanya dapat diaktifkan oleh toko dengan paket berlangganan Premium.
-                      </p>
-                    </div>
-                  </div>
-                  <Button 
-                    onClick={() => navigate('/PricingPage')}
-                    className="bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black hover:opacity-90 rounded-xl h-10 px-6 shrink-0 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02]"
-                  >
-                    Upgrade ke Premium
-                  </Button>
-                </div>
-              ) : !isPushSupported ? (
+              { !isPushSupported ? (
                 // Browser Not Supported Banner
                 <div className="p-5 bg-red-50 dark:bg-red-950/30 border border-red-200/50 rounded-2xl flex items-center gap-3">
                   <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />

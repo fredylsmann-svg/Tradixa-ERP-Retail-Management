@@ -44,12 +44,19 @@ export const getCurrentDeviceToken = async () => {
     const msg = await initFirebaseMessaging();
     if (!msg) return null;
 
-    const registration = await navigator.serviceWorker.ready;
-    if (!registration) return null;
+    let registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) {
+      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    }
+    const activeRegistration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout SW")), 2000))
+    ]);
+    if (!activeRegistration) return null;
 
     return await getToken(msg, {
       vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
-      serviceWorkerRegistration: registration
+      serviceWorkerRegistration: activeRegistration
     });
   } catch (err) {
     console.error("[FCM] Error getting current device token:", err);
@@ -79,19 +86,27 @@ export const registerDeviceForPush = async (user, storeId) => {
       throw new Error("Izin notifikasi ditolak oleh pengguna. Silakan aktifkan izin notifikasi di pengaturan browser Anda.");
     }
 
-    // Get VitePWA active service worker registration with a 5-second timeout
-    const registration = await Promise.race([
+    // Pastikan Service Worker terdaftar sebelum meminta token
+    let registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) {
+      console.log("[FCM] Mendaftarkan Service Worker secara manual...");
+      registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    }
+    
+    // Tunggu sampai SW benar-benar ready (maksimal 5 detik agar tidak hang)
+    const activeRegistration = await Promise.race([
       navigator.serviceWorker.ready,
       new Promise((_, reject) => setTimeout(() => reject(new Error("PWA Service Worker tidak merespon. Pastikan Anda mengakses melalui koneksi aman HTTPS / Production Build.")), 5000))
     ]);
-    if (!registration) {
+    
+    if (!activeRegistration) {
       throw new Error("PWA Service Worker registration not ready.");
     }
 
     // Request FCM Token from Firebase
     const token = await getToken(msg, {
       vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
-      serviceWorkerRegistration: registration
+      serviceWorkerRegistration: activeRegistration
     });
 
     if (!token) {
@@ -113,20 +128,7 @@ export const registerDeviceForPush = async (user, storeId) => {
       deviceName = 'Linux Device';
     }
 
-    // Verify plan gating
-    const { data: store, error: storeError } = await supabase
-      .from('stores')
-      .select('plan')
-      .eq('id', storeId)
-      .single();
-
-    if (storeError || !store) {
-      throw new Error("Gagal memverifikasi paket toko Anda.");
-    }
-
-    if (store.plan !== 'premium') {
-      throw new Error("Notifikasi push eksklusif untuk toko dengan Paket Premium.");
-    }
+    // Validasi toko sudah dihapus agar gratis untuk semua paket
 
     // Get actual Supabase Auth User ID from active session to satisfy RLS Policy
     const { data: { session } } = await supabase.auth.getSession();
@@ -148,6 +150,9 @@ export const registerDeviceForPush = async (user, storeId) => {
 
     if (error) throw error;
 
+    // Sync ke tabel users agar Golang bisa membaca token ini
+    await supabase.from('users').update({ fcm_token: token }).eq('id', authUserId);
+
     return token;
   } catch (err) {
     console.error("[FCM] Failed to register device for push notifications:", err);
@@ -165,6 +170,12 @@ export const unregisterDeviceFromPush = async (token) => {
       .eq('fcm_token', token);
 
     if (error) throw error;
+
+    // Hapus juga dari tabel users agar Golang berhenti mengirim push
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.id) {
+      await supabase.from('users').update({ fcm_token: null }).eq('id', session.user.id);
+    }
   } catch (err) {
     console.error("[FCM] Failed to unregister device from push notifications:", err);
     throw err;

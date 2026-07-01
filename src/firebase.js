@@ -32,7 +32,8 @@ let messagingPromise = isSupported().then((supported) => {
 });
 
 export const requestNotificationPermission = async () => {
-  if (!messaging) return null;
+  const msg = await messagingPromise;
+  if (!msg) return null;
   
   try {
     const permission = await Notification.requestPermission();

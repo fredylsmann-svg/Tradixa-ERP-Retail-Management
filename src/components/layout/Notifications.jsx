@@ -73,11 +73,11 @@ export default function Notifications({ store }) {
         console.log('[Notifications] RPC fallback — using direct queries:', rpcFallback.message);
         const results = await Promise.all([
           supabase.from('products').select('id, name, stock, reorder_level, expired_date').eq('store_id', store.id).limit(200),
-          supabase.from('receivables').select('id, status, customer_name, amount, due_date, created_at').eq('store_id', store.id).eq('status', 'Belum Lunas').limit(100),
-          supabase.from('payables').select('id, status, supplier_name, amount, due_date, created_at').eq('store_id', store.id).eq('status', 'Belum Lunas').limit(100),
-          supabase.from('purchase_orders').select('id, status, po_number, supplier_name, supplier_signature, admin_signature, created_at, updated_date').eq('store_id', store.id).in('status', ['Negotiation', 'Approved', 'Sent']).limit(50),
-          supabase.from('purchase_requisitions').select('id, status, pr_number, timestamp_wib, created_at, updated_date').eq('store_id', store.id).in('status', ['Diajukan', 'Menunggu Level 2', 'Pending', 'Approved', 'Disetujui']).limit(50),
-          supabase.from('sales_transactions').select('id, customer_name, total, timestamp_wib, created_at, payment_status, payment_method').eq('store_id', store.id).eq('created_date', todayString).limit(50)
+          supabase.from('receivables').select('id, status, customer_name, amount, due_date, created_at').eq('store_id', store.id).eq('status', 'Belum Lunas').order('due_date', { ascending: true }).limit(100),
+          supabase.from('payables').select('id, status, supplier_name, amount, due_date, created_at').eq('store_id', store.id).eq('status', 'Belum Lunas').order('due_date', { ascending: true }).limit(100),
+          supabase.from('purchase_orders').select('id, status, po_number, supplier_name, supplier_signature, admin_signature, created_at, updated_date').eq('store_id', store.id).in('status', ['Negotiation', 'Approved', 'Sent']).order('created_at', { ascending: false }).limit(50),
+          supabase.from('purchase_requisitions').select('id, status, pr_number, timestamp_wib, created_at, updated_date').eq('store_id', store.id).in('status', ['Diajukan', 'Menunggu Level 2', 'Pending', 'Approved', 'Disetujui']).order('created_at', { ascending: false }).limit(50),
+          supabase.from('sales_transactions').select('id, customer_name, total, timestamp_wib, created_at, payment_status, payment_method').eq('store_id', store.id).eq('created_date', todayString).order('created_at', { ascending: false }).limit(50)
         ]);
         products = results[0].data || [];
         receivables = results[1].data || [];
@@ -218,16 +218,16 @@ export default function Notifications({ store }) {
             time: pr.timestamp_wib?.split(' ')[0] || 'Diajukan',
             timestamp: pr.created_at ? new Date(pr.created_at).getTime() : startOfDay - 6000
           });
-        } else if ((pr.status === 'Approved' || pr.status === 'Disetujui') && pr.updated_date === todayString) {
+        } else if ((pr.status === 'Approved' || pr.status === 'Disetujui') && pr.updated_date?.startsWith(todayString)) {
           alerts.push({
             id: `pr-app-${pr.id}`,
             type: 'pr_approved',
             icon: FileText,
             iconClass: 'text-emerald-600 bg-emerald-50',
             title: 'PR Disetujui',
-            message: `PR #${pr.pr_number} telah disetujui hari ini`,
+            message: `PR #${pr.pr_number} telah disetujui`,
             time: 'Disetujui',
-            timestamp: pr.created_at ? new Date(pr.created_at).getTime() : startOfDay - 6000
+            timestamp: pr.updated_date ? new Date(pr.updated_date.replace(' ', 'T')).getTime() : (pr.created_at ? new Date(pr.created_at).getTime() : startOfDay - 6000)
           });
         }
       });
@@ -267,7 +267,7 @@ export default function Notifications({ store }) {
             time: 'TTD Segera',
             timestamp: po.created_at ? new Date(po.created_at).getTime() : startOfDay - 8000
           });
-        } else if (po.status === 'Approved' && po.admin_signature && po.updated_date === todayString) {
+        } else if (po.status === 'Approved' && po.admin_signature && po.updated_date?.startsWith(todayString)) {
           alerts.push({
             id: `po-app-${po.id}`,
             type: 'po_approved',
@@ -276,7 +276,7 @@ export default function Notifications({ store }) {
             title: 'PO Disetujui',
             message: `PO #${po.po_number} telah resmi disetujui`,
             time: 'Selesai',
-            timestamp: po.created_at ? new Date(po.created_at).getTime() : startOfDay - 8000
+            timestamp: po.updated_date ? new Date(po.updated_date.replace(' ', 'T')).getTime() : (po.created_at ? new Date(po.created_at).getTime() : startOfDay - 8000)
           });
         }
       });

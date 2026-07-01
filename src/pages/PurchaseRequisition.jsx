@@ -320,6 +320,7 @@ export default function PurchaseRequisition({ store }) {
           status: finalStatus,
           approved_by: formattedApprover,
           approved_at: getCurrentTimeWIB(),
+          updated_date: getCurrentTimeWIB(),
           approval_history: newHistory
         });
 
