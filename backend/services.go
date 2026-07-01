@@ -20,8 +20,20 @@ func InitServices() error {
 	// Initialize Firebase
 	ctx := context.Background()
 	
-	// Try to read the local service account file first (for local development)
-	opt := option.WithCredentialsFile("serviceAccountKey.json")
+	// Try to read from Environment Variable first (For Render.com)
+	firebaseKeyJSON := os.Getenv("FIREBASE_SERVICE_ACCOUNT_KEY")
+	var opt option.ClientOption
+
+	if firebaseKeyJSON != "" {
+		// Use the JSON string directly from the Environment Variable
+		opt = option.WithCredentialsJSON([]byte(firebaseKeyJSON))
+		log.Println("Initializing Firebase using Environment Variable (Render.com mode)")
+	} else {
+		// Try to read the local service account file (for local development in VS Code)
+		opt = option.WithCredentialsFile("serviceAccountKey.json")
+		log.Println("Initializing Firebase using local serviceAccountKey.json file")
+	}
+
 	app, err := firebase.NewApp(ctx, nil, opt)
 	
 	if err != nil {
