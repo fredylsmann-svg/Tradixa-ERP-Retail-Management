@@ -85,5 +85,18 @@
     "typescript": "^5.8.2",
     "vite": "^6.1.0",
     "vite-plugin-pwa": "^1.3.0"
-  }
+  },
+  "description": "Tradixa adalah sistem manajemen retail dan ERP lengkap untuk optimalisasi operasional bisnis.",
+  "main": "postcss.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://fredylsmann@github.com/fredylsmann-svg/Tradixa-ERP-Retail-Management.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fredylsmann-svg/Tradixa-ERP-Retail-Management/issues"
+  },
+  "homepage": "https://github.com/fredylsmann-svg/Tradixa-ERP-Retail-Management#readme"
 }

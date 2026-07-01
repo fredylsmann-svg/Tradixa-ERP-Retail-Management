@@ -237,6 +237,7 @@ export const PLAN_TIERS = {
       maxPhotosPerProduct: 1,
       maxPhotoSizeMB: 10,
       maxProductPhotos: Infinity,
+      maxReconciliationUploads: Infinity,
       emailCredits: Infinity,
       emailCreditsPerMonth: Infinity,
       maxPR: Infinity,
@@ -274,7 +275,8 @@ export const DEV_EMAILS = [
 ];
 
 export function isModuleAccessible(planId, pageName, userEmail = null) {
-  if (userEmail && DEV_EMAILS.includes(userEmail.toLowerCase())) return true;
+  const emailToCheck = userEmail || currentUserEmail;
+  if (emailToCheck && DEV_EMAILS.includes(emailToCheck.toLowerCase())) return true;
   if (pageName === 'FundTransfers') {
     return planId === 'premium' || planId === 'enterprise';
   }
@@ -303,6 +305,9 @@ export function getPlanLimits(planId) {
   return (PLAN_TIERS[planId] || PLAN_TIERS.free).limits;
 }
 
+let currentUserEmail = null;
+export const setCurrentUserEmail = (email) => { currentUserEmail = email; };
+
 /**
  * Get effective limits based on store's current state (trial vs paid)
  * - Pro Trial: uses trialLimits (100 produk, 100 customer, 5 email, 5 PO, dll)
@@ -311,6 +316,23 @@ export function getPlanLimits(planId) {
  * - Free: uses free limits
  */
 export function getEffectiveLimits(store) {
+  // BYPASS LIMITS FOR DEVELOPER/OWNER EMAILS (e.g. ferdiarmond)
+  
+  // HMR safe fallback
+  let checkEmail = currentUserEmail;
+  if (!checkEmail) {
+     try {
+       const saved = localStorage.getItem('tradixa_last_user');
+       if (saved) {
+         checkEmail = JSON.parse(saved).email;
+       }
+     } catch(e) {}
+  }
+  
+  if (checkEmail && DEV_EMAILS.includes(checkEmail.toLowerCase())) {
+    return PLAN_TIERS.enterprise.limits;
+  }
+
   if (!store) return PLAN_TIERS.free.limits;
 
   const plan = store.plan || 'free';

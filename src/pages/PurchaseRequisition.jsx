@@ -161,6 +161,7 @@ export default function PurchaseRequisition({ store }) {
     return `${String(wibTime.getDate()).padStart(2, '0')}/${String(wibTime.getMonth() + 1).padStart(2, '0')}/${wibTime.getFullYear()} ${String(wibTime.getHours()).padStart(2, '0')}:${String(wibTime.getMinutes()).padStart(2, '0')}`;
   };
 
+
   const handleSubmit = async (status) => {
     if (!formData.department || formData.items.length === 0) return;
 
@@ -191,6 +192,7 @@ export default function PurchaseRequisition({ store }) {
           total_amount: grandTotal,
           status, // 'Draft' or 'Diajukan'
           requester: currentUser?.full_name || store?.owner_name || 'Administrator',
+          created_by_id: currentUser?.id,
           timestamp_wib: getCurrentTimeWIB()
         });
       }
@@ -727,6 +729,7 @@ export default function PurchaseRequisition({ store }) {
                 </Button>
               </PremiumGate>
             </div>
+
             <Button variant="outline" onClick={() => setShowItemMaster(true)} className="border-slate-200 text-slate-600 hover:bg-slate-50 font-bold rounded-xl h-11 px-6">
               <ShoppingCart className="w-4 h-4 mr-2" />
               Buat PR dari Item Master

@@ -268,6 +268,7 @@ export default function PurchaseOrders({ store }) {
         shipping_address: formData.shipping_address,
         shipping_via: formData.shipping_via === 'Lainnya' ? formData.custom_shipping_via : formData.shipping_via,
         notes: formData.notes,
+        created_by_id: currentUser?.id,
         timestamp_wib: getWIBTimestamp()
       };
 
@@ -363,6 +364,7 @@ export default function PurchaseOrders({ store }) {
         delivery_date: poFromPrData.delivery_date,
         shipping_via: poFromPrData.shipping_via === 'Lainnya' ? poFromPrData.custom_shipping_via : (poFromPrData.shipping_via || 'Kurir Internal'),
         notes: poFromPrData.notes,
+        created_by_id: currentUser?.id,
         timestamp_wib: getWIBTimestamp()
       };
 

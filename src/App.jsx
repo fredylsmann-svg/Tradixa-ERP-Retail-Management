@@ -15,7 +15,7 @@ import SignUp from '@/pages/SignUp';
 import ResetPassword from '@/pages/ResetPassword';
 import PublicTracker from './pages/PublicTracker';
 import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
-
+import { onForegroundMessage } from '@/firebase';
 // Lazy-loaded public pages (heavy components that don't need eager loading)
 const PublicPOSign = lazy(() => import('./pages/PublicPOSign'));
 const PublicGRNSign = lazy(() => import('./pages/PublicGRNSign'));
@@ -153,6 +153,13 @@ const AppVisibilityCover = () => {
 };
 
 function App() {
+  useEffect(() => {
+    const unsubscribe = onForegroundMessage();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
   return (
     <DateProvider>
     <AuthProvider>

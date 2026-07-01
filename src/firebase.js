@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
+import { toast } from 'sonner';
 
 // Mengambil config dari .env file
 const firebaseConfig = {
@@ -15,10 +16,20 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase Cloud Messaging and get a reference to the service
-export const messaging = getMessaging(app);
+// Initialize Firebase Cloud Messaging safely
+export let messaging = null;
+
+isSupported().then((supported) => {
+  if (supported) {
+    messaging = getMessaging(app);
+  } else {
+    console.warn('Firebase Messaging tidak didukung di browser ini (harus HTTPS atau localhost).');
+  }
+}).catch(err => console.error("Error checking FCM support:", err));
 
 export const requestNotificationPermission = async () => {
+  if (!messaging) return null;
+  
   try {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
@@ -42,8 +53,23 @@ export const requestNotificationPermission = async () => {
 
 // Fungsi untuk mendengarkan pesan saat aplikasi sedang terbuka di layar (Foreground)
 export const onForegroundMessage = () => {
+  if (!messaging) return;
+  
   return onMessage(messaging, (payload) => {
-    console.log('Pesan diterima saat aplikasi terbuka: ', payload);
-    // Di sini Anda bisa memunculkan Toast / Alert tambahan jika mau
+    console.log('Pesan FCM diterima saat aplikasi terbuka: ', payload);
+    
+    // KITA MATIKAN TOAST FCM DI DESKTOP AGAR TIDAK DOUBLE DENGAN NOTIFICATIONS.JSX
+    // Notifikasi FCM akan tetap masuk ke HP secara native!
+    
+    // Dispatch event agar Notifikasi Hitam (Notifications.jsx) bisa me-refresh data secara realtime
+    window.dispatchEvent(new CustomEvent('fcm-received', { detail: payload }));
+    
+    /*
+    toast.success(payload.notification?.title || 'Notifikasi Baru', {
+      description: payload.notification?.body,
+      duration: 5000,
+      position: 'top-right'
+    });
+    */
   });
 };

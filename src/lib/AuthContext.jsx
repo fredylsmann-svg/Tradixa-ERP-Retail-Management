@@ -3,8 +3,9 @@ import { api } from '@/api/client';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { requestNotificationPermission } from '@/firebase';
+import { setCurrentUserEmail } from '@/planConfig';
 
-const AuthContext = createContext();
+const AuthContext = createContext({});
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -62,6 +63,7 @@ export const AuthProvider = ({ children }) => {
       if (existingUser) {
         console.log('[Tradixa Auth] Existing user found in DB');
         setUser(existingUser);
+        setCurrentUserEmail(existingUser.email);
         setIsAuthenticated(true);
         localStorage.setItem('tradixa_last_user', JSON.stringify({
           name: existingUser.full_name,
@@ -99,6 +101,7 @@ export const AuthProvider = ({ children }) => {
         if (!insertError && newUser) {
           console.log('[Tradixa Auth] New user record created');
           setUser(newUser);
+          setCurrentUserEmail(newUser.email);
           setIsAuthenticated(true);
         } else if (insertError?.code === '23505') {
           // Race condition: Another request created the user milliseconds ago!
@@ -111,6 +114,7 @@ export const AuthProvider = ({ children }) => {
             
           if (existingUserRetry) {
             setUser(existingUserRetry);
+            setCurrentUserEmail(existingUserRetry.email);
             setIsAuthenticated(true);
           } else {
             throw insertError;
@@ -132,6 +136,7 @@ export const AuthProvider = ({ children }) => {
           role: 'owner',
           is_store_setup_completed: true // Assume true to break setup loops
         });
+        setCurrentUserEmail(sessionUser.email);
         setIsAuthenticated(true);
       }
     } finally {
@@ -147,8 +152,14 @@ export const AuthProvider = ({ children }) => {
     if (isAuthenticated && user) {
       requestNotificationPermission().then(async (token) => {
         if (token && token !== user.fcm_token) {
-          await supabase.from('users').update({ fcm_token: token }).eq('id', user.id);
-          console.log('[Tradixa Auth] FCM token updated in DB');
+          const { error } = await supabase.from('users').update({ fcm_token: token }).eq('id', user.id);
+          if (error) {
+            console.error('[Tradixa Auth] Gagal update FCM token:', error);
+          } else {
+            console.log('[Tradixa Auth] FCM token updated in DB');
+            // Update local state so it doesn't try again
+            setUser({ ...user, fcm_token: token });
+          }
         }
       });
     }
@@ -183,6 +194,7 @@ export const AuthProvider = ({ children }) => {
       } else if (event === 'SIGNED_OUT') {
         console.log('[Tradixa Auth] Event: SIGNED_OUT');
         setUser(null);
+        setCurrentUserEmail(null);
         setIsAuthenticated(false);
         authResolvedRef.current = true;
         setIsLoadingAuth(false);

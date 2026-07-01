@@ -96,36 +96,36 @@ export default function Notifications({ store }) {
 
       // Fetch CRM Reminders unconditionally (not in RPC yet)
       const { data: rawReminders } = await supabase.from('follow_up_reminders').select('id, title, customer_name, due_date, remind_days_before, priority, created_at').eq('store_id', store.id).eq('status', 'Pending').limit(50);
-      
+
       // 5. CRM Reminders
       rawReminders?.forEach(reminder => {
         if (!reminder.due_date) return;
         const due = new Date(reminder.due_date);
-        due.setHours(0,0,0,0);
-        
+        due.setHours(0, 0, 0, 0);
+
         const remindDays = reminder.remind_days_before || 0;
         const triggerDate = new Date(due);
         triggerDate.setDate(triggerDate.getDate() - remindDays);
-        
+
         const todayDate = new Date();
-        todayDate.setHours(0,0,0,0);
-        
+        todayDate.setHours(0, 0, 0, 0);
+
         // Show alert if today is exactly the trigger date or after (but not past due)
         if (todayDate >= triggerDate && todayDate <= due) {
-           let prefix = remindDays > 0 ? `[H-${remindDays}] ` : '';
-           if (todayDate > triggerDate) prefix = `[H-${Math.ceil((due - todayDate) / (1000 * 60 * 60 * 24))}] `;
-           if (todayDate.getTime() === due.getTime()) prefix = '[HARI INI] ';
-           
-           alerts.push({
-             id: `reminder-${reminder.id}`,
-             type: 'crm_reminder',
-             icon: Bell,
-             iconClass: reminder.priority === 'High' ? 'text-red-600 bg-red-50' : 'text-blue-600 bg-blue-50',
-             title: 'Pengingat Follow-Up',
-             message: `${prefix}${reminder.title} - ${reminder.customer_name || 'Customer'}`,
-             time: `Jatuh tempo: ${reminder.due_date}`,
-             timestamp: reminder.created_at ? new Date(reminder.created_at).getTime() : startOfDay - 9000
-           });
+          let prefix = remindDays > 0 ? `[H-${remindDays}] ` : '';
+          if (todayDate > triggerDate) prefix = `[H-${Math.ceil((due - todayDate) / (1000 * 60 * 60 * 24))}] `;
+          if (todayDate.getTime() === due.getTime()) prefix = '[HARI INI] ';
+
+          alerts.push({
+            id: `reminder-${reminder.id}`,
+            type: 'crm_reminder',
+            icon: Bell,
+            iconClass: reminder.priority === 'High' ? 'text-red-600 bg-red-50' : 'text-blue-600 bg-blue-50',
+            title: 'Pengingat Follow-Up',
+            message: `${prefix}${reminder.title} - ${reminder.customer_name || 'Customer'}`,
+            time: `Jatuh tempo: ${reminder.due_date}`,
+            timestamp: reminder.created_at ? new Date(reminder.created_at).getTime() : startOfDay - 9000
+          });
         }
       });
 
@@ -286,7 +286,7 @@ export default function Notifications({ store }) {
         const saleTimestamp = sale.created_at ? new Date(sale.created_at).getTime() : new Date().getTime();
         const isPending = sale.payment_status === 'Pending';
         const isQRIS = sale.payment_method === 'QRIS' || sale.payment_method === 'QRIS / E-Wallet';
-        
+
         alerts.push({
           id: `sale-${sale.id}`,
           type: isPending ? 'sale_pending' : 'new_sale',
@@ -422,8 +422,8 @@ export default function Notifications({ store }) {
         table: 'sales_transactions',
         filter: `store_id=eq.${store.id}`
       }, () => {
-        // New sale — refresh notifications immediately
-        setTimeout(() => loadNotifications(), 500);
+        // console.log('Realtime Sales: New transaction!');
+        // loadNotifications();
       })
       .subscribe();
 
@@ -451,14 +451,33 @@ export default function Notifications({ store }) {
         table: 'purchase_requisitions',
         filter: `store_id=eq.${store.id}`
       }, () => {
-        // PR status or entry changed — refresh immediately
-        setTimeout(() => loadNotifications(), 500);
+        // console.log('Realtime PR: PR updated/created!');
+        // loadNotifications();
       })
       .subscribe();
+
+    // REALTIME FCM BRIDGE
+    // Menangkap sinyal FCM dari firebase.js dan memaksa Notifikasi Hitam untuk refresh seketika!
+    const handleFCM = () => {
+      console.log('Realtime FCM Bridge triggered: Fetching new data...');
+      setTimeout(() => loadNotifications(), 300); // 300ms delay to ensure DB transaction committed
+    };
+    window.addEventListener('fcm-received', handleFCM);
+    
+    // JUGA TANGKAP DARI SERVICE WORKER (jika browser menganggap tab ini background)
+    const fcmChannel = new BroadcastChannel('fcm-channel');
+    fcmChannel.onmessage = (event) => {
+      if (event.data && event.data.type === 'FCM_RECEIVED') {
+        console.log('Realtime FCM Bridge (dari Service Worker) triggered!');
+        setTimeout(() => loadNotifications(), 300);
+      }
+    };
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('fcm-received', handleFCM);
+      fcmChannel.close();
       supabase.removeChannel(salesChannel);
       supabase.removeChannel(poChannel);
       supabase.removeChannel(prChannel);

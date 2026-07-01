@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"firebase.google.com/go/v4/messaging"
@@ -32,8 +33,11 @@ func handleNotificationWebhook(c *gin.Context) {
 	if payload.Type == "UPDATE" || payload.Type == "INSERT" {
 		status, _ := payload.Record["status"].(string)
 		var title, body string
+		var requiredAuth string
+		var notifyCreatorOnly bool
 		
 		if status == "Approved" || status == "Disetujui" {
+			notifyCreatorOnly = true
 			if payload.Table == "purchase_orders" {
 				poNumber, _ := payload.Record["po_number"].(string)
 				title = "PO Disetujui! ✅"
@@ -48,23 +52,25 @@ func handleNotificationWebhook(c *gin.Context) {
 				poNumber, _ := payload.Record["po_number"].(string)
 				title = "Pengajuan PO Baru 📝"
 				body = fmt.Sprintf("PO #%s butuh persetujuan Anda.", poNumber)
+				requiredAuth = "APPROVE_PO"
 			} else if payload.Table == "purchase_requisitions" {
 				prNumber, _ := payload.Record["pr_number"].(string)
 				title = "Pengajuan PR Baru 📝"
 				body = fmt.Sprintf("PR #%s butuh persetujuan Anda.", prNumber)
+				requiredAuth = "APPROVE_PR_L1"
 			}
 		}
 
 		if title != "" {
 			
-			// Get created_by to notify the creator
-			createdBy, _ := payload.Record["created_by"].(string)
+			// Get created_by_id to notify the creator
+			createdBy, _ := payload.Record["created_by_id"].(string)
 			if createdBy == "" {
 				createdBy = "00000000-0000-0000-0000-000000000000" // dummy if empty
 			}
 			
-			log.Printf("Fetching tokens for creator: %s and purchasing roles...", createdBy)
-			tokens, err := fetchTargetFCMTokens(createdBy)
+			log.Printf("Fetching tokens for creator: %s and required auth: %s (notifyCreatorOnly: %v)...", createdBy, requiredAuth, notifyCreatorOnly)
+			tokens, err := fetchTargetFCMTokens(createdBy, requiredAuth, notifyCreatorOnly)
 			if err != nil {
 				log.Printf("Error fetching tokens: %v", err)
 			}
@@ -95,7 +101,7 @@ func handleNotificationWebhook(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "processed"})
 }
 
-func fetchTargetFCMTokens(creatorID string) ([]string, error) {
+func fetchTargetFCMTokens(creatorID string, requiredAuth string, notifyCreatorOnly bool) ([]string, error) {
 	supabaseURL := os.Getenv("SUPABASE_URL")
 	supabaseKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
 
@@ -103,10 +109,24 @@ func fetchTargetFCMTokens(creatorID string) ([]string, error) {
 		return nil, fmt.Errorf("supabase credentials not configured")
 	}
 
-	// Query users who have an FCM token AND (are owner/manager/purchasing OR created this document)
-	// PostgREST syntax: or=(role.in.(owner,manager,purchasing,admin),id.eq.creatorID)
-	query := fmt.Sprintf("select=fcm_token&fcm_token=not.is.null&or=(role.in.(owner,manager,purchasing,admin),id.eq.%s)", creatorID)
-	reqURL := fmt.Sprintf("%s/rest/v1/users?%s", supabaseURL, query)
+	q := url.Values{}
+	q.Add("select", "fcm_token")
+	q.Add("fcm_token", "not.is.null")
+
+	if notifyCreatorOnly {
+		// Hanya notifikasi pembuat dokumen (karena ini notifikasi Approval)
+		q.Add("id", fmt.Sprintf("eq.%s", creatorID))
+	} else if requiredAuth != "" {
+		// Include users with explicit authority, plus generic owner/admin roles, OR the creator
+		roleFilter := fmt.Sprintf("(role.in.(owner,admin),authorities.cs.[\"%s\"],id.eq.%s)", requiredAuth, creatorID)
+		q.Add("or", roleFilter)
+	} else {
+		// Fallback
+		roleFilter := fmt.Sprintf("(role.in.(owner,manager,purchasing,admin),id.eq.%s)", creatorID)
+		q.Add("or", roleFilter)
+	}
+
+	reqURL := fmt.Sprintf("%s/rest/v1/users?%s", supabaseURL, q.Encode())
 	
 	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
