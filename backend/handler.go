@@ -36,24 +36,27 @@ func handleNotificationWebhook(c *gin.Context) {
 		var requiredAuth string
 		var notifyCreatorOnly bool
 		
-		if status == "Approved" || status == "Disetujui" {
+		switch status {
+		case "Approved", "Disetujui":
 			notifyCreatorOnly = true
-			if payload.Table == "purchase_orders" {
+			switch payload.Table {
+			case "purchase_orders":
 				poNumber, _ := payload.Record["po_number"].(string)
 				title = "PO Disetujui! ✅"
 				body = fmt.Sprintf("Purchase Order %s telah disetujui.", poNumber)
-			} else if payload.Table == "purchase_requisitions" {
+			case "purchase_requisitions":
 				prNumber, _ := payload.Record["pr_number"].(string)
 				title = "PR Disetujui! ✅"
 				body = fmt.Sprintf("Purchase Requisition %s telah disetujui.", prNumber)
 			}
-		} else if status == "Diajukan" || status == "Menunggu Level 2" {
-			if payload.Table == "purchase_orders" {
+		case "Diajukan", "Menunggu Level 2":
+			switch payload.Table {
+			case "purchase_orders":
 				poNumber, _ := payload.Record["po_number"].(string)
 				title = "Pengajuan PO Baru 📝"
 				body = fmt.Sprintf("PO #%s butuh persetujuan Anda.", poNumber)
 				requiredAuth = "APPROVE_PO"
-			} else if payload.Table == "purchase_requisitions" {
+			case "purchase_requisitions":
 				prNumber, _ := payload.Record["pr_number"].(string)
 				title = "Pengajuan PR Baru 📝"
 				body = fmt.Sprintf("PR #%s butuh persetujuan Anda.", prNumber)
