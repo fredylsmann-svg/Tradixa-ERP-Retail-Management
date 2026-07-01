@@ -14,7 +14,7 @@ CREATE OR REPLACE FUNCTION notify_backend_on_change()
 RETURNS TRIGGER AS $$
 DECLARE
     payload JSONB;
-    backend_url TEXT := 'https://your-cloud-run-url.a.run.app/webhook/notifications'; -- Ganti dengan URL Cloud Run Anda nanti
+    backend_url TEXT := 'https://tradixa-erp-retail-management-production.up.railway.app/webhook/notifications';
 BEGIN
     payload := json_build_object(
         'type', TG_OP,
