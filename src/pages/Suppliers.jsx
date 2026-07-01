@@ -384,14 +384,15 @@ export default function Suppliers({ store }) {
       <Dialog open={!!viewingSupplier} onOpenChange={() => setViewingSupplier(null)}>
         <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white border-none rounded-xl">
           {viewingSupplier && (
-            <div className="flex flex-col max-h-[85vh]">
-              {/* Header with gradient */}
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 pt-8 pb-12 relative">
+            <div className="overflow-x-auto w-full">
+              <div className="flex flex-col max-h-[85vh] min-w-[500px]">
+                {/* Header with gradient */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 pt-8 pb-16 relative">
                 <p className="text-blue-200 text-xs font-bold uppercase tracking-widest">Supplier Profile</p>
               </div>
 
-              {/* Profile Card overlapping header */}
-              <div className="px-8 -mt-8">
+              {/* Profile Card below header */}
+              <div className="px-8 mt-2">
                 <Card className="border-none shadow-xl rounded-xl overflow-hidden">
                   <CardContent className="p-6">
                     <div className="flex items-center gap-5">
@@ -578,6 +579,7 @@ export default function Suppliers({ store }) {
                     <p className="text-sm text-slate-700">{viewingSupplier.notes}</p>
                   </div>
                 )}
+              </div>
               </div>
             </div>
           )}
