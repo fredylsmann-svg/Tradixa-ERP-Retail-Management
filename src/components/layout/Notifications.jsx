@@ -397,7 +397,7 @@ export default function Notifications({ store }) {
         // Tab kembali aktif — tunggu sebentar agar auth token stabil, lalu reload
         setTimeout(() => {
           loadNotifications();
-        }, 1500);
+        }, 500); // Dipercepat menjadi 500ms agar di HP lebih responsif
 
         // Restart interval (yang lama mungkin sudah throttled oleh browser)
         if (intervalRef.current) clearInterval(intervalRef.current);
@@ -412,6 +412,11 @@ export default function Notifications({ store }) {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', () => {
+      if (document.visibilityState === 'visible') {
+        setTimeout(loadNotifications, 300); // Extra pancingan saat HP di-unlock
+      }
+    });
     // REALTIME: Instant notifications for sales & PO changes
     // This supplements the 3-minute polling for instant critical updates
     const salesChannel = supabase
