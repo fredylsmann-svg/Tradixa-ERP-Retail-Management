@@ -112,24 +112,34 @@ const AppVisibilityCover = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    const showCover = () => setIsVisible(true);
+    const hideCover = () => {
+      setTimeout(() => setIsVisible(false), 100);
+    };
+
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        setIsVisible(true);
+        showCover();
       } else {
-        // Small delay when coming back to prevent flashing
-        setTimeout(() => {
-          setIsVisible(false);
-        }, 100);
+        hideCover();
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", showCover);
+    window.addEventListener("focus", hideCover);
+    window.addEventListener("pagehide", showCover);
+    window.addEventListener("pageshow", hideCover);
     
     // Check initial state
     handleVisibilityChange();
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", showCover);
+      window.removeEventListener("focus", hideCover);
+      window.removeEventListener("pagehide", showCover);
+      window.removeEventListener("pageshow", hideCover);
     };
   }, []);
 
