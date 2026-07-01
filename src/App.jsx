@@ -1,5 +1,4 @@
-
-import { Suspense, lazy } from "react"
+import { Suspense, lazy, useState, useEffect } from "react"
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -108,6 +107,41 @@ const LoginRoute = () => {
   return <Login />;
 };
 
+// Component to cover the app with a logo when it goes to the background (app switcher)
+const AppVisibilityCover = () => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setIsVisible(true);
+      } else {
+        // Small delay when coming back to prevent flashing
+        setTimeout(() => {
+          setIsVisible(false);
+        }, 100);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    // Check initial state
+    handleVisibilityChange();
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
+  if (!isVisible) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white">
+      <img src={tradixaLogo} alt="Tradixa" className="w-40 md:w-60 h-auto object-contain" />
+    </div>
+  );
+};
+
 function App() {
   return (
     <DateProvider>
@@ -115,6 +149,7 @@ function App() {
     <SettingsProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
+          <AppVisibilityCover />
           <NavigationTracker />
           <Suspense fallback={<LoadingFallback />}>
           <Routes>
