@@ -27,3 +27,6 @@ dist-ssr
 
 .env
 supabase/.temp/
+
+# Firebase Credentials
+serviceAccountKey.json

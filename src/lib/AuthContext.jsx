@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect, useRef, useCallb
 import { api } from '@/api/client';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { requestNotificationPermission } from '@/firebase';
 
 const AuthContext = createContext();
 
@@ -141,6 +142,17 @@ export const AuthProvider = ({ children }) => {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      requestNotificationPermission().then(async (token) => {
+        if (token && token !== user.fcm_token) {
+          await supabase.from('users').update({ fcm_token: token }).eq('id', user.id);
+          console.log('[Tradixa Auth] FCM token updated in DB');
+        }
+      });
+    }
+  }, [user, isAuthenticated]);
 
   useEffect(() => {
     mountedRef.current = true;
