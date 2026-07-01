@@ -20,14 +20,17 @@ func InitServices() error {
 	// Initialize Firebase
 	ctx := context.Background()
 	
-	// Read Firebase Service Account from Environment Variable
-	// In Cloud Run, it's common to mount the service account as a secret file, or pass as base64 ENV
+	// Try to read the local service account file first (for local development)
 	opt := option.WithCredentialsFile("serviceAccountKey.json")
-	
 	app, err := firebase.NewApp(ctx, nil, opt)
+	
 	if err != nil {
-		log.Printf("Warning: Failed to initialize Firebase App (maybe serviceAccountKey.json is missing?): %v", err)
-		return nil // Don't crash locally if key is missing, just return
+		log.Printf("Local serviceAccountKey.json not found. Falling back to Google Cloud Default Credentials...")
+		// Fallback for Cloud Run: Use Application Default Credentials automatically
+		app, err = firebase.NewApp(ctx, nil)
+		if err != nil {
+			return fmt.Errorf("failed to initialize Firebase App: %v", err)
+		}
 	}
 
 	fcmClient, err = app.Messaging(ctx)
