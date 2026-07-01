@@ -1034,7 +1034,7 @@ export default function PurchaseRequisition({ store }) {
             <DialogTitle>Buat PR Berdasarkan Item Master</DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-hidden flex flex-col p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto flex flex-col p-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0">
               <div className="space-y-1.5">
                 <Label className="text-xs text-slate-500">Department</Label>
@@ -1058,7 +1058,7 @@ export default function PurchaseRequisition({ store }) {
               <Input placeholder="Cari Kode atau Nama Item..." className="pl-10 h-10 border-slate-200 focus:ring-slate-500" value={itemSearch} onChange={e => setItemSearch(e.target.value)} />
             </div>
 
-            <div className="flex-1 overflow-y-auto border rounded-xl bg-white shadow-sm">
+            <div className="flex-1 overflow-y-auto border rounded-xl bg-white shadow-sm min-h-[300px]">
               <Table>
                 <TableHeader className="bg-slate-50 sticky top-0 z-10">
                   <TableRow>
