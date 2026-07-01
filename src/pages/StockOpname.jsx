@@ -27,10 +27,12 @@ import PDAOpnameCard from '@/components/wms/PDAOpnameCard';
 import {
   PackageCheck, Plus, Search, Eye, CheckCircle2, XCircle, ArrowUpCircle, ArrowDownCircle,
   MinusCircle, Loader2, ScanLine, FileText, ChevronRight, Package, AlertTriangle, Info, Calendar, MapPin, UserCheck, X,
-  Download, Printer, RefreshCw, Shield, Smartphone, Sparkles
+  Download, Printer, RefreshCw, Shield, Smartphone, Sparkles, Star
 } from 'lucide-react';
 import { DialogTrigger } from '@/components/ui/dialog';
 import PremiumGate from '@/components/ui/PremiumGate';
+import { useQuickAccess } from '@/contexts/QuickAccessContext';
+import { toast as sonnerToast } from 'sonner';
 
 const STATUS_COLORS = {
   'Draft': 'bg-slate-100 text-slate-700',
@@ -100,6 +102,8 @@ function OpnameFlowchart() {
 
 export default function StockOpname({ store }) {
   const { toast } = useToast();
+  const { toggleQuickAccess, isQuickAccess } = useQuickAccess();
+  const isFavorited = isQuickAccess('Stock Opname');
   const [opnames, setOpnames] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -471,7 +475,35 @@ export default function StockOpname({ store }) {
             <PackageCheck className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-wide">Stock Opname</h1>
+            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-wide flex items-center gap-2">
+              Stock Opname
+              <button
+                onClick={() => {
+                  toggleQuickAccess('Stock Opname');
+                  const wasAdded = !isFavorited;
+                  sonnerToast(
+                    wasAdded ? 'Berhasil!' : 'Dihapus',
+                    {
+                      description: wasAdded
+                        ? `Menu Stock Opname berhasil ditambahkan ke Quick Access`
+                        : `Menu Stock Opname dihapus dari Quick Access`,
+                      duration: 2500,
+                    }
+                  );
+                }}
+                className="flex-shrink-0 p-0.5 rounded-md transition-all duration-200 hover:scale-110 active:scale-95 translate-y-[1px]"
+                title={isFavorited ? 'Hapus dari Quick Access' : 'Tambah ke Quick Access'}
+              >
+                <Star
+                  strokeWidth={isFavorited ? 2.5 : 2}
+                  className={`w-[20px] h-[20px] transition-colors duration-200 ${
+                    isFavorited
+                      ? 'fill-amber-400 text-amber-400 drop-shadow-sm'
+                      : 'text-slate-300 dark:text-slate-600 hover:text-amber-400'
+                  }`}
+                />
+              </button>
+            </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">Verifikasi stok fisik vs stok sistem</p>
           </div>
         </div>

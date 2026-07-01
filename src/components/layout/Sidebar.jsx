@@ -14,9 +14,10 @@ import {
   Workflow, ChevronDown, Menu, X, MessageCircle, Award, Layers, Mail, Zap, Megaphone, Banknote, PieChart, Contact, Landmark, Coins,
   BookOpen, ReceiptText, LineChart, BarChart, Activity, Warehouse, ClipboardCheck, MapPin, Palette, Boxes, BarChart3, HandCoins, History,
   Lock, CreditCard as CreditCardIcon, Calculator, FileSignature, PackageCheck, RotateCcw, Bot,
-  PanelLeftClose, PanelLeftOpen
+  PanelLeftClose, PanelLeftOpen, Star
 } from 'lucide-react';
 import WarehouseTransferIcon from '@/components/icons/WarehouseTransferIcon';
+import { useQuickAccess } from '@/contexts/QuickAccessContext';
 
 const getFilteredMenuGroups = (isOwner) => {
   const allGroups = [
@@ -239,17 +240,37 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
     return groups;
   }, [isOwner, isLoading, userModules]);
 
+  // Quick Access: inject dynamic group at top of sidebar
+  const { quickAccessItems } = useQuickAccess();
+
+  const finalMenuGroups = useMemo(() => {
+    // Collect all items from all groups to find matching favorites
+    const allItems = menuGroups.flatMap(g => g.items);
+    const quickItems = (quickAccessItems || [])
+      .map(key => allItems.find(item => item.page === key || item.name === key))
+      .filter(Boolean);
+
+    const quickAccessGroup = {
+      title: 'Quick Access',
+      icon: Zap,
+      isQuickAccess: true,
+      items: quickItems
+    };
+
+    return [quickAccessGroup, ...menuGroups];
+  }, [menuGroups, quickAccessItems]);
+
   const [expandedGroups, setExpandedGroups] = useState({});
   const scrollContainerRef = React.useRef(null);
   const scrollPositionRef = React.useRef(0);
 
   useEffect(() => {
     const initialExpanded = {};
-    menuGroups.forEach(group => {
+    finalMenuGroups.forEach(group => {
       initialExpanded[group.title] = true;
     });
     setExpandedGroups(initialExpanded);
-  }, [menuGroups]);
+  }, [finalMenuGroups]);
 
   const toggleGroup = (e, title) => {
     e.preventDefault();
@@ -274,7 +295,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
 
       {/* Menu items - icons only with tooltip */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto py-2 min-h-0">
-        {menuGroups.map((group) => (
+        {finalMenuGroups.map((group) => (
           <div key={group.title} className="mb-1">
             {/* Divider line between groups */}
             <div className="mx-3 my-1.5 h-px bg-slate-100 dark:bg-slate-800" />
@@ -339,7 +360,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
       </div>
 
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto py-4 min-h-0">
-        {menuGroups.map((group) => (
+        {finalMenuGroups.map((group) => (
           <div key={group.title} className="mb-2">
             <button
               onClick={(e) => toggleGroup(e, group.title)}
@@ -359,8 +380,18 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
               <div className="relative space-y-1 px-2 pl-4 group/list">
                 <div className={cn(
                   "absolute left-3 top-0 bottom-0 w-[2px] transition-colors duration-300",
-                  "bg-slate-200 dark:bg-slate-700 group-hover/list:bg-blue-400/50 dark:group-hover/list:bg-blue-500/50"
+                  group.isQuickAccess
+                    ? "bg-amber-300/50 dark:bg-amber-500/30"
+                    : "bg-slate-200 dark:bg-slate-700 group-hover/list:bg-blue-400/50 dark:group-hover/list:bg-blue-500/50"
                 )} />
+
+                {/* Empty state for Quick Access */}
+                {group.isQuickAccess && group.items.length === 0 && (
+                  <div className="px-4 py-3 text-xs text-slate-400 dark:text-slate-500 italic flex items-center gap-2">
+                    <Star className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" />
+                    <span>Klik ⭐ di header untuk menambahkan</span>
+                  </div>
+                )}
 
                 {group.items.map((item) => {
                   const Icon = item.icon;

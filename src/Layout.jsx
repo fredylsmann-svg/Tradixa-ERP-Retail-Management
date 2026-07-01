@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { QuickAccessProvider } from '@/contexts/QuickAccessContext';
 import { api } from '@/api/client';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
@@ -141,6 +142,7 @@ export default function Layout({ children, currentPageName }) {
   }
 
   return (
+    <QuickAccessProvider>
     <div className="min-h-screen min-h-[100dvh] bg-slate-50 dark:bg-slate-950 flex flex-col lg:flex-row">
       <div className="print:hidden">
         <Sidebar
@@ -166,6 +168,7 @@ export default function Layout({ children, currentPageName }) {
             setIsSidebarOpen={setIsSidebarOpen}
             isMobileOpen={isMobileOpen}
             setIsMobileOpen={setIsMobileOpen}
+            currentPageName={currentPageName}
           />
         </div>
         <main 
@@ -201,5 +204,6 @@ export default function Layout({ children, currentPageName }) {
       <Toaster />
       <SonnerToaster position="top-center" />
     </div>
+    </QuickAccessProvider>
   );
 }
