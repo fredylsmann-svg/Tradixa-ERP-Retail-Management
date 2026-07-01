@@ -29,25 +29,33 @@ func handleNotificationWebhook(c *gin.Context) {
 
 	log.Printf("Received Webhook: Table=%s, Type=%s", payload.Table, payload.Type)
 
-	if payload.Type == "UPDATE" {
+	if payload.Type == "UPDATE" || payload.Type == "INSERT" {
 		status, _ := payload.Record["status"].(string)
+		var title, body string
+		
 		if status == "Approved" || status == "Disetujui" {
-			
-			var title, body string
-			
 			if payload.Table == "purchase_orders" {
 				poNumber, _ := payload.Record["po_number"].(string)
-				title = "PO Disetujui!"
+				title = "PO Disetujui! ✅"
 				body = fmt.Sprintf("Purchase Order %s telah disetujui.", poNumber)
 			} else if payload.Table == "purchase_requisitions" {
 				prNumber, _ := payload.Record["pr_number"].(string)
-				title = "PR Disetujui!"
+				title = "PR Disetujui! ✅"
 				body = fmt.Sprintf("Purchase Requisition %s telah disetujui.", prNumber)
-			} else {
-				// Unsupported table
-				c.JSON(http.StatusOK, gin.H{"status": "ignored"})
-				return
 			}
+		} else if status == "Diajukan" || status == "Menunggu Level 2" {
+			if payload.Table == "purchase_orders" {
+				poNumber, _ := payload.Record["po_number"].(string)
+				title = "Pengajuan PO Baru 📝"
+				body = fmt.Sprintf("PO #%s butuh persetujuan Anda.", poNumber)
+			} else if payload.Table == "purchase_requisitions" {
+				prNumber, _ := payload.Record["pr_number"].(string)
+				title = "Pengajuan PR Baru 📝"
+				body = fmt.Sprintf("PR #%s butuh persetujuan Anda.", prNumber)
+			}
+		}
+
+		if title != "" {
 			
 			// Get created_by to notify the creator
 			createdBy, _ := payload.Record["created_by"].(string)
@@ -76,7 +84,7 @@ func handleNotificationWebhook(c *gin.Context) {
 			// Supabase Fallback Insert
 			storeID, _ := payload.Record["store_id"].(string)
 			if storeID != "" {
-				err = insertSupabaseFallback(storeID, title, body, payload.Table)
+				err := insertSupabaseFallback(storeID, title, body, payload.Table)
 				if err != nil {
 					log.Printf("Supabase Fallback Error: %v", err)
 				}
