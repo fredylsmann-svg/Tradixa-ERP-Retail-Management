@@ -27,8 +27,10 @@ import PageHeader from '@/components/layout/PageHeader';
 import { useTaxRate } from '@/hooks/useTaxRate';
 import { getEffectiveLimits } from '@/planConfig';
 import { toast as sonnerToast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function PurchaseOrders({ store }) {
+  const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const { ppnRate, ppnLabel, ppnDecimal } = useTaxRate(store?.id);
   const [orders, setOrders] = useState([]);
