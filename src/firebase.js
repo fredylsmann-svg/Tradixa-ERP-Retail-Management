@@ -64,18 +64,7 @@ export const onForegroundMessage = async () => {
   return onMessage(msg, (payload) => {
     console.log('Pesan FCM diterima saat aplikasi terbuka: ', payload);
     
-    // KITA MATIKAN TOAST FCM DI DESKTOP AGAR TIDAK DOUBLE DENGAN NOTIFICATIONS.JSX
-    // Notifikasi FCM akan tetap masuk ke HP secara native!
-    
     // Dispatch event agar Notifikasi Hitam (Notifications.jsx) bisa me-refresh data secara realtime
     window.dispatchEvent(new CustomEvent('fcm-received', { detail: payload }));
-    
-    /*
-    toast.success(payload.notification?.title || 'Notifikasi Baru', {
-      description: payload.notification?.body,
-      duration: 5000,
-      position: 'top-right'
-    });
-    */
   });
 };

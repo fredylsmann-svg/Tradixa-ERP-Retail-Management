@@ -117,6 +117,15 @@ export default function PurchaseRequisition({ store }) {
     setIsLoading(false);
   };
 
+  useEffect(() => {
+    const handleFCMRefresh = () => {
+      console.log("FCM Triggered: Mereload tabel PR...");
+      loadPrs();
+    };
+    window.addEventListener('fcm-received', handleFCMRefresh);
+    return () => window.removeEventListener('fcm-received', handleFCMRefresh);
+  }, [store]);
+
   const currentPrs = prs.filter(pr => {
     const isDateMatch = matchesDate(pr, selectedDate);
     const isStatusMatch = statusFilter === 'Semua Status' || pr.status === statusFilter;
