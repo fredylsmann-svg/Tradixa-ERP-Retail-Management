@@ -1165,8 +1165,8 @@ export default function SalesTransaction({ store }) {
 
       {/* Modal Tampilan QRIS (Gambar 3) */}
       <Dialog open={!!viewingQrisTx} onOpenChange={() => setViewingQrisTx(null)}>
-        <DialogContent className="max-w-md rounded-2xl p-6 border-none bg-slate-950 text-white flex flex-col items-center text-center">
-          <DialogHeader className="w-full flex flex-col items-center">
+        <DialogContent hideFullscreen hideClose className="max-w-md rounded-2xl p-6 border-none bg-slate-950 text-white flex flex-col items-center text-center">
+          <DialogHeader className="w-full flex flex-col items-center sm:pr-0 sm:text-center">
             <div className="w-14 h-14 bg-amber-500/10 rounded-full flex items-center justify-center mb-3">
               <QrCode className="w-8 h-8 text-amber-500" />
             </div>
@@ -1253,8 +1253,7 @@ export default function SalesTransaction({ store }) {
             )}
             <Button
               onClick={() => setViewingQrisTx(null)}
-              variant="outline"
-              className="flex-1 h-11 border-slate-800 text-white hover:bg-slate-900 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5"
+              className="flex-1 h-11 bg-transparent border border-slate-800 text-white hover:bg-slate-900 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5"
             >
               <X className="w-4 h-4" /> Tutup
             </Button>

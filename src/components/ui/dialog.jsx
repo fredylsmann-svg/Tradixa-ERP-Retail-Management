@@ -40,27 +40,29 @@ const DialogContent = React.forwardRef(({ className, children, hideClose = false
           isFullscreen && "!max-w-[95vw] !w-[95vw] !h-[95vh] !max-h-[95vh] !rounded-2xl md:!p-10 text-lg [&_input]:text-lg [&_input]:h-14 [&_label]:text-base [&_h2]:text-3xl [&_td]:text-base [&_th]:text-base"
         )}
         {...props}>
-        <div className="flex justify-end -mb-4 sm:absolute sm:right-3 sm:top-3 sm:mb-0 z-50">
-          <div className="flex items-center gap-1 bg-white/90 dark:bg-background backdrop-blur-md p-1 rounded-full shadow-sm border border-slate-200 dark:border-slate-700">
-            {!hideFullscreen && (
-              <button
-                type="button"
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-white/10 opacity-80 ring-offset-background transition-all hover:opacity-100 hover:bg-slate-200 dark:hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
-              >
-                {isFullscreen ? <Minimize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Maximize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
-                <span className="sr-only">Toggle Fullscreen</span>
-              </button>
-            )}
-            {!hideClose && (
-              <DialogPrimitive.Close
-                className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-white/10 opacity-80 ring-offset-background transition-all hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-                <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="sr-only">Close</span>
-              </DialogPrimitive.Close>
-            )}
+        {(!hideFullscreen || !hideClose) && (
+          <div className="flex justify-end -mb-4 sm:absolute sm:right-3 sm:top-3 sm:mb-0 z-50">
+            <div className="flex items-center gap-1 bg-white/90 dark:bg-background backdrop-blur-md p-1 rounded-full shadow-sm border border-slate-200 dark:border-slate-700">
+              {!hideFullscreen && (
+                <button
+                  type="button"
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-white/10 opacity-80 ring-offset-background transition-all hover:opacity-100 hover:bg-slate-200 dark:hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+                >
+                  {isFullscreen ? <Minimize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Maximize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                  <span className="sr-only">Toggle Fullscreen</span>
+                </button>
+              )}
+              {!hideClose && (
+                <DialogPrimitive.Close
+                  className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-white/10 opacity-80 ring-offset-background transition-all hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+                  <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="sr-only">Close</span>
+                </DialogPrimitive.Close>
+              )}
+            </div>
           </div>
-        </div>
+        )}
         {children}
       </DialogPrimitive.Content>
     </DialogPortal>
