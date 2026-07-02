@@ -30,4 +30,8 @@ messaging.onBackgroundMessage((payload) => {
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
+
+  // Broadcast ke React (Notifications.jsx) agar mereload data meskipun tab ada di background
+  const fcmChannel = new BroadcastChannel('fcm-channel');
+  fcmChannel.postMessage({ type: 'FCM_RECEIVED', payload: payload });
 });
