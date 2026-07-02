@@ -19,7 +19,13 @@ BEGIN
     payload := json_build_object(
         'type', TG_OP,
         'table', TG_TABLE_NAME,
-        'record', row_to_json(NEW)
+        'record', json_build_object(
+            'status', NEW.status,
+            'store_id', NEW.store_id,
+            'created_by_id', NEW.created_by_id,
+            'pr_number', CASE WHEN TG_TABLE_NAME = 'purchase_requisitions' THEN NEW.pr_number ELSE NULL END,
+            'po_number', CASE WHEN TG_TABLE_NAME = 'purchase_orders' THEN NEW.po_number ELSE NULL END
+        )
     );
 
     -- Send HTTP POST to Golang Backend

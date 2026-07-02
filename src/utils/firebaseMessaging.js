@@ -150,8 +150,7 @@ export const registerDeviceForPush = async (user, storeId) => {
 
     if (error) throw error;
 
-    // Sync ke tabel users agar Golang bisa membaca token ini
-    await supabase.from('users').update({ fcm_token: token }).eq('id', authUserId);
+    // Tidak perlu lagi sync ke tabel users tunggal karena Golang membaca dari user_push_subscriptions
 
     return token;
   } catch (err) {

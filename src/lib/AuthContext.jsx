@@ -150,17 +150,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      requestNotificationPermission().then(async (token) => {
-        if (token && token !== user.fcm_token) {
-          const { error } = await supabase.from('users').update({ fcm_token: token }).eq('id', user.id);
-          if (error) {
-            console.error('[Tradixa Auth] Gagal update FCM token:', error);
-          } else {
-            console.log('[Tradixa Auth] FCM token updated in DB');
-            // Update local state so it doesn't try again
-            setUser({ ...user, fcm_token: token });
-          }
-        }
+      requestNotificationPermission().catch(err => {
+        console.error('[Tradixa Auth] Gagal request permission notifikasi:', err);
       });
     }
   }, [user, isAuthenticated]);

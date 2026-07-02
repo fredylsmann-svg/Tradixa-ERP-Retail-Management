@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"firebase.google.com/go/v4/messaging"
 	"github.com/gin-gonic/gin"
@@ -58,9 +59,15 @@ func handleNotificationWebhook(c *gin.Context) {
 				requiredAuth = "APPROVE_PO"
 			case "purchase_requisitions":
 				prNumber, _ := payload.Record["pr_number"].(string)
-				title = "Pengajuan PR Baru 📝"
-				body = fmt.Sprintf("PR #%s butuh persetujuan Anda.", prNumber)
-				requiredAuth = "APPROVE_PR_L1"
+				if status == "Menunggu Level 2" {
+					title = "PR Menunggu Persetujuan L2 📝"
+					body = fmt.Sprintf("PR #%s butuh persetujuan Level 2 Anda.", prNumber)
+					requiredAuth = "APPROVE_PR_L2"
+				} else {
+					title = "Pengajuan PR Baru 📝"
+					body = fmt.Sprintf("PR #%s butuh persetujuan Anda.", prNumber)
+					requiredAuth = "APPROVE_PR_L1"
+				}
 			}
 		}
 
@@ -112,9 +119,11 @@ func fetchTargetFCMTokens(creatorID string, requiredAuth string, notifyCreatorOn
 		return nil, fmt.Errorf("supabase credentials not configured")
 	}
 
+	client := &http.Client{}
+
+	// --- STEP 1: Dapatkan daftar ID user yang berhak menerima notifikasi ---
 	q := url.Values{}
-	q.Add("select", "fcm_token")
-	q.Add("fcm_token", "not.is.null")
+	q.Add("select", "id")
 
 	if notifyCreatorOnly {
 		// Hanya notifikasi pembuat dokumen (karena ini notifikasi Approval)
@@ -139,7 +148,6 @@ func fetchTargetFCMTokens(creatorID string, requiredAuth string, notifyCreatorOn
 	req.Header.Set("apikey", supabaseKey)
 	req.Header.Set("Authorization", "Bearer "+supabaseKey)
 
-	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -147,20 +155,60 @@ func fetchTargetFCMTokens(creatorID string, requiredAuth string, notifyCreatorOn
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("supabase returned status: %d", resp.StatusCode)
+		return nil, fmt.Errorf("supabase returned status: %d when fetching users", resp.StatusCode)
 	}
 
 	var users []struct {
-		FCMToken string `json:"fcm_token"`
+		ID string `json:"id"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&users); err != nil {
 		return nil, err
 	}
 
-	var tokens []string
+	if len(users) == 0 {
+		return nil, nil // Tidak ada user yang cocok
+	}
+
+	var userIDs []string
 	for _, u := range users {
-		if u.FCMToken != "" {
-			tokens = append(tokens, u.FCMToken)
+		userIDs = append(userIDs, u.ID)
+	}
+
+	// --- STEP 2: Ambil SEMUA token aktif dari user_push_subscriptions ---
+	idList := strings.Join(userIDs, ",")
+	qTokens := url.Values{}
+	qTokens.Add("select", "fcm_token")
+	qTokens.Add("user_id", fmt.Sprintf("in.(%s)", idList))
+
+	tokenURL := fmt.Sprintf("%s/rest/v1/user_push_subscriptions?%s", supabaseURL, qTokens.Encode())
+	reqTokens, err := http.NewRequest("GET", tokenURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	reqTokens.Header.Set("apikey", supabaseKey)
+	reqTokens.Header.Set("Authorization", "Bearer "+supabaseKey)
+
+	respTokens, err := client.Do(reqTokens)
+	if err != nil {
+		return nil, err
+	}
+	defer respTokens.Body.Close()
+
+	if respTokens.StatusCode >= 400 {
+		return nil, fmt.Errorf("supabase returned status: %d when fetching tokens", respTokens.StatusCode)
+	}
+
+	var subs []struct {
+		FCMToken string `json:"fcm_token"`
+	}
+	if err := json.NewDecoder(respTokens.Body).Decode(&subs); err != nil {
+		return nil, err
+	}
+
+	var tokens []string
+	for _, sub := range subs {
+		if sub.FCMToken != "" {
+			tokens = append(tokens, sub.FCMToken)
 		}
 	}
 
@@ -176,6 +224,31 @@ func sendFirebasePush(token, title, body string) error {
 		Notification: &messaging.Notification{
 			Title: title,
 			Body:  body,
+		},
+		Android: &messaging.AndroidConfig{
+			Priority: "high",
+			Notification: &messaging.AndroidNotification{
+				Sound: "default",
+			},
+		},
+		Webpush: &messaging.WebpushConfig{
+			Headers: map[string]string{
+				"Urgency": "high",
+			},
+			Notification: &messaging.WebpushNotification{
+				Icon: "/logo-tradixa.png",
+			},
+		},
+		APNS: &messaging.APNSConfig{
+			Headers: map[string]string{
+				"apns-priority": "10",
+			},
+			Payload: &messaging.APNSPayload{
+				Aps: &messaging.Aps{
+					Sound:            "default",
+					ContentAvailable: true,
+				},
+			},
 		},
 		Token: token,
 	}
