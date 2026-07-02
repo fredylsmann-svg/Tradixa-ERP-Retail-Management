@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, isSupported } from 'firebase/messaging';
+import { getMessaging, getToken, isSupported, onMessage } from 'firebase/messaging';
 import { supabase } from '@/lib/supabase';
 
 const firebaseConfig = {
@@ -137,16 +137,12 @@ export const registerDeviceForPush = async (user, storeId) => {
       throw new Error("Sesi pengguna tidak ditemukan. Silakan login kembali.");
     }
 
-    // Save token to Supabase user_push_subscriptions table
-    const { error } = await supabase
-      .from('user_push_subscriptions')
-      .upsert({
-        user_id: authUserId,
-        store_id: storeId,
-        device_name: deviceName,
-        fcm_token: token,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'fcm_token' });
+    // Save token to Supabase user_push_subscriptions table via RPC to bypass RLS 403 on account switch
+    const { error } = await supabase.rpc('register_push_token', {
+      p_fcm_token: token,
+      p_store_id: storeId || null,
+      p_device_name: deviceName
+    });
 
     if (error) throw error;
 
@@ -178,5 +174,22 @@ export const unregisterDeviceFromPush = async (token) => {
   } catch (err) {
     console.error("[FCM] Failed to unregister device from push notifications:", err);
     throw err;
+  }
+};
+
+// Listener untuk Foreground Messages
+export const setupForegroundMessageListener = async () => {
+  try {
+    const msg = await initFirebaseMessaging();
+    if (!msg) return;
+
+    onMessage(msg, (payload) => {
+      console.log('[FCM] Pesan Foreground diterima:', payload);
+      // Dispatch event ke window agar ditangkap oleh Notifications.jsx
+      window.dispatchEvent(new CustomEvent('fcm-received', { detail: payload }));
+    });
+    console.log('[FCM] Foreground listener aktif.');
+  } catch (err) {
+    console.error('[FCM] Gagal setup foreground listener:', err);
   }
 };

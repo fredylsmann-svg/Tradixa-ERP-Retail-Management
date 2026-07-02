@@ -150,7 +150,25 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      requestNotificationPermission().catch(err => {
+      requestNotificationPermission().then(async (token) => {
+        if (token) {
+          const userAgent = navigator.userAgent;
+          let deviceName = 'Web Browser';
+          if (/android/i.test(userAgent)) deviceName = 'Android Device';
+          else if (/ipad|iphone|ipod/i.test(userAgent)) deviceName = 'iOS Device';
+          else if (/macintosh/i.test(userAgent)) deviceName = 'MacBook/Mac';
+          else if (/windows/i.test(userAgent)) deviceName = 'Windows PC';
+
+          const { error } = await supabase.rpc('register_push_token', {
+            p_fcm_token: token,
+            p_store_id: user.store_id || null,
+            p_device_name: deviceName
+          });
+            
+          if (error) console.error('[Tradixa Auth] Gagal upsert FCM token via RPC:', error);
+          else console.log('[Tradixa Auth] FCM token tersimpan di langganan via RPC');
+        }
+      }).catch(err => {
         console.error('[Tradixa Auth] Gagal request permission notifikasi:', err);
       });
     }
