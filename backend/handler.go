@@ -236,7 +236,9 @@ func sendFirebasePush(token, title, body string) error {
 				"Urgency": "high",
 			},
 			Notification: &messaging.WebpushNotification{
-				Icon: "/logo-tradixa.png",
+				Title: title,
+				Body:  body,
+				Icon:  "/logo-tradixa.png",
 			},
 		},
 		APNS: &messaging.APNSConfig{
