@@ -266,7 +266,7 @@ export default function Header({ store, isSidebarOpen, setIsSidebarOpen, isMobil
 
   return (
     <header 
-      className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none z-10 px-4 md:px-6 flex-shrink-0 w-full"
+      className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none z-10 px-4 md:px-6 flex-shrink-0 w-full"
       style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: '12px' }}
     >
       <div className="flex items-center gap-3 md:gap-4">

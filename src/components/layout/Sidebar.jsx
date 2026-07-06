@@ -287,7 +287,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
     <div className="flex flex-col h-full">
       {/* Logo area - icon only */}
       <div 
-        className="border-b border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none z-10 flex-shrink-0 flex justify-center"
+        className="border-b border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none z-10 flex-shrink-0 flex justify-center"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: '12px', paddingLeft: '12px', paddingRight: '12px' }}
       >
         <img src="/logo-tradixa.png" alt="Tradixa" className="w-10 h-10 rounded-xl object-cover shadow-sm mix-blend-multiply dark:bg-white dark:p-0.5 dark:mix-blend-normal" />
@@ -347,7 +347,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
   const renderContent = () => (
     <div className="flex flex-col h-full">
       <div 
-        className="border-b border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none z-10 flex-shrink-0"
+        className="border-b border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none z-10 flex-shrink-0"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}
       >
         <div className="flex items-center gap-4">
@@ -489,7 +489,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
 
       {/* Desktop sidebar */}
       <aside className={cn(
-        "hidden lg:flex lg:flex-col bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 h-screen fixed top-0 left-0 transition-all duration-300 z-40",
+        "hidden lg:flex lg:flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 h-screen fixed top-0 left-0 transition-all duration-300 z-40",
         isSidebarOpen ? '' : '-translate-x-full',
         isCollapsed ? 'w-[72px]' : 'w-72'
       )}>
