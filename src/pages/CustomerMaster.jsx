@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import ExportToolbar from '@/components/layout/ExportToolbar';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import moment from 'moment';
 import PageHeader from '@/components/layout/PageHeader';
 import { executeAutomation } from '@/utils/automation';
@@ -28,6 +29,9 @@ export default function CustomerMaster({ store }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -74,11 +78,17 @@ export default function CustomerMaster({ store }) {
 
   useEffect(() => {
     if (store?.id) loadCustomers();
-  }, [store]);
+  }, [store, currentPage, pageSize]); // Re-fetch when page or size changes
 
   const loadCustomers = async () => {
-    const data = await api.entities.Customer.filter({ store_id: store.id }, '-created_date');
-    setCustomers(data);
+    setIsLoading(true);
+    const { data, totalCount } = await api.entities.Customer.filter(
+      { store_id: store.id }, 
+      '-created_date', 
+      { page: currentPage, pageSize }
+    );
+    setCustomers(data || []);
+    setTotalData(totalCount || 0);
     setIsLoading(false);
   };
 
@@ -89,8 +99,8 @@ export default function CustomerMaster({ store }) {
     // --- CUSTOMER LIMIT CHECK ---
     const limits = getEffectiveLimits(store);
     if (!editingCustomer && limits.maxCustomers !== Infinity) {
-      if (customers.length >= limits.maxCustomers) {
-        sonnerToast.error(`Kuota customer habis (${customers.length}/${limits.maxCustomers}). Silakan upgrade paket Anda untuk menambah kuota.`, { duration: 5000 });
+      if (totalData >= limits.maxCustomers) {
+        sonnerToast.error(`Kuota customer habis (${totalData}/${limits.maxCustomers}). Silakan upgrade paket Anda untuk menambah kuota.`, { duration: 5000 });
         setIsSaving(false);
         return;
       }
@@ -305,6 +315,19 @@ export default function CustomerMaster({ store }) {
               )}
             </TableBody>
           </Table>
+          
+          {!isLoading && (
+            <DataTablePagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalData={totalData}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1); // Reset to page 1 when size changes
+              }}
+            />
+          )}
         </CardContent>
       </Card>
 

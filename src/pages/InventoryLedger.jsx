@@ -19,6 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import moment from 'moment';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import PageHeader from '@/components/layout/PageHeader';
@@ -29,6 +30,8 @@ export default function InventoryLedger({ store }) {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const { selectedDate, formattedDate } = useGlobalDate();
 
   useEffect(() => {
@@ -135,6 +138,10 @@ export default function InventoryLedger({ store }) {
 
     return matchesSearch && matchesType && matchesD;
   });
+
+  const totalData = filteredMovements.length;
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedMovements = filteredMovements.slice(startIndex, startIndex + pageSize);
 
   const stats = {
     totalIn: filteredMovements.reduce((sum, m) => m.movement_type === 'in' ? sum + Number(m.quantity) : sum, 0),
@@ -262,9 +269,9 @@ export default function InventoryLedger({ store }) {
                      </TableCell>
                   </TableRow>
                 ) : (
-                  filteredMovements.map((m, idx) => (
+                  paginatedMovements.map((m, idx) => (
                     <TableRow key={m.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                      <TableCell className="text-center">{idx + 1}</TableCell>
+                      <TableCell className="text-center">{startIndex + idx + 1}</TableCell>
                       <TableCell className="font-medium text-slate-600 dark:text-slate-300 font-mono text-xs">{m.ledger_id}</TableCell>
                       <TableCell>{m.timestamp_wib.split(' WIB')[0]}</TableCell>
                       <TableCell>
@@ -320,6 +327,19 @@ export default function InventoryLedger({ store }) {
               </TableBody>
             </Table>
           </div>
+
+          {!isLoading && (
+            <DataTablePagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalData={totalData}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

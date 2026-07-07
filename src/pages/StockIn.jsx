@@ -11,6 +11,7 @@ import StockInForm from '@/components/stock/StockInForm';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import PageHeader from '@/components/layout/PageHeader';
 import { Package } from 'lucide-react';
 import { toast as sonnerToast } from 'sonner';
@@ -21,28 +22,52 @@ export default function StockIn({ store }) {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [viewingItem, setViewingItem] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
+  const [totalMovementCount, setTotalMovementCount] = useState(0);
   const { selectedDate, formattedDate, isToday } = useGlobalDate();
 
   useEffect(() => {
     if (store?.id) loadMovements();
-  }, [store]);
+  }, [store, selectedDate, currentPage, pageSize]);
 
   const handleOpenForm = () => {
     const limits = getEffectiveLimits(store);
-    if (limits.maxStockIn !== Infinity && allMovements.length >= limits.maxStockIn) {
-      sonnerToast.error(`Kuota Stock In habis (${allMovements.length}/${limits.maxStockIn}). Silakan upgrade paket Anda untuk menambah kuota.`, { duration: 5000 });
+    if (limits.maxStockIn !== Infinity && totalMovementCount >= limits.maxStockIn) {
+      sonnerToast.error(`Kuota Stock In habis (${totalMovementCount}/${limits.maxStockIn}). Silakan upgrade paket Anda untuk menambah kuota.`, { duration: 5000 });
       return;
     }
     setShowForm(true);
   };
 
   const loadMovements = async () => {
-    const data = await api.entities.StockMovement.filter({ store_id: store.id, movement_type: 'in' }, '-created_date');
-    setAllMovements(data);
+    setIsLoading(true);
+    const { data, totalCount } = await api.entities.StockMovement.filter(
+      { store_id: store.id, movement_type: 'in' }, 
+      '-created_date',
+      {
+        page: currentPage,
+        pageSize,
+        startDate: selectedDate,
+        endDate: selectedDate,
+        dateField: 'created_date'
+      }
+    );
+    setAllMovements(data || []);
+    setTotalData(totalCount || 0);
+
+    const limits = getEffectiveLimits(store);
+    if (limits.maxStockIn !== Infinity) {
+      const { totalCount: allTimeCount } = await api.entities.StockMovement.filter(
+        { store_id: store.id, movement_type: 'in' },
+        null,
+        { page: 1, pageSize: 1 }
+      );
+      setTotalMovementCount(allTimeCount || 0);
+    }
     setIsLoading(false);
   };
-
-  const movements = allMovements.filter(m => matchesDate(m, selectedDate));
 
   const getExpiryStatus = (expiredDate) => {
     if (!expiredDate) return null;
@@ -107,7 +132,7 @@ export default function StockIn({ store }) {
                       <TableCell colSpan={9}><Skeleton className="h-12 w-full" /></TableCell>
                     </TableRow>
                   ))
-                ) : movements.length === 0 ? (
+                ) : allMovements.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center py-12 text-slate-500">
                       <Download className="w-12 h-12 mx-auto mb-3 text-slate-300" />
@@ -115,7 +140,7 @@ export default function StockIn({ store }) {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  movements.map((item, idx) => {
+                  allMovements.map((item, idx) => {
                     const expiryStatus = getExpiryStatus(item.expiry_date || item.expired_date);
                     return (
                       <TableRow key={item.id} className="hover:bg-slate-50">
@@ -150,6 +175,19 @@ export default function StockIn({ store }) {
               </TableBody>
             </Table>
           </div>
+          
+          {!isLoading && (
+            <DataTablePagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalData={totalData}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1); // Reset to page 1 when size changes
+              }}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -198,7 +236,7 @@ export default function StockIn({ store }) {
             </tr>
           </thead>
           <tbody>
-            {movements.map((m) => (
+            {allMovements.map((m) => (
               <tr key={m.id}>
                 <td>{m.timestamp_wib}</td>
                 <td>{m.reference}</td>

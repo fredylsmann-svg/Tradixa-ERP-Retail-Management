@@ -40,6 +40,7 @@ import {
 import SignaturePad from '@/components/ui/SignaturePad';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import PageHeader from '@/components/layout/PageHeader';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import moment from 'moment';
@@ -79,6 +80,10 @@ export default function InventoryGRN({ store }) {
   const [view, setView] = useState(initialGrnId ? 'create' : 'list');
   const [history, setHistory] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
+  const [totalMovementCount, setTotalMovementCount] = useState(0);
   const { selectedDate } = useGlobalDate();
 
   // Create Section States
@@ -125,7 +130,7 @@ export default function InventoryGRN({ store }) {
       const saved = localStorage.getItem(`signatures_${store.id}_manager`);
       if (saved) setSignatureHistory(JSON.parse(saved));
     }
-  }, [store]);
+  }, [store, selectedDate, currentPage, pageSize]);
 
   const loadLocations = async () => {
     try {
@@ -158,8 +163,29 @@ export default function InventoryGRN({ store }) {
   const loadHistory = async () => {
     setIsLoading(true);
     try {
-      const data = await api.entities.InventoryGRN.filter({ store_id: store.id });
-      setHistory(data.sort((a, b) => new Date(b.timestamp_wib.split(' ')[0].split('/').reverse().join('-')) - new Date(a.timestamp_wib.split(' ')[0].split('/').reverse().join('-'))));
+      const { data, totalCount } = await api.entities.InventoryGRN.filter(
+        { store_id: store.id },
+        '-created_date',
+        {
+          page: currentPage,
+          pageSize,
+          startDate: selectedDate,
+          endDate: selectedDate,
+          dateField: 'created_date'
+        }
+      );
+      setHistory(data || []);
+      setTotalData(totalCount || 0);
+
+      const limits = getEffectiveLimits(store);
+      if (limits.maxInventoryGRN !== Infinity) {
+        const { totalCount: allTimeCount } = await api.entities.InventoryGRN.filter(
+          { store_id: store.id },
+          null,
+          { page: 1, pageSize: 1 }
+        );
+        setTotalMovementCount(allTimeCount || 0);
+      }
     } catch (err) {
       console.error("Failed to load history", err);
     }
@@ -366,7 +392,7 @@ export default function InventoryGRN({ store }) {
 
     // --- PROCUREMENT LIMIT CHECK ---
     const limits = getEffectiveLimits(store);
-    if (limits.maxInventoryGRN !== Infinity && history.length >= limits.maxInventoryGRN) {
+    if (limits.maxInventoryGRN !== Infinity && totalMovementCount >= limits.maxInventoryGRN) {
       toast({
         title: "Batas Inventory GRN Tercapai",
         description: `Batas Inventory GRN tercapai (${limits.maxInventoryGRN} data). Silakan upgrade paket Anda untuk akses tanpa batas.`,
@@ -731,11 +757,10 @@ export default function InventoryGRN({ store }) {
   };
 
   const filteredHistory = history.filter(h => {
-    const isDateMatch = matchesDate(h, selectedDate);
     const isSearchMatch = h.igrn_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       h.po_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       h.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    return isDateMatch && isSearchMatch;
+    return isSearchMatch;
   });
 
   if (isLoading && view === 'list' && history.length === 0) {
@@ -843,6 +868,19 @@ export default function InventoryGRN({ store }) {
               )}
             </TableBody>
           </Table>
+          
+          {!isLoading && (
+            <DataTablePagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalData={totalData}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+          )}
         </Card>
       </div>
     );

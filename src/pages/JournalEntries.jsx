@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,13 +14,16 @@ import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import { useNavigate } from 'react-router-dom';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import { toast } from 'sonner';
 import PageHeader from '@/components/layout/PageHeader';
 
 export default function JournalEntries({ store }) {
-  const { toast } = useToast();
   const [entries, setEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -44,17 +46,26 @@ export default function JournalEntries({ store }) {
 
   useEffect(() => {
     loadData();
-  }, [selectedDate]);
+  }, [selectedDate, currentPage, pageSize]);
 
   const loadData = async () => {
     if (!store?.id) return;
     setIsLoading(true);
     try {
-      const entriesData = await api.entities.JournalEntry.filter({ store_id: store.id }, '-created_at');
+      const response = await api.entities.JournalEntry.filter(
+        { store_id: store.id },
+        '-created_at',
+        {
+          page: currentPage,
+          pageSize,
+          startDate: selectedDate,
+          endDate: selectedDate,
+          dateField: 'date'
+        }
+      );
 
-      // Filter by global date
-      const dateFiltered = entriesData.filter(e => matchesDate(e, selectedDate));
-      setEntries(dateFiltered);
+      setEntries(response.data || []);
+      setTotalData(response.totalCount || 0);
     } catch (err) {
       console.error(err);
     } finally {
@@ -111,15 +122,15 @@ export default function JournalEntries({ store }) {
 
   const handleSaveManualJournal = async () => {
     if (!manualForm.description) {
-      toast({ title: "Validation Error", description: "Deskripsi wajib diisi", variant: "destructive" });
+      toast.error("Deskripsi wajib diisi");
       return;
     }
     if (!isBalanced) {
-      toast({ title: "Validation Error", description: "Total Debit dan Credit harus sama (balance)", variant: "destructive" });
+      toast.error("Total Debit dan Credit harus sama (balance)");
       return;
     }
     if (manualForm.lines.some(l => !l.account_name)) {
-      toast({ title: "Validation Error", description: "Semua baris harus memiliki akun", variant: "destructive" });
+      toast.error("Semua baris harus memiliki akun");
       return;
     }
 
@@ -554,9 +565,22 @@ export default function JournalEntries({ store }) {
                   ))
                 )}
               </TableBody>
-            </Table>
-          </div>
-        </CardContent>
+              </Table>
+            </div>
+            {!isLoading && (
+              <DataTablePagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(totalData / pageSize)}
+                totalData={totalData}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+            )}
+          </CardContent>
       </Card>
 
 

@@ -13,6 +13,7 @@ import PrintInvoice from '@/components/invoice/PrintInvoice';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import PageHeader from '@/components/layout/PageHeader';
 import { getEffectiveLimits } from '@/planConfig';
 import { useToast } from '@/components/ui/use-toast';
@@ -23,6 +24,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export default function SalesTransaction({ store }) {
   const [allTransactions, setAllTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
+  const [currentMonthSalesCount, setCurrentMonthSalesCount] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [viewingTransaction, setViewingTransaction] = useState(null);
   const [viewingQrisTx, setViewingQrisTx] = useState(null);
@@ -399,7 +404,7 @@ export default function SalesTransaction({ store }) {
 
   useEffect(() => {
     if (store?.id) loadTransactions();
-  }, [store]);
+  }, [store, selectedDate, currentPage, pageSize]);
 
   // REALTIME: Auto-update QRIS modal and transactions list when paid
   useEffect(() => {
@@ -461,23 +466,42 @@ export default function SalesTransaction({ store }) {
   }, [viewingTransaction?.id]);
 
   const loadTransactions = async () => {
-    const data = await api.entities.SalesTransaction.filter({ store_id: store.id }, '-created_date');
-    setAllTransactions(data);
+    setIsLoading(true);
+    
+    // Fetch paginated data for the selected date
+    const { data, totalCount } = await api.entities.SalesTransaction.filter(
+      { store_id: store.id }, 
+      '-created_date',
+      {
+        page: currentPage,
+        pageSize,
+        startDate: selectedDate,
+        endDate: selectedDate,
+        dateField: 'created_date'
+      }
+    );
+    setAllTransactions(data || []);
+    setTotalData(totalCount || 0);
+
+    // Fetch current month total for limits check
+    const limits = getEffectiveLimits(store);
+    if (limits.maxSalesPerMonth !== Infinity) {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const { totalCount: monthCount } = await api.entities.SalesTransaction.filter(
+        { store_id: store.id },
+        null,
+        { page: 1, pageSize: 1, startDate: `${y}-${m}-01`, endDate: `${y}-${m}-31`, dateField: 'created_date' }
+      );
+      setCurrentMonthSalesCount(monthCount || 0);
+    }
+
     setIsLoading(false);
   };
 
-  // Filter by global selected date
-  const transactions = allTransactions.filter(tx => matchesDate(tx, selectedDate));
-
-  // Count current month transactions for Free plan limit
-  const currentMonthSales = allTransactions.filter(tx => {
-    const txDate = new Date(tx.created_date || tx.timestamp_wib);
-    const now = new Date();
-    return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
-  }).length;
-
   const limits = getEffectiveLimits(store);
-  const isLimitReached = limits.maxSalesPerMonth !== Infinity && currentMonthSales >= limits.maxSalesPerMonth;
+  const isLimitReached = limits.maxSalesPerMonth !== Infinity && currentMonthSalesCount >= limits.maxSalesPerMonth;
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
 
@@ -730,7 +754,7 @@ export default function SalesTransaction({ store }) {
                       <TableCell colSpan={9}><Skeleton className="h-12 w-full" /></TableCell>
                     </TableRow>
                   ))
-                ) : transactions.length === 0 ? (
+                ) : allTransactions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center py-12 text-slate-500">
                       <ShoppingCart className="w-12 h-12 mx-auto mb-3 text-slate-300" />
@@ -738,7 +762,7 @@ export default function SalesTransaction({ store }) {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  transactions.map((tx, idx) => (
+                  allTransactions.map((tx, idx) => (
                     <TableRow key={tx.id} className="hover:bg-slate-50">
                       <TableCell>{idx + 1}</TableCell>
                       <TableCell>
@@ -805,6 +829,19 @@ export default function SalesTransaction({ store }) {
               </TableBody>
             </Table>
           </div>
+          
+          {!isLoading && (
+            <DataTablePagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalData={totalData}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1); // Reset to page 1 when size changes
+              }}
+            />
+          )}
         </CardContent>
       </Card>
 

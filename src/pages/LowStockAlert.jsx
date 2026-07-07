@@ -80,7 +80,7 @@ export default function LowStockAlert({ store }) {
               <div className="absolute right-0 top-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <AlertTriangle className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-14 md:pr-16">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 tracking-wide drop-shadow-sm">Out of Stock</p>
                 <p className="text-3xl font-black text-white mt-1 tracking-tight drop-shadow-md">{outOfStock.length}</p>
                 <p className="text-sm text-white/80 font-medium mt-1 drop-shadow-sm">produk habis</p>
@@ -96,7 +96,7 @@ export default function LowStockAlert({ store }) {
               <div className="absolute right-0 top-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <Package className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-14 md:pr-16">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 tracking-wide drop-shadow-sm">Low Stock</p>
                 <p className="text-3xl font-black text-white mt-1 tracking-tight drop-shadow-md">{lowStock.length}</p>
                 <p className="text-sm text-white/80 font-medium mt-1 drop-shadow-sm">produk hampir habis</p>
@@ -112,7 +112,7 @@ export default function LowStockAlert({ store }) {
               <div className="absolute right-0 top-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <Package className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-14 md:pr-16">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 tracking-wide drop-shadow-sm">Total Perlu Restock</p>
                 <p className="text-3xl font-black text-white mt-1 tracking-tight drop-shadow-md">{products.length}</p>
                 <p className="text-sm text-white/80 font-medium mt-1 drop-shadow-sm">produk butuh restock</p>

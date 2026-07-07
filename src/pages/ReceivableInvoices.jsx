@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import PageHeader from '@/components/layout/PageHeader';
 import PremiumGate from '@/components/ui/PremiumGate';
 import moment from 'moment';
@@ -19,6 +20,9 @@ export default function ReceivableInvoices({ store }) {
   const [receivables, setReceivables] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
   const [viewingInvoice, setViewingInvoice] = useState(null);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [selectedProofUrl, setSelectedProofUrl] = useState(null);
@@ -33,21 +37,29 @@ export default function ReceivableInvoices({ store }) {
   }, [viewingInvoice]);
 
   useEffect(() => {
-    if (store?.id) loadReceivables();
-  }, [store]);
+    if (store?.id) loadData();
+  }, [store, selectedDate, currentPage, pageSize, searchQuery]);
 
-  const loadReceivables = async () => {
-    const data = await api.entities.Receivable.filter({ store_id: store.id }, '-created_date');
-    setReceivables(data);
+  const loadData = async () => {
+    setIsLoading(true);
+    const response = await api.entities.Receivable.filter(
+      { store_id: store.id },
+      '-created_date',
+      {
+        page: currentPage,
+        pageSize,
+        startDate: selectedDate,
+        endDate: selectedDate,
+        dateField: 'created_date',
+        search: searchQuery
+      }
+    );
+    setReceivables(response.data || []);
+    setTotalData(response.totalCount || 0);
     setIsLoading(false);
   };
 
-  const filteredReceivables = receivables.filter(r => {
-    const matchesSearch = r.invoice_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        r.customer_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesGlobalDate = matchesDate(r, selectedDate);
-    return matchesSearch && matchesGlobalDate;
-  });
+  const filteredReceivables = receivables;
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
 
@@ -194,6 +206,19 @@ export default function ReceivableInvoices({ store }) {
               </TableBody>
             </Table>
           </div>
+          {!isLoading && (
+            <DataTablePagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(totalData / pageSize)}
+              totalData={totalData}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -202,7 +227,7 @@ export default function ReceivableInvoices({ store }) {
           {viewingInvoice && (
             <div className="flex flex-col max-h-[90vh]">
               {/* Toolbar */}
-              <div className="no-print p-4 bg-slate-50 dark:bg-slate-800 border-b flex items-center justify-between gap-4 pr-14">
+              <div className="no-print p-4 bg-slate-50 dark:bg-slate-800 border-b flex items-center justify-between gap-4 pr-24">
                 <div className="flex items-center gap-2">
                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
                       <FileInput className="w-4 h-4" />

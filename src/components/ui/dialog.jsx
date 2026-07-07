@@ -42,7 +42,7 @@ const DialogContent = React.forwardRef(({ className, children, hideClose = false
         {...props}>
         {(!hideFullscreen || !hideClose) && (
           <div className="flex justify-end -mb-4 sm:absolute sm:right-3 sm:top-3 sm:mb-0 z-50">
-            <div className="flex items-center gap-1 bg-white/90 dark:bg-background backdrop-blur-md p-1 rounded-full shadow-sm border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-1 bg-white/90 dark:bg-slate-800 backdrop-blur-md p-1 rounded-full shadow-sm border border-slate-200 dark:border-slate-700">
               {!hideFullscreen && (
                 <button
                   type="button"
@@ -75,7 +75,7 @@ const DialogHeader = ({
   ...props
 }) => (
   <div
-    className={cn("flex flex-col space-y-1.5 text-center sm:text-left sm:pr-20", className)}
+    className={cn("flex flex-col space-y-1.5 text-center sm:text-left sm:pr-24", className)}
     {...props} />
 )
 DialogHeader.displayName = "DialogHeader"

@@ -426,7 +426,7 @@ export default function Payments({ store }) {
         <DialogContent className="max-w-3xl rounded-xl p-0 max-h-[90vh] overflow-y-auto">
           {viewingPayment && (
             <div className="flex flex-col">
-              <div className="p-8 bg-slate-50 dark:bg-slate-800 border-b border-slate-100 pr-14">
+              <div className="p-8 bg-slate-50 dark:bg-slate-800 border-b border-slate-100 pr-24">
                 <div className="flex items-center justify-between mb-6">
                   <Badge className={viewingPayment.transaction_type === 'Credit' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-600 text-white'}>
                     {viewingPayment.transaction_type === 'Credit' ? 'PENERIMAAN PIUTANG (AR)' : 'PENGELUARAN UTANG (AP)'}

@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import moment from 'moment';
 import 'moment/locale/id';
 import { useToast } from '@/components/ui/use-toast';
@@ -62,7 +63,10 @@ export default function PurchaseRequisition({ store }) {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua Status');
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
+  const [totalPrCount, setTotalPrCount] = useState(0);
   const { selectedDate, formattedDate } = useGlobalDate();
 
   const [formData, setFormData] = useState({
@@ -81,7 +85,7 @@ export default function PurchaseRequisition({ store }) {
       loadCurrentUser();
       loadProducts();
     }
-  }, [store]);
+  }, [store, selectedDate, currentPage, pageSize]);
 
   const loadProducts = async () => {
     const data = await api.entities.Product.filter({ store_id: store.id });
@@ -111,9 +115,34 @@ export default function PurchaseRequisition({ store }) {
   };
 
   const loadPrs = async () => {
-    // Assuming "PurchaseRequisition" entity exists in local mock or using a generic fallback.
-    const data = await api.entities.PurchaseRequisition?.filter({ store_id: store.id }, '-created_date') || [];
-    setPrs(data);
+    setIsLoading(true);
+    try {
+      const { data, totalCount } = await api.entities.PurchaseRequisition.filter(
+        { store_id: store.id },
+        '-created_date',
+        {
+          page: currentPage,
+          pageSize,
+          startDate: selectedDate,
+          endDate: selectedDate,
+          dateField: 'created_date'
+        }
+      );
+      setPrs(data || []);
+      setTotalData(totalCount || 0);
+
+      const limits = getEffectiveLimits(store);
+      if (limits.maxPR !== Infinity) {
+        const { totalCount: allTimeCount } = await api.entities.PurchaseRequisition.filter(
+          { store_id: store.id },
+          null,
+          { page: 1, pageSize: 1 }
+        );
+        setTotalPrCount(allTimeCount || 0);
+      }
+    } catch (err) {
+      console.error("Failed to load PRs", err);
+    }
     setIsLoading(false);
   };
 
@@ -127,12 +156,11 @@ export default function PurchaseRequisition({ store }) {
   }, [store]);
 
   const currentPrs = prs.filter(pr => {
-    const isDateMatch = matchesDate(pr, selectedDate);
     const isStatusMatch = statusFilter === 'Semua Status' || pr.status === statusFilter;
     const isSearchMatch = !searchTerm ||
       pr.pr_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pr.requester?.toLowerCase().includes(searchTerm.toLowerCase());
-    return isDateMatch && isStatusMatch && isSearchMatch;
+    return isStatusMatch && isSearchMatch;
   });
 
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID').format(val || 0);
@@ -176,7 +204,7 @@ export default function PurchaseRequisition({ store }) {
 
     // --- PROCUREMENT LIMIT CHECK ---
     const limits = getEffectiveLimits(store);
-    if (limits.maxPR !== Infinity && prs.length >= limits.maxPR) {
+    if (limits.maxPR !== Infinity && totalPrCount >= limits.maxPR) {
       sonnerToast.error(`Batas PR tercapai (${limits.maxPR} PR). Silakan upgrade paket Anda untuk membuat PR tanpa batas.`, { duration: 5000 });
       return;
     }
@@ -235,7 +263,7 @@ export default function PurchaseRequisition({ store }) {
 
     // --- PROCUREMENT LIMIT CHECK ---
     const limits = getEffectiveLimits(store);
-    if (limits.maxPR !== Infinity && prs.length >= limits.maxPR) {
+    if (limits.maxPR !== Infinity && totalPrCount >= limits.maxPR) {
       sonnerToast.error(`Batas PR tercapai (${limits.maxPR} PR). Silakan upgrade paket Anda untuk membuat PR tanpa batas.`, { duration: 5000 });
       return;
     }
@@ -849,6 +877,19 @@ export default function PurchaseRequisition({ store }) {
               )}
             </TableBody>
           </Table>
+          
+          {!isLoading && (
+            <DataTablePagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalData={totalData}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -858,7 +899,7 @@ export default function PurchaseRequisition({ store }) {
           {viewingPr && (
             <div className="flex flex-col h-full md:overflow-hidden">
               {/* Header */}
-              <div className="p-6 pr-14 border-b bg-white flex items-center justify-between shrink-0">
+              <div className="p-6 pr-24 border-b bg-white flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
                     <FileText className="w-5 h-5" />

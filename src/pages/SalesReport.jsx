@@ -244,7 +244,7 @@ export default function SalesReport({ store }) {
               <div className="absolute right-0 top-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <Calendar className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-14 md:pr-16">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">Penjualan Hari Ini</p>
                 <p className="text-3xl font-black text-white mt-1 tracking-tight drop-shadow-md">
                   <AnimatedNumber value={dailyRevenue} prefix="Rp " />
@@ -262,7 +262,7 @@ export default function SalesReport({ store }) {
               <div className="absolute right-0 top-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-14 md:pr-16">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">Total Revenue (Filtered)</p>
                 <p className="text-3xl font-black text-white mt-1 tracking-tight drop-shadow-md">
                   <AnimatedNumber value={totalRevenue} prefix="Rp " />
@@ -280,7 +280,7 @@ export default function SalesReport({ store }) {
               <div className="absolute right-0 top-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <DollarSign className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-14 md:pr-16">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">Total Profit (Filtered)</p>
                 <p className="text-3xl font-black text-white mt-1 tracking-tight drop-shadow-md">
                   <AnimatedNumber value={totalProfit} prefix="Rp " />
@@ -301,7 +301,7 @@ export default function SalesReport({ store }) {
               <div className="absolute right-0 top-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <ShoppingCart className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-14 md:pr-16">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">Total Transaksi</p>
                 <p className="text-3xl font-black text-white mt-1 tracking-tight drop-shadow-md">
                   <AnimatedNumber value={totalTransactions} suffix=" Order" />
@@ -318,7 +318,7 @@ export default function SalesReport({ store }) {
               <div className="absolute right-0 top-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <DollarSign className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-14 md:pr-16">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">Total Pendapatan</p>
                 <p className="text-3xl font-black text-white mt-1 tracking-tight drop-shadow-md">
                   <AnimatedNumber value={totalRevenue} prefix="Rp " />
@@ -335,7 +335,7 @@ export default function SalesReport({ store }) {
               <div className="absolute right-0 top-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-14 md:pr-16">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">Total Keuntungan</p>
                 <p className="text-3xl font-black text-white mt-1 tracking-tight drop-shadow-md">
                   <AnimatedNumber value={totalProfit} prefix="Rp " />
@@ -459,7 +459,47 @@ export default function SalesReport({ store }) {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                  label={(props) => {
+                    const { cx, cy, midAngle, outerRadius, fill, percent, name, index } = props;
+                    if (percent === 0) return null;
+                    const RADIAN = Math.PI / 180;
+                    const sin = Math.sin(-RADIAN * midAngle);
+                    const cos = Math.cos(-RADIAN * midAngle);
+                    
+                    const sx = cx + outerRadius * cos;
+                    const sy = cy + outerRadius * sin;
+                    
+                    // Vertical stagger for small slices to prevent overlap without widening chart
+                    const stagger = [ -35, 0, 35 ];
+                    const verticalStagger = percent < 0.1 ? stagger[index % 3] : 0;
+                    
+                    const mx = cx + (outerRadius + 15) * cos;
+                    const my = cy + (outerRadius + 15) * sin + verticalStagger;
+                    
+                    const ex = mx + (cos >= 0 ? 1 : -1) * 12;
+                    const ey = my;
+                    const textAnchor = cos >= 0 ? 'start' : 'end';
+                    const textX = ex + (cos >= 0 ? 1 : -1) * 6;
+                    
+                    const isLong = name.length > 12;
+
+                    return (
+                      <g>
+                        <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" strokeWidth={1} />
+                        <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
+                        <text x={textX} y={ey} textAnchor={textAnchor} fill={fill} fontSize={15} dominantBaseline="central">
+                          {isLong ? (
+                            <>
+                              <tspan x={textX} dy="-0.4em">{name}</tspan>
+                              <tspan x={textX} dy="1.2em">{`(${(percent * 100).toFixed(0)}%)`}</tspan>
+                            </>
+                          ) : (
+                            `${name} (${(percent * 100).toFixed(0)}%)`
+                          )}
+                        </text>
+                      </g>
+                    );
+                  }}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"

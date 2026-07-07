@@ -16,6 +16,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import PageHeader from '@/components/layout/PageHeader';
 
 function TransactionItems({ salesTransactionId }) {
@@ -86,6 +87,9 @@ export default function BankTransactions({ store }) {
   const [allTransactions, setAllTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [viewingDetail, setViewingDetail] = useState(null);
@@ -97,19 +101,31 @@ export default function BankTransactions({ store }) {
 
   useEffect(() => {
     if (store?.id) loadData();
-  }, [store]);
+  }, [store, selectedDate, currentPage, pageSize]);
 
   const loadData = async () => {
-    const [txData, accData] = await Promise.all([
-      api.entities.BankTransaction.filter({ store_id: store.id }, '-created_at'),
+    setIsLoading(true);
+    const [txResponse, accData] = await Promise.all([
+      api.entities.BankTransaction.filter(
+        { store_id: store.id },
+        '-created_at',
+        {
+          page: currentPage,
+          pageSize,
+          startDate: selectedDate,
+          endDate: selectedDate,
+          dateField: 'created_date'
+        }
+      ),
       api.entities.BankAccount.filter({ store_id: store.id })
     ]);
-    setAllTransactions(txData);
-    setAccounts(accData);
+    setAllTransactions(txResponse.data || []);
+    setTotalData(txResponse.totalCount || 0);
+    setAccounts(accData || []);
     setIsLoading(false);
   };
 
-  const transactions = allTransactions.filter(tx => matchesDate(tx, selectedDate));
+  const transactions = allTransactions;
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
 
@@ -476,9 +492,22 @@ export default function BankTransactions({ store }) {
                 ))
               )}
             </TableBody>
-          </Table>
-          </div>
-        </CardContent>
+              </Table>
+            </div>
+            {!isLoading && (
+              <DataTablePagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(totalData / pageSize)}
+                totalData={totalData}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+            )}
+          </CardContent>
       </Card>
 
       {/* Form Dialog */}

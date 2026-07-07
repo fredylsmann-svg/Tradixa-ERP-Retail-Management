@@ -21,6 +21,7 @@ import SignaturePad from '@/components/ui/SignaturePad';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar, { exportToPDF } from '@/components/layout/ExportToolbar';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import moment from 'moment';
 import 'moment/locale/id';
 import PageHeader from '@/components/layout/PageHeader';
@@ -41,6 +42,10 @@ export default function PurchaseOrders({ store }) {
   const [showForm, setShowForm] = useState(false);
   const [viewingOrder, setViewingOrder] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
+  const [totalOrderCount, setTotalOrderCount] = useState(0);
   const { selectedDate, formattedDate, isToday } = useGlobalDate();
   const [formData, setFormData] = useState({
     supplier_id: '',
@@ -119,7 +124,7 @@ export default function PurchaseOrders({ store }) {
       const saved = localStorage.getItem(`signatures_${store.id}_admin`);
       if (saved) setSignatureHistory(JSON.parse(saved));
     }
-  }, [store]);
+  }, [store, selectedDate, currentPage, pageSize]);
 
   // REALTIME: Auto-update PO detail when supplier signs (no manual refresh needed)
   useEffect(() => {
@@ -142,35 +147,56 @@ export default function PurchaseOrders({ store }) {
   }, [viewingOrder?.id]);
 
   const loadData = async () => {
-    const [ordersData, suppliersData, productsData, prsData, receiptsData] = await Promise.all([
-      api.entities.PurchaseOrder.filter({ store_id: store.id }, '-created_date'),
+    setIsLoading(true);
+    const [ordersResponse, suppliersData, productsData, prsData, receiptsData] = await Promise.all([
+      api.entities.PurchaseOrder.filter(
+        { store_id: store.id }, 
+        '-created_date',
+        {
+          page: currentPage,
+          pageSize,
+          startDate: selectedDate,
+          endDate: selectedDate,
+          dateField: 'created_date'
+        }
+      ),
       api.entities.Supplier.filter({ store_id: store.id }),
       api.entities.Product.filter({ store_id: store.id }),
       api.entities.PurchaseRequisition?.filter({ store_id: store.id }) || [],
       api.entities.GoodsReceipt?.filter({ store_id: store.id }) || []
     ]);
 
-    // Filter out already converted PRs in memory and check for approved status (both EN and ID)
     const availablePrs = prsData.filter(pr =>
       (pr.status === 'Approved' || pr.status === 'Disetujui') && !pr.converted_to_po
     );
 
-    setOrders(ordersData);
+    setOrders(ordersResponse?.data || ordersResponse || []);
+    setTotalData(ordersResponse?.totalCount || 0);
     setSuppliers(suppliersData);
     setProducts(productsData);
     setApprovedPrs(availablePrs);
     setReceipts(receiptsData);
+
+    const limits = getEffectiveLimits(store);
+    if (limits.maxPO !== Infinity) {
+      const { totalCount: allTimeCount } = await api.entities.PurchaseOrder.filter(
+        { store_id: store.id },
+        null,
+        { page: 1, pageSize: 1 }
+      );
+      setTotalOrderCount(allTimeCount || 0);
+    }
+    
     setIsLoading(false);
   };
 
   // Filter by global selected date, status, and search term
   const filteredOrders = orders.filter(o => {
-    const isDateMatch = matchesDate(o, selectedDate);
     const isStatusMatch = statusFilter === 'Semua Status' || o.status === statusFilter;
     const isSearchMatch = !searchTerm ||
       o.po_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    return isDateMatch && isStatusMatch && isSearchMatch;
+    return isStatusMatch && isSearchMatch;
   });
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
@@ -236,7 +262,7 @@ export default function PurchaseOrders({ store }) {
 
     // --- PROCUREMENT LIMIT CHECK ---
     const limits = getEffectiveLimits(store);
-    if (limits.maxPO !== Infinity && orders.length >= limits.maxPO) {
+    if (limits.maxPO !== Infinity && totalOrderCount >= limits.maxPO) {
       sonnerToast.error(`Batas PO tercapai (${limits.maxPO} PO). Silakan upgrade paket Anda untuk membuat PO tanpa batas.`, { duration: 5000 });
       return;
     }
@@ -305,7 +331,7 @@ export default function PurchaseOrders({ store }) {
 
     // --- PROCUREMENT LIMIT CHECK ---
     const limits = getEffectiveLimits(store);
-    if (limits.maxPO !== Infinity && orders.length >= limits.maxPO) {
+    if (limits.maxPO !== Infinity && totalOrderCount >= limits.maxPO) {
       sonnerToast.error(`Batas PO tercapai (${limits.maxPO} PO). Silakan upgrade paket Anda untuk membuat PO tanpa batas.`, { duration: 5000 });
       return;
     }
@@ -792,6 +818,19 @@ export default function PurchaseOrders({ store }) {
               )}
             </TableBody>
           </Table>
+          
+          {!isLoading && (
+            <DataTablePagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalData={totalData}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -959,7 +998,7 @@ export default function PurchaseOrders({ store }) {
         <DialogContent hideFullscreen={true} className="max-w-6xl p-0 md:overflow-hidden overflow-y-auto bg-white shadow-2xl border-none">
           <div className="flex flex-col md:h-[90vh]">
             {/* Header */}
-            <div className="bg-blue-600 px-8 py-6 pr-14 flex items-center justify-between shrink-0">
+            <div className="bg-blue-600 px-8 py-6 pr-24 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20">
                   <ShoppingCart className="w-6 h-6" />
@@ -1311,7 +1350,7 @@ export default function PurchaseOrders({ store }) {
           {viewingOrder && (
             <div className="flex flex-col h-full md:overflow-hidden">
               {/* Header */}
-              <div className="p-6 pr-14 border-b bg-white flex items-center justify-between shrink-0">
+              <div className="p-6 pr-24 border-b bg-white flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
                     <FileText className="w-5 h-5" />

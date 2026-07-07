@@ -99,7 +99,7 @@ export default function PrintInvoice({ invoice, store, onClose, forceThermal = f
         )}
 
         {/* Kontrol di atas yang tidak ikut diprint */}
-        <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b z-20 px-6 py-4 flex justify-between items-center print:hidden">
+        <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b z-20 pl-6 pr-24 py-4 flex justify-between items-center print:hidden">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
               <Printer className="w-5 h-5" />

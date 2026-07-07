@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import { Textarea } from '@/components/ui/textarea';
 import PageHeader from '@/components/layout/PageHeader';
 import moment from 'moment';
@@ -84,6 +85,10 @@ export default function GoodsReceipt({ store }) {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua Status');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
+  const [totalReceiptCount, setTotalReceiptCount] = useState(0);
   const [actualArrivalAt, setActualArrivalAt] = useState(moment().format('YYYY-MM-DDTHH:mm'));
   const [confirmedDateSnapshot, setConfirmedDateSnapshot] = useState('');
 
@@ -115,7 +120,7 @@ export default function GoodsReceipt({ store }) {
         storage_location: localStorage.getItem(`last_gr_storage_location_${store.id}`) || '',
       }));
     }
-  }, [store]);
+  }, [store, selectedDate, currentPage, pageSize]);
 
   // REALTIME: Auto-update GRN detail when driver signs from public portal
   useEffect(() => {
@@ -137,9 +142,20 @@ export default function GoodsReceipt({ store }) {
   }, [viewingReceipt?.id]);
 
   const loadData = async () => {
+    setIsLoading(true);
     try {
-      const [receiptsData, poData, locationsData, suppliersData] = await Promise.all([
-        api.entities.GoodsReceipt.filter({ store_id: store.id }, '-created_date'),
+      const [receiptsResponse, poData, locationsData, suppliersData] = await Promise.all([
+        api.entities.GoodsReceipt.filter(
+          { store_id: store.id },
+          '-created_date',
+          {
+            page: currentPage,
+            pageSize,
+            startDate: selectedDate,
+            endDate: selectedDate,
+            dateField: 'created_date'
+          }
+        ),
         api.entities.PurchaseOrder.filter({ store_id: store.id }),
         api.entities.ProductLocation.filter({ store_id: store.id }),
         api.entities.Supplier.filter({ store_id: store.id })
@@ -147,7 +163,7 @@ export default function GoodsReceipt({ store }) {
 
       setSuppliers(suppliersData);
 
-      // Only show POs that can be received AND don't already have a GRN
+      const receiptsData = receiptsResponse?.data || receiptsResponse || [];
       const poIdsWithGRN = new Set(receiptsData.map(r => r.po_id).filter(Boolean));
       const activePOs = poData.filter(po =>
         ['Sent', 'Confirmed', 'Approved', 'Partial Received'].includes(po.status) &&
@@ -155,24 +171,33 @@ export default function GoodsReceipt({ store }) {
       );
 
       setReceipts(receiptsData);
+      setTotalData(receiptsResponse?.totalCount || 0);
       setPurchaseOrders(activePOs);
       setAllPurchaseOrders(poData);
       setLocations(locationsData);
+
+      const limits = getEffectiveLimits(store);
+      if (limits.maxGRN !== Infinity) {
+        const { totalCount: allTimeCount } = await api.entities.GoodsReceipt.filter(
+          { store_id: store.id },
+          null,
+          { page: 1, pageSize: 1 }
+        );
+        setTotalReceiptCount(allTimeCount || 0);
+      }
     } catch (err) {
       console.error("Failed to load GRN data", err);
     }
     setIsLoading(false);
   };
 
-  // Filter by global selected date, status, and search term
   const filteredReceipts = receipts.filter(r => {
-    const isDateMatch = matchesDate(r, selectedDate);
     const isStatusMatch = statusFilter === 'Semua Status' || r.status === statusFilter;
     const isSearchMatch = !searchTerm ||
       r.gr_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       r.po_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       r.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    return isDateMatch && isStatusMatch && isSearchMatch;
+    return isStatusMatch && isSearchMatch;
   });
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
@@ -273,7 +298,7 @@ export default function GoodsReceipt({ store }) {
 
     // --- PROCUREMENT LIMIT CHECK ---
     const limits = getEffectiveLimits(store);
-    if (limits.maxGRN !== Infinity && receipts.length >= limits.maxGRN) {
+    if (limits.maxGRN !== Infinity && totalReceiptCount >= limits.maxGRN) {
       toast({
         title: "Batas GRN Tercapai",
         description: `Batas GRN tercapai (${limits.maxGRN} data). Silakan upgrade paket Anda untuk membuat GRN tanpa batas.`,
@@ -697,6 +722,19 @@ export default function GoodsReceipt({ store }) {
               )}
             </TableBody>
           </Table>
+          
+          {!isLoading && (
+            <DataTablePagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalData={totalData}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -755,7 +793,7 @@ export default function GoodsReceipt({ store }) {
           ) : (
             <div className="flex flex-col md:h-[90vh] min-w-0 w-full overflow-hidden">
               {/* Form Header */}
-              <div className="p-6 pr-14 border-b bg-white flex items-center justify-between shrink-0">
+              <div className="p-6 pr-24 border-b bg-white flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4">
                   <Button variant="ghost" size="icon" onClick={() => setSelectedPO(null)} className="rounded-full hover:bg-slate-100">
                     <ArrowLeft className="w-5 h-5" />
@@ -1065,7 +1103,7 @@ export default function GoodsReceipt({ store }) {
       {/* Redesigned View Dialog */}
       <Dialog open={!!viewingReceipt} onOpenChange={() => setViewingReceipt(null)}>
         <DialogContent hideFullscreen={true} className="max-w-[95vw] xl:max-w-[1400px] md:h-[90vh] h-[95vh] flex flex-col p-0 md:overflow-hidden overflow-y-auto rounded-3xl bg-white shadow-2xl border-none">
-          <div className="p-6 border-b flex items-center justify-between bg-white relative pr-14 flex-shrink-0">
+          <div className="p-6 border-b flex items-center justify-between bg-white relative pr-24 flex-shrink-0">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center">
                 <Truck className="w-6 h-6 text-emerald-600" />

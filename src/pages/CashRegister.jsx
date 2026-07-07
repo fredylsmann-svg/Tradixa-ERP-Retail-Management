@@ -55,8 +55,11 @@ export default function CashRegister({ store }) {
 
       // 2. Fetch all journal lines for these entries
       const allLines = await api.entities.JournalLine.filter({});
-      // Filter lines where account_name is 'Kas Kantor' and journal_id is in entryIds
-      const cashLines = allLines.filter(line => line.account_name === 'Kas Kantor' && entryIds.includes(line.journal_id));
+      // Filter lines where account_name is 'Kas Kantor' or 'Kas Tangan' and journal_id is in entryIds
+      const cashLines = allLines.filter(line => 
+        (line.account_name === 'Kas Kantor' || line.account_name === 'Kas Tangan') && 
+        entryIds.includes(line.journal_id)
+      );
 
       let balance = 0;
       let in_today = 0;

@@ -85,21 +85,64 @@ function createEntityProxy(entityName) {
      * filter(filters, sort, options)
      * @param {Object} filters - Key-value pairs for .eq() filtering
      * @param {string|null} sort - Sort string, e.g. '-created_date'
-     * @param {Object} options - { columns: 'id,name,...', limit: 100 }
+     * @param {Object} options - { columns: 'id,name,...', limit: 100, page: 1, pageSize: 25, startDate, endDate, dateField }
      */
     async filter(filters = {}, sort = null, options = {}) {
       const columns = options.columns || '*';
       const limit = options.limit || null;
-      let query = supabase.from(table).select(columns);
+      
+      // If page is provided, we need to count total data as well
+      const isPaginated = options.page && options.pageSize;
+      
+      let query = isPaginated 
+        ? supabase.from(table).select(columns, { count: 'exact' })
+        : supabase.from(table).select(columns);
+
       query = applyFilters(query, filters);
+      
+      if (options.exclude && typeof options.exclude === 'object') {
+        Object.entries(options.exclude).forEach(([key, value]) => {
+          query = query.neq(key, value);
+        });
+      }
+      
+      // Apply Date Filtering if provided
+      if (options.startDate && options.dateField) {
+        if (options.dateField === 'created_date' || options.dateField === 'timestamp_wib') {
+          const startWIB = new Date(`${options.startDate}T00:00:00+07:00`);
+          query = query.gte('created_at', startWIB.toISOString());
+        } else {
+          query = query.gte(options.dateField, options.startDate);
+        }
+      }
+      if (options.endDate && options.dateField) {
+        if (options.dateField === 'created_date' || options.dateField === 'timestamp_wib') {
+          const endWIB = new Date(`${options.endDate}T23:59:59+07:00`);
+          query = query.lte('created_at', endWIB.toISOString());
+        } else {
+          query = query.lte(options.dateField, options.endDate);
+        }
+      }
+
       query = applySort(query, sort);
-      if (limit) query = query.limit(limit);
-      const { data, error } = await query;
+      
+      // Apply Pagination
+      if (isPaginated) {
+        const from = (options.page - 1) * options.pageSize;
+        const to = from + options.pageSize - 1;
+        query = query.range(from, to);
+      } else if (limit) {
+        query = query.limit(limit);
+      }
+
+      const { data, count, error } = await query;
+      
       if (error) {
         console.error(`[Tradixa] ${entityName}.filter error:`, error.message);
-        return [];
+        return isPaginated ? { data: [], totalCount: 0 } : [];
       }
-      return data || [];
+      
+      return isPaginated ? { data: data || [], totalCount: count || 0 } : (data || []);
     },
 
     /**

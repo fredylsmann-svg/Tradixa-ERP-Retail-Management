@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import PageHeader from '@/components/layout/PageHeader';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import { RotateCcw, Plus, Search, Loader2, PackageCheck, Eye, Minus } from 'lucide-react';
 import { NumberInput } from '@/components/ui/number-input';
 
@@ -23,6 +24,9 @@ export default function SalesReturn({ store }) {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [viewingReturn, setViewingReturn] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
 
   // Form states
   const [searchInvoice, setSearchInvoice] = useState('');
@@ -39,16 +43,27 @@ export default function SalesReturn({ store }) {
 
   useEffect(() => {
     if (storeId) loadData();
-  }, [storeId]);
+  }, [storeId, selectedDate, currentPage, pageSize]);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
       const [returnsData, banksData] = await Promise.all([
-        api.entities.SalesReturn.filter({ store_id: storeId }, '-created_at'),
+        api.entities.SalesReturn.filter(
+          { store_id: storeId },
+          '-created_at',
+          {
+            page: currentPage,
+            pageSize,
+            startDate: selectedDate,
+            endDate: selectedDate,
+            dateField: 'created_date'
+          }
+        ),
         api.entities.BankAccount.filter({ store_id: storeId })
       ]);
-      setAllReturns(returnsData || []);
+      setAllReturns(returnsData.data || []);
+      setTotalData(returnsData.totalCount || 0);
       setBankAccounts(banksData || []);
     } catch (err) {
       console.error('Failed to load returns:', err);
@@ -56,7 +71,7 @@ export default function SalesReturn({ store }) {
     setIsLoading(false);
   };
 
-  const returns = allReturns.filter(r => matchesDate(r, selectedDate));
+  const returns = allReturns;
   const formatCurrency = (v) => new Intl.NumberFormat('id-ID').format(v || 0);
 
   const getWIBTimestamp = () => {
@@ -212,7 +227,7 @@ export default function SalesReturn({ store }) {
         });
         const creditAccount = refundMethod === 'Transfer Bank'
           ? `Kas Bank - ${bankAccounts.find(b => b.id === selectedBankId)?.bank_name || 'Bank'}`
-          : 'Kas Tangan';
+          : 'Kas Kantor';
         await Promise.all([
           api.entities.JournalLine.create({
             journal_id: journal.id,
@@ -362,6 +377,21 @@ export default function SalesReturn({ store }) {
               )}
             </TableBody>
           </Table>
+          {!isLoading && (
+            <div className="p-4 border-t">
+              <DataTablePagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(totalData / pageSize)}
+                totalData={totalData}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

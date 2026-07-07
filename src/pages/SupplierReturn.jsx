@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import { useToast } from '@/components/ui/use-toast';
 import PageHeader from '@/components/layout/PageHeader';
 import { getEffectiveLimits } from '@/planConfig';
@@ -31,6 +32,10 @@ export default function SupplierReturn({ store }) {
   const [allGRNs, setAllGRNs] = useState([]);
   const { selectedDate, formattedDate } = useGlobalDate();
   const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
+  const [totalReturnCount, setTotalReturnCount] = useState(0);
 
   const [formData, setFormData] = useState({ supplier_id: '', items: [], notes: '', bank_account_id: '' });
   const [newItem, setNewItem] = useState({ product_id: '', quantity: 1, reason: 'Rusak', photo_url: '' });
@@ -41,30 +46,53 @@ export default function SupplierReturn({ store }) {
 
   useEffect(() => {
     if (store?.id) loadData();
-  }, [store]);
+  }, [store, selectedDate, currentPage, pageSize]);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
       const [returnsData, suppliersData, productsData, banksData, grnsData] = await Promise.all([
-        api.entities.SupplierReturn.filter({ store_id: store.id }, '-created_date'),
+        api.entities.SupplierReturn.filter(
+          { store_id: store.id },
+          '-created_date',
+          {
+            page: currentPage,
+            pageSize,
+            startDate: selectedDate,
+            endDate: selectedDate,
+            dateField: 'created_date'
+          }
+        ),
         api.entities.Supplier.filter({ store_id: store.id }),
         api.entities.Product.filter({ store_id: store.id }),
         api.entities.BankAccount.filter({ store_id: store.id }),
         api.entities.GoodsReceipt.filter({ store_id: store.id }, '-created_date')
       ]);
-      setReturns(returnsData || []);
+      setReturns(returnsData.data || []);
+      setTotalData(returnsData.totalCount || 0);
       setSuppliers(suppliersData || []);
       setProducts(productsData || []);
       setBankAccounts(banksData || []);
       setAllGRNs(grnsData || []);
-    } catch (error) {
-      console.error("Error loading data:", error);
+
+      // Fetch all-time count for limit check
+      const limits = getEffectiveLimits(store);
+      if (limits.maxSupplierReturn !== Infinity) {
+        const { totalCount: allTimeCount } = await api.entities.SupplierReturn.filter(
+          { store_id: store.id },
+          null,
+          { page: 1, pageSize: 1 }
+        );
+        setTotalReturnCount(allTimeCount || 0);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
-  const filteredReturns = returns.filter(r => matchesDate(r, selectedDate));
+  const filteredReturns = returns;
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
@@ -159,11 +187,11 @@ export default function SupplierReturn({ store }) {
 
     // --- PROCUREMENT LIMIT CHECK ---
     const limits = getEffectiveLimits(store);
-    if (limits.maxSupplierReturn !== Infinity && returns.length >= limits.maxSupplierReturn) {
+    if (limits.maxSupplierReturn !== Infinity && totalReturnCount >= limits.maxSupplierReturn) {
       toast({
         title: "Batas Retur Tercapai",
         description: `Batas Retur Supplier tercapai (${limits.maxSupplierReturn} data). Silakan upgrade paket Anda untuk akses tanpa batas.`,
-        variant: "destructive"
+        variant: 'destructive'
       });
       return;
     }
@@ -417,9 +445,8 @@ export default function SupplierReturn({ store }) {
               storeAddress={store?.address}
               storeLogoUrl={store?.logo_url}
               contentId="print-return-detailed"
-            
-            store={store}
-          />
+              store={store}
+            />
             <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 rounded-xl">
               <Plus className="w-4 h-4 mr-2" />
               Buat Retur Supplier
@@ -457,7 +484,7 @@ export default function SupplierReturn({ store }) {
                 ) : (
                   filteredReturns.map((r, idx) => (
                     <TableRow key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="pl-6 text-slate-400 font-bold">{idx + 1}</TableCell>
+                      <TableCell className="pl-6 text-slate-400 font-bold">{(currentPage - 1) * pageSize + idx + 1}</TableCell>
                       <TableCell className="font-black text-slate-900">{r.return_number}</TableCell>
                       <TableCell className="text-slate-500 text-xs font-medium">{r.timestamp_wib}</TableCell>
                       <TableCell className="font-bold text-slate-800">{r.supplier_name}</TableCell>
@@ -480,6 +507,19 @@ export default function SupplierReturn({ store }) {
               </TableBody>
             </Table>
           </div>
+          {!isLoading && (
+            <DataTablePagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(totalData / pageSize)}
+              totalData={totalData}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
 

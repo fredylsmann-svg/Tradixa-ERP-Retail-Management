@@ -202,7 +202,7 @@ export default function Layout({ children, currentPageName }) {
         </main>
       </div>
       <Toaster />
-      <SonnerToaster position="top-center" />
+      <SonnerToaster position="top-center" offset="80px" />
     </div>
     </QuickAccessProvider>
   );

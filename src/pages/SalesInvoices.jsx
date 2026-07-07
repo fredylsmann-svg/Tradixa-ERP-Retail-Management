@@ -12,6 +12,7 @@ import PrintInvoice from '@/components/invoice/PrintInvoice';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import { toast } from 'sonner';
 import PageHeader from '@/components/layout/PageHeader';
 import PremiumGate from '@/components/ui/PremiumGate';
@@ -19,9 +20,12 @@ import { FileText } from 'lucide-react';
 import { marketingApi } from '@/api/marketing';
 
 export default function SalesInvoices({ store }) {
-  const [allTransactions, setAllTransactions] = useState([]);
+  const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
   const [viewingInvoice, setViewingInvoice] = useState(null);
   const [printingInvoice, setPrintingInvoice] = useState(null);
   const [emailingInvoice, setEmailingInvoice] = useState(null);
@@ -29,28 +33,38 @@ export default function SalesInvoices({ store }) {
   const { selectedDate, formattedDate, isToday } = useGlobalDate();
 
   useEffect(() => {
-    if (store?.id) loadTransactions();
+    if (store?.id) loadData();
 
     // Listener untuk tombol refresh di Header
     const handleRefreshEvent = () => {
-      loadTransactions();
+      loadData();
     };
     window.addEventListener('refresh_data', handleRefreshEvent);
 
     return () => {
       window.removeEventListener('refresh_data', handleRefreshEvent);
     };
-  }, [store]);
+  }, [store, selectedDate, currentPage, pageSize]);
 
-  const loadTransactions = async () => {
-    const data = await api.entities.SalesTransaction.filter({ store_id: store.id }, '-created_date');
-    setAllTransactions(data);
+  const loadData = async () => {
+    setIsLoading(true);
+    const response = await api.entities.SalesTransaction.filter(
+      { store_id: store.id },
+      '-created_at',
+      {
+        page: currentPage,
+        pageSize,
+        startDate: selectedDate,
+        endDate: selectedDate,
+        dateField: 'created_date'
+      }
+    );
+    setTransactions(response.data || []);
+    setTotalData(response.totalCount || 0);
     setIsLoading(false);
   };
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
-
-  const transactions = allTransactions.filter(tx => matchesDate(tx, selectedDate));
 
   const filteredTransactions = transactions.filter(tx =>
     tx.invoice_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -316,6 +330,19 @@ export default function SalesInvoices({ store }) {
               </TableBody>
             </Table>
           </div>
+          {!isLoading && (
+            <DataTablePagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(totalData / pageSize)}
+              totalData={totalData}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
 

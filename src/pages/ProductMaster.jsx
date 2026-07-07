@@ -16,6 +16,7 @@ import { formatNumber } from '@/components/utils/currencyFormatter';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
 import ExportToolbar from '@/components/layout/ExportToolbar';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 import PageHeader from '@/components/layout/PageHeader';
 import { getEffectiveLimits } from '@/planConfig';
 import { useToast } from '@/components/ui/use-toast';
@@ -30,6 +31,10 @@ export default function ProductMaster({ store }) {
   const [deleteProduct, setDeleteProduct] = useState(null);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [printProducts, setPrintProducts] = useState([]); // Products to pass to modal
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
+  const [totalProductCount, setTotalProductCount] = useState(0);
   const { selectedDate, formattedDate } = useGlobalDate();
   const { toast } = useToast();
 
@@ -49,7 +54,7 @@ export default function ProductMaster({ store }) {
     return () => {
       window.removeEventListener('refresh_data', handleRefreshEvent);
     };
-  }, [store]);
+  }, [store, currentPage, pageSize]);
 
   useEffect(() => {
     if (isLoading || !store?.id) return;
@@ -98,8 +103,24 @@ export default function ProductMaster({ store }) {
   }, [readyForActionGuide, showActionColumnGuide]);
 
   const loadProducts = async () => {
-    const data = await api.entities.Product.filter({ store_id: store.id });
-    setProducts(data);
+    setIsLoading(true);
+    const { data, totalCount } = await api.entities.Product.filter(
+      { store_id: store.id },
+      '-created_at',
+      { page: currentPage, pageSize }
+    );
+    setProducts(data || []);
+    setTotalData(totalCount || 0);
+
+    const limits = getEffectiveLimits(store);
+    if (limits.maxProducts !== Infinity) {
+      const { totalCount: allTimeCount } = await api.entities.Product.filter(
+        { store_id: store.id },
+        null,
+        { page: 1, pageSize: 1 }
+      );
+      setTotalProductCount(allTimeCount || 0);
+    }
     setIsLoading(false);
   };
 
@@ -184,7 +205,7 @@ export default function ProductMaster({ store }) {
                 onClick={() => {
                   if (showAddProductGuide) dismissAddProductGuide();
                   const limits = getEffectiveLimits(store);
-                  if (limits.maxProducts !== Infinity && products.length >= limits.maxProducts) {
+                  if (limits.maxProducts !== Infinity && totalProductCount >= limits.maxProducts) {
                     toast({
                       title: "Batas Produk Tercapai",
                       description: `Paket ${store?.plan || 'Free'} maksimal ${limits.maxProducts} produk. Silakan upgrade paket Anda.`,
@@ -385,6 +406,19 @@ export default function ProductMaster({ store }) {
               </TableBody>
             </Table>
           </div>
+          
+          {!isLoading && (
+            <DataTablePagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalData={totalData}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
 

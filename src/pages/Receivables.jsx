@@ -114,7 +114,7 @@ export default function Receivables({ store }) {
 
   const extractReceiptData = (text) => {
     let amount = null;
-    
+
     const cleanIDR = (str) => {
       let s = str.replace(/(?:Rp|IDR)/gi, '').trim();
       s = s.replace(/,00$/g, '');
@@ -176,15 +176,16 @@ export default function Receivables({ store }) {
       reader.onloadend = async () => {
         const base64data = reader.result;
         setLastUploadedImageBase64(base64data);
-        
+
         const { data: { text } } = await Tesseract.recognize(
           file,
           'ind+eng',
-          { logger: m => {
+          {
+            logger: m => {
               if (m.status === 'recognizing text') {
                 setOcrMessage(`Membaca Struk... ${Math.round(m.progress * 100)}%`);
               }
-            } 
+            }
           }
         );
 
@@ -193,7 +194,7 @@ export default function Receivables({ store }) {
         if (amount && !isNaN(amount) && amount > 0) {
           setPaymentAmount(amount);
           toast({ title: "Berhasil", description: `Nominal terdeteksi: Rp ${formatCurrency(amount)}` });
-          
+
           if (bankMatch) {
             setPaymentMethod('Bank');
             setAccounts(prev => {
@@ -249,7 +250,7 @@ export default function Receivables({ store }) {
       if (amount && !isNaN(amount) && amount > 0) {
         setPaymentAmount(amount);
         toast({ title: "Berhasil (Smart AI)", description: `Nominal terdeteksi: Rp ${formatCurrency(amount)}` });
-        
+
         if (bankMatch) {
           setPaymentMethod('Bank');
           setAccounts(prev => {
@@ -380,9 +381,9 @@ export default function Receivables({ store }) {
           redirect_url: `${window.location.origin}/receivables`
         }
       });
-      
+
       if (error) throw error;
-      
+
       if (data && data.link) {
         let finalLink = data.link;
         if (finalLink.includes('ferdiarmond.myr.id')) {
@@ -401,7 +402,7 @@ export default function Receivables({ store }) {
         try {
           const contextData = await err.context.json();
           errMsg = contextData.error || errMsg;
-        } catch(e){}
+        } catch (e) { }
       }
       toast({ title: 'Error', description: 'Gagal memanggil Mayar: ' + errMsg, variant: 'destructive' });
     } finally {
@@ -428,11 +429,11 @@ export default function Receivables({ store }) {
     }
 
     const bank = accounts.find(a => a.id === selectedBankId);
-    
+
     // Hitung Advance Balance (Kelebihan Bayar & Pemotongan Deposit)
     const selectedCustomer = customers.find(c => c.id === paymentDialog.customer_id);
     const currentAdvanceBalance = selectedCustomer?.advance_balance || 0;
-    
+
     let excessAmount = 0;
     let depositUsed = 0;
     let actualPaidToInvoice = 0;
@@ -442,7 +443,7 @@ export default function Receivables({ store }) {
       depositUsed = Math.min(Number(depositAmount) || 0, currentAdvanceBalance, remaining);
       const stillNeeded = remaining - depositUsed;
       const cashPaid = Number(paymentAmount);
-      
+
       if (cashPaid > stillNeeded && stillNeeded >= 0) {
         excessAmount = cashPaid - stillNeeded;
         actualPaidToInvoice = remaining;
@@ -484,7 +485,7 @@ export default function Receivables({ store }) {
     // 2. Integrated Financial Action
     if (paymentAmount > 0) {
       const reference = `RCV-PAY-${Date.now()}`;
-      
+
       if (paymentMethod === 'Bank') {
         const newBalance = (bank?.balance || 0) + paymentAmount;
 
@@ -545,17 +546,17 @@ export default function Receivables({ store }) {
 
       // Log Invoice Payment History (Cash/Bank)
       await api.entities.InvoicePayment.create({
-         store_id: store.id,
-         invoice_type: 'Receivable',
-         invoice_id: paymentDialog.id,
-         invoice_number: paymentDialog.invoice_number,
-         amount: paymentAmount,
-         payment_method: paymentMethod,
-         bank_name: paymentMethod === 'Bank' ? bank?.bank_name : 'Cash',
-         payment_proof_url: paymentProofUrl,
-         reference,
-         payment_date: currentDate,
-         timestamp_wib: timestamp
+        store_id: store.id,
+        invoice_type: 'Receivable',
+        invoice_id: paymentDialog.id,
+        invoice_number: paymentDialog.invoice_number,
+        amount: paymentAmount,
+        payment_method: paymentMethod,
+        bank_name: paymentMethod === 'Bank' ? bank?.bank_name : 'Cash',
+        payment_proof_url: paymentProofUrl,
+        reference,
+        payment_date: currentDate,
+        timestamp_wib: timestamp
       });
     }
 
@@ -563,17 +564,17 @@ export default function Receivables({ store }) {
     if (depositUsed > 0) {
       const depositRef = `DEPOSIT-${Date.now()}`;
       await api.entities.InvoicePayment.create({
-         store_id: store.id,
-         invoice_type: 'Receivable',
-         invoice_id: paymentDialog.id,
-         invoice_number: paymentDialog.invoice_number,
-         amount: depositUsed,
-         payment_method: 'Deposit',
-         bank_name: 'Saldo Pelanggan',
-         payment_proof_url: '',
-         reference: depositRef,
-         payment_date: currentDate,
-         timestamp_wib: timestamp
+        store_id: store.id,
+        invoice_type: 'Receivable',
+        invoice_id: paymentDialog.id,
+        invoice_number: paymentDialog.invoice_number,
+        amount: depositUsed,
+        payment_method: 'Deposit',
+        bank_name: 'Saldo Pelanggan',
+        payment_proof_url: '',
+        reference: depositRef,
+        payment_date: currentDate,
+        timestamp_wib: timestamp
       });
 
       // Create Journal Entry for deposit usage (integrates with Bank Reconciliation)
@@ -649,16 +650,16 @@ export default function Receivables({ store }) {
         icon={Wallet}
         actions={
           <>
-            <ExportToolbar 
-              title="Laporan Account Receivables" 
-              date={moment().format('DD MMMM YYYY')} 
-              storeName={store?.store_name} 
-              storeAddress={store?.address} 
-              storeLogoUrl={store?.logo_url} 
-              contentId="print-receivables-table" 
-            
-            store={store}
-          />
+            <ExportToolbar
+              title="Laporan Account Receivables"
+              date={moment().format('DD MMMM YYYY')}
+              storeName={store?.store_name}
+              storeAddress={store?.address}
+              storeLogoUrl={store?.logo_url}
+              contentId="print-receivables-table"
+
+              store={store}
+            />
             <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 rounded-xl">
               <Plus className="w-4 h-4 mr-2" />
               Tambah Piutang Baru
@@ -709,7 +710,7 @@ export default function Receivables({ store }) {
                   const totalTransfer = invoicePayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
                   const overpayment = totalTransfer > 0 ? Math.max(0, totalTransfer - (item.paid_amount || 0)) : 0;
                   const depositUsed = invoicePayments.filter(p => p.payment_method === 'Deposit').reduce((sum, p) => sum + Number(p.amount || 0), 0);
-                  
+
                   return (
                     <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors">
                       <TableCell className="pl-8 text-xs font-medium text-slate-400">{idx + 1}</TableCell>
@@ -736,28 +737,28 @@ export default function Receivables({ store }) {
                       <TableCell className="text-xs font-bold text-slate-600">{item.due_date}</TableCell>
                       <TableCell>{getStatusBadge(item.status)}</TableCell>
                       <TableCell className="text-center pr-8">
-                      <div className="flex items-center justify-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setViewingItem(item)}
-                          className="hover:bg-blue-50 hover:text-blue-600 rounded-xl"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        {item.status !== 'Paid' && (
+                        <div className="flex items-center justify-center gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => { setPaymentDialog(item); setPaymentAmount(item.remaining_amount); }}
-                            className="hover:bg-emerald-50 hover:text-emerald-600 rounded-xl"
+                            onClick={() => setViewingItem(item)}
+                            className="hover:bg-blue-50 hover:text-blue-600 rounded-xl"
                           >
-                            <DollarSign className="w-4 h-4" />
+                            <Eye className="w-4 h-4" />
                           </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                          {item.status !== 'Paid' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => { setPaymentDialog(item); setPaymentAmount(item.remaining_amount); }}
+                              className="hover:bg-emerald-50 hover:text-emerald-600 rounded-xl"
+                            >
+                              <DollarSign className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   );
                 })
               )}
@@ -908,46 +909,46 @@ export default function Receivables({ store }) {
             {(!useDeposit || Number(paymentAmount) > 0) && (
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center mb-2">
-                   <Label className="text-xs font-bold uppercase text-slate-400">{useDeposit ? 'Sisa Diterima via Cash/Bank' : 'Jumlah yang Diterima *'}</Label>
-                   {!useDeposit && (
-                     <Button type="button" variant="outline" size="sm" className="h-8 rounded-lg text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => document.getElementById('ocr-upload').click()}>
-                        <Camera className="w-3 h-3 mr-2" /> Scan Struk
-                     </Button>
-                   )}
-                   <input type="file" id="ocr-upload" className="hidden" accept="image/*" onChange={handleOcrUpload} />
+                  <Label className="text-xs font-bold uppercase text-slate-400">{useDeposit ? 'Sisa Diterima via Cash/Bank' : 'Jumlah yang Diterima *'}</Label>
+                  {!useDeposit && (
+                    <Button type="button" variant="outline" size="sm" className="h-8 rounded-lg text-xs font-bold text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => document.getElementById('ocr-upload').click()}>
+                      <Camera className="w-3 h-3 mr-2" /> Scan Struk
+                    </Button>
+                  )}
+                  <input type="file" id="ocr-upload" className="hidden" accept="image/*" onChange={handleOcrUpload} />
                 </div>
 
                 <AnimatePresence>
                   {isOcrProcessing && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                       <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-center gap-3 mb-4">
-                         <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                         <p className="text-xs font-bold text-blue-800">{ocrMessage}</p>
+                        <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                        <p className="text-xs font-bold text-blue-800">{ocrMessage}</p>
                       </div>
                     </motion.div>
                   )}
                   {ocrError && !isOcrProcessing && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                       <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2 mb-4">
-                         <div className="flex items-center gap-2 text-amber-800">
-                           <AlertTriangle className="w-4 h-4" />
-                           <p className="text-xs font-bold">{ocrMessage}</p>
-                         </div>
-                         <Button size="sm" onClick={() => {
-                           if (isOcrLocked) {
-                             sonnerToast.error(
-                               <div className="flex flex-col gap-1">
-                                 <span className="font-bold text-sm">{isTrial ? 'Fitur Trial Terbatas' : 'Upgrade Paket'}</span>
-                                 <span className="text-xs">Smart AI OCR hanya tersedia untuk paket Pro berbayar. Upgrade untuk menggunakan fitur ini.</span>
-                               </div>,
-                               { duration: 5000 }
-                             );
-                             return;
-                           }
-                           runGoogleCloudVision();
-                         }} className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-lg text-xs h-8">
-                           <Sparkles className="w-3 h-3 mr-2" /> Gunakan Cloud Vision AI (Premium)
-                         </Button>
+                        <div className="flex items-center gap-2 text-amber-800">
+                          <AlertTriangle className="w-4 h-4" />
+                          <p className="text-xs font-bold">{ocrMessage}</p>
+                        </div>
+                        <Button size="sm" onClick={() => {
+                          if (isOcrLocked) {
+                            sonnerToast.error(
+                              <div className="flex flex-col gap-1">
+                                <span className="font-bold text-sm">{isTrial ? 'Fitur Trial Terbatas' : 'Upgrade Paket'}</span>
+                                <span className="text-xs">Smart AI OCR hanya tersedia untuk paket Pro berbayar. Upgrade untuk menggunakan fitur ini.</span>
+                              </div>,
+                              { duration: 5000 }
+                            );
+                            return;
+                          }
+                          runGoogleCloudVision();
+                        }} className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-lg text-xs h-8">
+                          <Sparkles className="w-3 h-3 mr-2" /> Gunakan Cloud Vision AI (Premium)
+                        </Button>
                       </div>
                     </motion.div>
                   )}
@@ -1035,10 +1036,10 @@ export default function Receivables({ store }) {
             <div className="flex justify-between items-center pr-8">
               <DialogTitle className="font-black text-xl text-slate-900">Detail Piutang Usaha</DialogTitle>
               {viewingItem && !viewingItem.payment_link && viewingItem.status !== 'Paid' && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleGenerateMayar} 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateMayar}
                   disabled={isGeneratingMayar || !store?.mayar_api_key}
                   className="rounded-xl font-bold gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50 h-8 disabled:opacity-50 disabled:bg-slate-50"
                 >

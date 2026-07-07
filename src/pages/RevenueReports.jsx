@@ -129,7 +129,7 @@ export default function RevenueReports({ store }) {
               <div className="absolute right-0 top-0 w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <DollarSign className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-12 md:pr-14">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">Total Pendapatan</p>
                 <p className="text-2xl font-black text-white tracking-tight drop-shadow-md">
                   <AnimatedNumber value={totalRevenue} prefix="Rp " />
@@ -146,7 +146,7 @@ export default function RevenueReports({ store }) {
               <div className="absolute right-0 top-0 w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-12 md:pr-14">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">Total Keuntungan</p>
                 <p className="text-2xl font-black text-white tracking-tight drop-shadow-md">
                   <AnimatedNumber value={totalProfit} prefix="Rp " />
@@ -163,7 +163,7 @@ export default function RevenueReports({ store }) {
               <div className="absolute right-0 top-0 w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <ShoppingCart className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-12 md:pr-14">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">Total Order</p>
                 <p className="text-2xl font-black text-white tracking-tight drop-shadow-md">
                   <AnimatedNumber value={totalOrders} />
@@ -180,7 +180,7 @@ export default function RevenueReports({ store }) {
               <div className="absolute right-0 top-0 w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <Percent className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-12 md:pr-14">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">Rata-rata Order</p>
                 <p className="text-2xl font-black text-white tracking-tight drop-shadow-md">
                   <AnimatedNumber value={avgOrderValue} prefix="Rp " />
@@ -315,7 +315,48 @@ export default function RevenueReports({ store }) {
                   cy="50%"
                   outerRadius={80}
                   dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={false}
+                  label={(props) => {
+                    const { cx, cy, midAngle, outerRadius, fill, percent, name, index } = props;
+                    if (percent === 0) return null;
+                    const RADIAN = Math.PI / 180;
+                    const sin = Math.sin(-RADIAN * midAngle);
+                    const cos = Math.cos(-RADIAN * midAngle);
+                    
+                    const sx = cx + outerRadius * cos;
+                    const sy = cy + outerRadius * sin;
+                    
+                    // Vertical stagger for small slices to prevent overlap without widening chart
+                    const stagger = [ -35, 0, 35 ];
+                    const verticalStagger = percent < 0.1 ? stagger[index % 3] : 0;
+                    
+                    const mx = cx + (outerRadius + 15) * cos;
+                    const my = cy + (outerRadius + 15) * sin + verticalStagger;
+                    
+                    const ex = mx + (cos >= 0 ? 1 : -1) * 12;
+                    const ey = my;
+                    const textAnchor = cos >= 0 ? 'start' : 'end';
+                    const textX = ex + (cos >= 0 ? 1 : -1) * 6;
+                    
+                    const isLong = name.length > 12;
+
+                    return (
+                      <g>
+                        <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" strokeWidth={1} />
+                        <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
+                        <text x={textX} y={ey} textAnchor={textAnchor} fill={fill} fontSize={15} dominantBaseline="central">
+                          {isLong ? (
+                            <>
+                              <tspan x={textX} dy="-0.4em">{name}</tspan>
+                              <tspan x={textX} dy="1.2em">{`${(percent * 100).toFixed(0)}%`}</tspan>
+                            </>
+                          ) : (
+                            `${name} ${(percent * 100).toFixed(0)}%`
+                          )}
+                        </text>
+                      </g>
+                    );
+                  }}
                 >
                   {[1, 2, 3, 4, 5].map((_, index) => (
                     <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'][index % 5]} />
@@ -332,11 +373,11 @@ export default function RevenueReports({ store }) {
             <CardTitle className="text-lg">Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="p-3 bg-slate-50 rounded-lg flex items-center justify-between">
+            <div className="p-3 bg-white rounded-lg flex items-center justify-between border border-slate-100 border-t-4 border-t-slate-500 shadow-sm">
               <span className="text-slate-600">Total Pendapatan</span>
               <span className="font-bold text-lg">Rp {formatCurrency(totalRevenue)}</span>
             </div>
-            <div className="p-3 bg-red-50 rounded-lg flex items-center justify-between">
+            <div className="p-3 bg-white rounded-lg flex items-center justify-between border border-slate-100 border-t-4 border-t-red-500 shadow-sm">
               <span className="text-red-600">Total Biaya</span>
               <span className="font-bold text-lg text-red-600">Rp {formatCurrency((() => {
                 let totalCost = 0;
@@ -348,17 +389,17 @@ export default function RevenueReports({ store }) {
                 return totalCost;
               })())}</span>
             </div>
-            <div className="p-3 bg-emerald-50 rounded-lg flex items-center justify-between">
+            <div className="p-3 bg-white rounded-lg flex items-center justify-between border border-slate-100 border-t-4 border-t-emerald-500 shadow-sm">
               <span className="text-emerald-600">Total Keuntungan</span>
               <span className="font-bold text-lg text-emerald-600">Rp {formatCurrency(totalProfit)}</span>
             </div>
-            <div className="p-3 bg-violet-50 rounded-lg flex items-center justify-between">
+            <div className="p-3 bg-white rounded-lg flex items-center justify-between border border-slate-100 border-t-4 border-t-violet-500 shadow-sm">
               <span className="text-violet-600">Margin Keuntungan</span>
               <span className="font-bold text-lg text-violet-600">
                 {totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : 0}%
               </span>
             </div>
-            <div className="p-3 bg-blue-50 rounded-lg flex items-center justify-between">
+            <div className="p-3 bg-white rounded-lg flex items-center justify-between border border-slate-100 border-t-4 border-t-blue-500 shadow-sm">
               <span className="text-blue-600">Rata-rata per Transaksi</span>
               <span className="font-bold text-lg text-blue-600">Rp {formatCurrency(avgOrderValue)}</span>
             </div>
@@ -414,7 +455,7 @@ export default function RevenueReports({ store }) {
                         <div className="absolute right-0 top-0 w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                           <PackageX className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-md" />
                         </div>
-                        <div className="text-white pr-12 md:pr-14">
+                        <div className="text-white pr-24 md:pr-24">
                           <p className="text-xs md:text-sm font-medium text-white/90 tracking-wide drop-shadow-sm uppercase mb-1 flex items-center gap-2">Dead Stock ({days} Hari)</p>
                           <h3 className="text-2xl font-black text-white tracking-tight drop-shadow-md mb-2">{deadStock.length} <span className="text-sm font-bold text-white/80">Produk</span></h3>
                           <p className="text-[10px] md:text-xs font-bold text-white bg-black/20 inline-block px-2 py-1 rounded backdrop-blur-sm border border-white/10">Nilai Tertahan: Rp {formatCurrency(totalDeadValue)}</p>
@@ -431,7 +472,7 @@ export default function RevenueReports({ store }) {
                         <div className="absolute right-0 top-0 w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                           <AlertTriangle className="w-5 h-5 md:w-6 md:h-6 text-white drop-shadow-md" />
                         </div>
-                        <div className="text-white pr-12 md:pr-14">
+                        <div className="text-white pr-24 md:pr-24">
                           <p className="text-xs md:text-sm font-medium text-white/90 tracking-wide drop-shadow-sm uppercase mb-1 flex items-center gap-2">Slow Moving ({days} Hari)</p>
                           <h3 className="text-2xl font-black text-white tracking-tight drop-shadow-md mb-2">{slowMoving.length} <span className="text-sm font-bold text-white/80">Produk</span></h3>
                           <p className="text-[10px] md:text-xs font-bold text-white bg-black/20 inline-block px-2 py-1 rounded backdrop-blur-sm border border-white/10">Nilai Tertahan: Rp {formatCurrency(totalSlowValue)}</p>

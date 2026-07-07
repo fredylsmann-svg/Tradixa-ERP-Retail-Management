@@ -52,22 +52,38 @@ export default function Expenses({ store }) {
     notes: ''
   });
   const [isExpanded, setIsExpanded] = useState(false);
+  const [totalExpenseCount, setTotalExpenseCount] = useState(0);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [selectedDate]);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
       const [expenseData, accountData] = await Promise.all([
-        api.entities.Expense.filter({}, '-date'),
-        api.entities.BankAccount.filter({})
+        api.entities.Expense.filter(
+          { store_id: store?.id },
+          '-date',
+          { startDate: selectedDate, endDate: selectedDate, dateField: 'date' }
+        ),
+        api.entities.BankAccount.filter({ store_id: store?.id })
       ]);
       setAllExpenses(expenseData.filter(e => e.category !== 'Pembelian Produk (HPP)'));
       setBankAccounts(accountData);
       if (accountData.length > 0 && !formData.bank_account_id) {
         setFormData(prev => ({ ...prev, bank_account_id: accountData[0].id }));
+      }
+
+      // Fetch all-time count for limit check
+      const limits = getEffectiveLimits(store);
+      if (limits.maxExpenses !== Infinity) {
+        const allTimeData = await api.entities.Expense.filter(
+          { store_id: store?.id },
+          null,
+          { page: 1, pageSize: 1, exclude: { category: 'Pembelian Produk (HPP)' } }
+        );
+        setTotalExpenseCount(allTimeData.totalCount || 0);
       }
     } catch (err) {
       console.error(err);
@@ -102,7 +118,7 @@ export default function Expenses({ store }) {
     setIsSubmitting(true);
     try {
       const limits = getEffectiveLimits(store);
-      if (limits.maxExpenses !== Infinity && allExpenses.length >= limits.maxExpenses) {
+      if (limits.maxExpenses !== Infinity && totalExpenseCount >= limits.maxExpenses) {
         toast({
           title: "Batas Operational Expenses Tercapai",
           description: `Anda telah mencapai batas maksimal pencatatan beban operasional (${limits.maxExpenses} data). Silakan upgrade ke Pro untuk akses tanpa batas.`,
@@ -115,6 +131,8 @@ export default function Expenses({ store }) {
       const amountNumeric = Number(formData.amount);
       const trxId = `OPEX-${Date.now().toString(36).toUpperCase()}`;
       
+      const selectedBank = bankAccounts.find(b => b.id === formData.bank_account_id);
+
       // 1. Save Expense
       await api.entities.Expense.create({
         date: formData.date,
@@ -126,8 +144,6 @@ export default function Expenses({ store }) {
       });
 
       // 2. Journal Entry (1 Header + 2 Lines — Double Entry Accounting)
-      const selectedBank = bankAccounts.find(b => b.id === formData.bank_account_id);
-      
       // Create single journal header
       const journal = await api.entities.JournalEntry.create({
         store_id: store?.id,
@@ -152,8 +168,8 @@ export default function Expenses({ store }) {
 
       await api.entities.JournalLine.create({
         journal_id: journal.id,
-        account_name: selectedBank?.bank_name || 'Kas',
-        description: `Beban ${formData.category} - Pembayaran via ${selectedBank?.bank_name || 'Kas'}`,
+        account_name: selectedBank ? selectedBank.bank_name : 'Kas Kantor',
+        description: `Beban ${formData.category} - Pembayaran via ${selectedBank ? selectedBank.bank_name : 'Kas Kantor'}`,
         debit: 0,
         credit: amountNumeric
       });
@@ -163,31 +179,31 @@ export default function Expenses({ store }) {
       const currentBalance = Number(selectedBank?.balance || 0);
       const newBalance = currentBalance - amountNumeric;
 
-      // Update bank account balance
+      // Update bank account balance and create BankTransaction if paid via Bank
       if (selectedBank?.id) {
         await api.entities.BankAccount.update(selectedBank.id, {
           balance: newBalance
         });
-      }
 
-      await api.entities.BankTransaction.create({
-        store_id: store?.id || '',
-        bank_account_id: formData.bank_account_id,
-        bank_name: selectedBank?.bank_name || 'Kas',
-        transaction_type: 'Debit',
-        amount: amountNumeric,
-        description: `Beban ${formData.category}: ${formData.notes || ''}`,
-        reference: trxId,
-        status: 'Approved',
-        created_date: formData.date,
-        timestamp_wib: `${formData.date.split('-').reverse().join('/')} ${timeStr}`,
-        balance_after: newBalance
-      });
+        await api.entities.BankTransaction.create({
+          store_id: store?.id || '',
+          bank_account_id: formData.bank_account_id,
+          bank_name: selectedBank.bank_name,
+          transaction_type: 'Debit',
+          amount: amountNumeric,
+          description: `Beban ${formData.category}: ${formData.notes || ''}`,
+          reference: trxId,
+          status: 'Approved',
+          created_date: formData.date,
+          timestamp_wib: `${formData.date.split('-').reverse().join('/')} ${timeStr}`,
+          balance_after: newBalance
+        });
+      }
 
       setIsModalOpen(false);
       setFormData({
         date: new Date().toISOString().split('T')[0],
-        bank_account_id: bankAccounts[0]?.id || '',
+        bank_account_id: 'cash',
         category: '',
         amount: '',
         displayAmount: '',
@@ -211,7 +227,23 @@ export default function Expenses({ store }) {
     }
   };
 
-  const expenses = allExpenses.filter(exp => matchesDate(exp, selectedDate));
+  const handleViewExpense = async (exp) => {
+    try {
+      const journals = await api.entities.JournalEntry.filter({ transaction_id: exp.reference });
+      if (journals && journals.length > 0) {
+        const lines = await api.entities.JournalLine.filter({ journal_id: journals[0].id });
+        const creditLine = lines.find(l => l.credit > 0);
+        if (creditLine) {
+          exp.payment_method = creditLine.account_name;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load expense journal details:', err);
+    }
+    setViewingExpense(exp);
+  };
+
+  const expenses = allExpenses;
   const filteredData = expenses.filter(exp => 
     exp.category?.toLowerCase().includes(search.toLowerCase()) || 
     exp.notes?.toLowerCase().includes(search.toLowerCase())
@@ -274,7 +306,7 @@ export default function Expenses({ store }) {
               <div className="absolute right-0 top-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <ArrowDownCircle className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-14 md:pr-16">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">Total Pengeluaran</p>
                 <p className="text-2xl font-black text-white mt-2 tracking-tight drop-shadow-md">
                   <AnimatedNumber value={totalAmount} prefix="Rp " />
@@ -356,7 +388,7 @@ export default function Expenses({ store }) {
                       <td className="px-6 py-5 font-black text-red-600 text-right">Rp {Number(exp.amount).toLocaleString('id-ID')}</td>
                       <td className="px-8 py-5">
                         <div className="flex items-center justify-center gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => setViewingExpense(exp)} className="h-8 w-8 rounded-xl hover:bg-blue-50 hover:text-blue-600">
+                          <Button variant="ghost" size="icon" onClick={() => handleViewExpense(exp)} className="h-8 w-8 rounded-xl hover:bg-blue-50 hover:text-blue-600">
                             <Eye className="w-4 h-4" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => handleDelete(exp.id)} className="h-8 w-8 rounded-xl hover:bg-red-50 hover:text-red-600 text-slate-300">
@@ -388,6 +420,7 @@ export default function Expenses({ store }) {
               <Select value={formData.bank_account_id} onValueChange={v => setFormData({...formData, bank_account_id: v})}>
                 <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none"><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="cash">Kas Kantor (Tunai)</SelectItem>
                   {bankAccounts.map(acc => <SelectItem key={acc.id} value={acc.id}>{acc.bank_name} - {acc.account_number}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -462,6 +495,10 @@ export default function Expenses({ store }) {
                 <div className="space-y-1">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</p>
                   <p className="font-bold text-slate-800 text-xs">{new Date(viewingExpense.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sumber Dana</p>
+                  <p className="font-bold text-slate-800 uppercase text-xs">{viewingExpense.payment_method || '-'}</p>
                 </div>
               </div>
               <div className="space-y-1 px-2">

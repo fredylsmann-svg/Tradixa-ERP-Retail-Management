@@ -233,7 +233,47 @@ export default function AgentPerformance({ store }) {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                  label={(props) => {
+                    const { cx, cy, midAngle, outerRadius, fill, percent, name, index } = props;
+                    if (percent === 0) return null;
+                    const RADIAN = Math.PI / 180;
+                    const sin = Math.sin(-RADIAN * midAngle);
+                    const cos = Math.cos(-RADIAN * midAngle);
+                    
+                    const sx = cx + outerRadius * cos;
+                    const sy = cy + outerRadius * sin;
+                    
+                    // Vertical stagger for small slices to prevent overlap without widening chart
+                    const stagger = [ -35, 0, 35 ];
+                    const verticalStagger = percent < 0.1 ? stagger[index % 3] : 0;
+                    
+                    const mx = cx + (outerRadius + 15) * cos;
+                    const my = cy + (outerRadius + 15) * sin + verticalStagger;
+                    
+                    const ex = mx + (cos >= 0 ? 1 : -1) * 12;
+                    const ey = my;
+                    const textAnchor = cos >= 0 ? 'start' : 'end';
+                    const textX = ex + (cos >= 0 ? 1 : -1) * 6;
+                    
+                    const isLong = name.length > 12;
+
+                    return (
+                      <g>
+                        <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" strokeWidth={1} />
+                        <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
+                        <text x={textX} y={ey} textAnchor={textAnchor} fill={fill} fontSize={15} dominantBaseline="central">
+                          {isLong ? (
+                            <>
+                              <tspan x={textX} dy="-0.4em">{name}</tspan>
+                              <tspan x={textX} dy="1.2em">{`(${(percent * 100).toFixed(0)}%)`}</tspan>
+                            </>
+                          ) : (
+                            `${name} (${(percent * 100).toFixed(0)}%)`
+                          )}
+                        </text>
+                      </g>
+                    );
+                  }}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"

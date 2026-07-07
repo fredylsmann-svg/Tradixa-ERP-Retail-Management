@@ -136,7 +136,7 @@ export default function SalesPerformance({ store }) {
               <div className="absolute right-0 top-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <DollarSign className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-14 md:pr-16">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">Total Penjualan</p>
                 <p className="text-3xl font-black text-white mt-1 tracking-tight drop-shadow-md">
                   <AnimatedNumber value={grandTotal} prefix="Rp " />
@@ -153,7 +153,7 @@ export default function SalesPerformance({ store }) {
               <div className="absolute right-0 top-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-14 md:pr-16">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">Total Transaksi</p>
                 <p className="text-3xl font-black text-white mt-1 tracking-tight drop-shadow-md">
                   <AnimatedNumber value={totalTxs} suffix=" Order" />
@@ -170,7 +170,7 @@ export default function SalesPerformance({ store }) {
               <div className="absolute right-0 top-0 w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/20 backdrop-blur-md shadow-inner border border-white/20 flex items-center justify-center">
                 <Users className="w-6 h-6 md:w-7 md:h-7 text-white drop-shadow-md" />
               </div>
-              <div className="text-white pr-14 md:pr-16">
+              <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">PIC Teraktif</p>
                 <p className="text-3xl font-black text-white mt-1 tracking-tight drop-shadow-md">{performanceData[0]?.name || '-'}</p>
               </div>
