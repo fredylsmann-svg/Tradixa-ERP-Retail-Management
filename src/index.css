@@ -508,3 +508,33 @@
   z-index: 100000 !important;
   pointer-events: auto !important;
 }
+
+/* ===== Mobile Dialog Horizontal Scroll Fix ===== */
+/* Allows horizontal scrolling inside modal dialogs on small screens */
+/* so that wide content (invoices, barcodes, tables) can be swiped. */
+@media (max-width: 640px) {
+  /* 1. Enable horizontal scroll on the dialog container */
+  [role="dialog"] {
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 2. Prevent the dialog's direct child wrapper from being */
+  /*    constrained to the dialog width. This lets wide content */
+  /*    (like invoice layouts) keep their natural width and */
+  /*    trigger the horizontal scrollbar above. */
+  [role="dialog"] > div:not([class*="absolute"]):not([class*="fixed"]) {
+    min-width: fit-content;
+  }
+}
+
+/* Ensure print styles are not affected by mobile scroll fix */
+@media print {
+  [role="dialog"] {
+    overflow: visible !important;
+  }
+  [role="dialog"] > div {
+    min-width: unset !important;
+  }
+}
