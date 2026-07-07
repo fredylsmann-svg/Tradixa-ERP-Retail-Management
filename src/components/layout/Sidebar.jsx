@@ -21,12 +21,6 @@ import { useQuickAccess } from '@/contexts/QuickAccessContext';
 
 const getFilteredMenuGroups = (isOwner) => {
   const allGroups = [
-    /* {
-      title: 'Workflow System',
-      items: [
-        { name: 'Workflow System', icon: GitBranch, page: 'WorkflowSystem' }
-      ]
-    }, */
     {
       title: 'Overview',
       items: [

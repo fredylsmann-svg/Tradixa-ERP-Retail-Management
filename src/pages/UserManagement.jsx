@@ -24,10 +24,6 @@ const MODULE_GROUPS = [
     modules: ['Dashboard', 'Design Studio']
   },
   {
-    category: 'WORKFLOW',
-    modules: ['Workflow System']
-  },
-  {
     category: 'INVENTORY',
     modules: ['Product Master', 'Location Settings', 'Stock In', 'Stock Out', 'Inventory Ledger', 'Inventory Reports', 'Low Stock Alert', 'Inventory Workflow']
   },

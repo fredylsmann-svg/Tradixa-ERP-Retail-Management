@@ -68,7 +68,6 @@ const TransaksiAgen = lazy(() => import('./pages/TransaksiAgen'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const Suppliers = lazy(() => import('./pages/Suppliers'));
 const SupplierReturn = lazy(() => import('./pages/SupplierReturn'));
-const WorkflowSystem = lazy(() => import('./pages/WorkflowSystem'));
 const SalesWorkflow = lazy(() => import('./pages/SalesWorkflow'));
 const PublicPOSign = lazy(() => import('./pages/PublicPOSign'));
 const SystemSettings = lazy(() => import('./pages/SystemSettings'));
@@ -144,7 +143,6 @@ export const PAGES = {
     "ProfileAccount": ProfileAccount,
     "Suppliers": Suppliers,
     "SupplierReturn": SupplierReturn,
-    "WorkflowSystem": WorkflowSystem,
     "SalesWorkflow": SalesWorkflow,
     "PublicPOSign": PublicPOSign,
     "ProcurementWorkflow": ProcurementWorkflow,
