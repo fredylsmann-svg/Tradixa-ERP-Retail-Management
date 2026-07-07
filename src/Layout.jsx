@@ -202,7 +202,11 @@ export default function Layout({ children, currentPageName }) {
         </main>
       </div>
       <Toaster />
-      <SonnerToaster position="top-center" offset="80px" />
+      <SonnerToaster 
+        position="top-center" 
+        offset="80px" 
+        toastOptions={{ style: { marginTop: 'calc(env(safe-area-inset-top) + 10px)' } }}
+      />
     </div>
     </QuickAccessProvider>
   );
