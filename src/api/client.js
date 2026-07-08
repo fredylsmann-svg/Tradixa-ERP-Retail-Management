@@ -124,6 +124,15 @@ function createEntityProxy(entityName) {
         }
       }
 
+      // Apply Server-Side Search (ilike across multiple columns)
+      if (options.search && options.searchColumns && options.search.trim()) {
+        const searchPattern = `%${options.search.trim()}%`;
+        const orConditions = options.searchColumns
+          .map(col => `${col}.ilike.${searchPattern}`)
+          .join(',');
+        query = query.or(orConditions);
+      }
+
       query = applySort(query, sort);
       
       // Apply Pagination

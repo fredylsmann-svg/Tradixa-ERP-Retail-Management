@@ -308,7 +308,7 @@ export default function Expenses({ store }) {
               </div>
               <div className="text-white pr-24 md:pr-24">
                 <p className="text-base font-medium text-white/90 drop-shadow-sm mb-1">Total Pengeluaran</p>
-                <p className="text-2xl font-black text-white mt-2 tracking-tight drop-shadow-md">
+                <p className="text-2xl font-bold text-white mt-2 tracking-tight drop-shadow-md">
                   <AnimatedNumber value={totalAmount} prefix="Rp " />
                 </p>
                 <p className="text-[10px] font-bold text-white/80 mt-1 uppercase">{filteredData.length} transaksi</p>
@@ -324,7 +324,7 @@ export default function Expenses({ store }) {
             <Card key={cat} className="border-slate-100 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-1 duration-300">
               <CardContent className="p-6">
                 <p className="text-base font-medium text-slate-500 truncate">{cat}</p>
-                <p className="text-xl font-black text-slate-800 mt-2">Rp {total.toLocaleString('id-ID')}</p>
+                <p className="text-xl font-bold text-slate-800 mt-2">Rp {total.toLocaleString('id-ID')}</p>
                 <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">{((total / totalAmount) * 100).toFixed(1)}% dari total</p>
               </CardContent>
             </Card>
@@ -385,7 +385,7 @@ export default function Expenses({ store }) {
                         </span>
                       </td>
                       <td className="px-6 py-5 text-slate-600 font-medium">{exp.notes || '-'}</td>
-                      <td className="px-6 py-5 font-black text-red-600 text-right">Rp {Number(exp.amount).toLocaleString('id-ID')}</td>
+                      <td className="px-6 py-5 font-semibold text-red-600 text-right">Rp {Number(exp.amount).toLocaleString('id-ID')}</td>
                       <td className="px-8 py-5">
                         <div className="flex items-center justify-center gap-1">
                           <Button variant="ghost" size="icon" onClick={() => handleViewExpense(exp)} className="h-8 w-8 rounded-xl hover:bg-blue-50 hover:text-blue-600">
@@ -477,7 +477,7 @@ export default function Expenses({ store }) {
               <div className="p-8 bg-red-50 rounded-xl border border-red-100 flex items-center justify-between">
                 <div>
                   <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Total Biaya</p>
-                  <p className="text-3xl font-black text-red-600">Rp {Number(viewingExpense.amount).toLocaleString('id-ID')}</p>
+                  <p className="text-3xl font-bold text-red-600">Rp {Number(viewingExpense.amount).toLocaleString('id-ID')}</p>
                 </div>
                 <div className="w-14 h-14 bg-white rounded-[1.25rem] flex items-center justify-center shadow-sm">
                   <ArrowDownCircle className="w-8 h-8 text-red-500" />

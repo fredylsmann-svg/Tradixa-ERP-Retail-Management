@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Eye, Download } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Plus, Eye, Download, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import StockInForm from '@/components/stock/StockInForm';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
@@ -28,9 +29,20 @@ export default function StockIn({ store }) {
   const [totalMovementCount, setTotalMovementCount] = useState(0);
   const { selectedDate, formattedDate, isToday } = useGlobalDate();
 
+  // Search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      if (searchTerm !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     if (store?.id) loadMovements();
-  }, [store, selectedDate, currentPage, pageSize]);
+  }, [store, selectedDate, currentPage, pageSize, debouncedSearch]);
 
   const handleOpenForm = () => {
     const limits = getEffectiveLimits(store);
@@ -49,9 +61,8 @@ export default function StockIn({ store }) {
       {
         page: currentPage,
         pageSize,
-        startDate: selectedDate,
-        endDate: selectedDate,
-        dateField: 'created_date'
+        ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['reference', 'product_name', 'supplier_name'] } : {}),
+        ...(!debouncedSearch ? { startDate: selectedDate, endDate: selectedDate, dateField: 'created_date' } : {})
       }
     );
     setAllMovements(data || []);
@@ -109,6 +120,17 @@ export default function StockIn({ store }) {
 
       <Card>
         <CardContent className="p-0">
+          <div className="p-4 border-b">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                placeholder="Cari referensi atau nama produk..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-11 rounded-xl"
+              />
+            </div>
+          </div>
           <div className="overflow-x-auto" id="print-stockin">
             <Table>
               <TableHeader>

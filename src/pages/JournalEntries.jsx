@@ -44,9 +44,19 @@ export default function JournalEntries({ store }) {
     ]
   });
 
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      if (search !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   useEffect(() => {
     loadData();
-  }, [selectedDate, currentPage, pageSize]);
+  }, [selectedDate, currentPage, pageSize, debouncedSearch]);
 
   const loadData = async () => {
     if (!store?.id) return;
@@ -58,9 +68,8 @@ export default function JournalEntries({ store }) {
         {
           page: currentPage,
           pageSize,
-          startDate: selectedDate,
-          endDate: selectedDate,
-          dateField: 'date'
+          ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['transaction_id', 'description'] } : {}),
+          ...(!debouncedSearch ? { startDate: selectedDate, endDate: selectedDate, dateField: 'date' } : {})
         }
       );
 
@@ -171,9 +180,7 @@ export default function JournalEntries({ store }) {
   };
 
   const filteredData = entries.filter(entry => {
-    const matchesSearch =
-      entry.transaction_id?.toLowerCase().includes(search.toLowerCase()) ||
-      entry.description?.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = true;
 
     const matchesType = typeFilter === 'all' || entry.type?.toLowerCase() === typeFilter.toLowerCase();
     const matchesStatus = statusFilter === 'all' || entry.status?.toLowerCase() === statusFilter.toLowerCase();
@@ -240,7 +247,7 @@ export default function JournalEntries({ store }) {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-black text-slate-900 tracking-wide">Buat Journal Entry Manual</h1>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Buat Journal Entry Manual</h1>
             <RefreshCw className="w-4 h-4 text-slate-400" />
           </div>
         </div>
@@ -357,8 +364,8 @@ export default function JournalEntries({ store }) {
 
                 {/* Totals */}
                 <div className="flex items-center justify-center gap-12 mt-8 pt-6 border-t-2 border-slate-100">
-                  <p className="text-sm font-black text-blue-600">Total Debit: <span className="text-lg">Rp {formatCurrency(totalDebit)}</span></p>
-                  <p className="text-sm font-black text-orange-600">Total Credit: <span className="text-lg">Rp {formatCurrency(totalCredit)}</span></p>
+                  <p className="text-sm font-semibold text-blue-600">Total Debit: <span className="text-lg">Rp {formatCurrency(totalDebit)}</span></p>
+                  <p className="text-sm font-semibold text-orange-600">Total Credit: <span className="text-lg">Rp {formatCurrency(totalCredit)}</span></p>
                 </div>
               </CardContent>
             </Card>
@@ -536,8 +543,8 @@ export default function JournalEntries({ store }) {
                         </div>
                       </td>
                       <td className="px-8 py-6">{getTypeBadge(entry.type)}</td>
-                      <td className="px-8 py-6 text-right font-black text-slate-900 text-sm">Rp {formatCurrency(entry.total_debit)}</td>
-                      <td className="px-8 py-6 text-right font-black text-slate-900 text-sm">Rp {formatCurrency(entry.total_credit)}</td>
+                      <td className="px-8 py-6 text-right font-semibold text-slate-900 text-sm">Rp {formatCurrency(entry.total_debit)}</td>
+                      <td className="px-8 py-6 text-right font-semibold text-slate-900 text-sm">Rp {formatCurrency(entry.total_credit)}</td>
                       <td className="px-8 py-6 text-center">{getStatusBadge(entry.status)}</td>
                       <td className="px-8 py-6 text-center">
                         <div className="flex items-center justify-center gap-2">

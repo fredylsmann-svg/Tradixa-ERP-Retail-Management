@@ -344,8 +344,8 @@ export default function ChartOfAccounts({ store }) {
                     {group.items.map((acc, idx) => (
                       <TableRow key={acc.id} className="group hover:bg-slate-50/30 transition-colors">
                         <TableCell className="pl-8 font-medium text-slate-400 text-xs">{idx + 1}</TableCell>
-                        <TableCell className="font-black text-slate-400 italic text-sm">{acc.code}</TableCell>
-                        <TableCell className="font-bold text-slate-900">{acc.name}</TableCell>
+                        <TableCell className="font-medium text-slate-600 text-sm">{acc.code}</TableCell>
+                        <TableCell className="font-semibold text-slate-900">{acc.name}</TableCell>
                         <TableCell>
                           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${group.bgColor} ${group.textColor} text-[10px] font-black capitalize tracking-widest`}>
                             <div className={`w-1.5 h-1.5 rounded-full ${group.color}`} />
@@ -404,7 +404,7 @@ export default function ChartOfAccounts({ store }) {
       }}>
         <DialogContent className="rounded-xl border-none p-8 max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black text-slate-900">
+            <DialogTitle className="text-xl font-bold text-slate-900">
               {editingAccount ? 'Edit Akun' : 'Tambah Akun Baru'}
             </DialogTitle>
           </DialogHeader>

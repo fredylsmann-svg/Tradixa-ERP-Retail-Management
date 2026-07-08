@@ -41,9 +41,20 @@ export default function SalesReturn({ store }) {
 
   const storeId = store?.id;
 
+  // Search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      if (searchTerm !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     if (storeId) loadData();
-  }, [storeId, selectedDate, currentPage, pageSize]);
+  }, [storeId, selectedDate, currentPage, pageSize, debouncedSearch]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -55,9 +66,8 @@ export default function SalesReturn({ store }) {
           {
             page: currentPage,
             pageSize,
-            startDate: selectedDate,
-            endDate: selectedDate,
-            dateField: 'created_date'
+            ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['return_number', 'invoice_number', 'customer_name'] } : {}),
+            ...(!debouncedSearch ? { startDate: selectedDate, endDate: selectedDate, dateField: 'created_date' } : {})
           }
         ),
         api.entities.BankAccount.filter({ store_id: storeId })
@@ -320,6 +330,17 @@ export default function SalesReturn({ store }) {
       {/* Return History Table */}
       <Card>
         <CardContent className="p-0">
+          <div className="p-4 border-b">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                placeholder="Cari nomor retur atau invoice..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-11 rounded-xl"
+              />
+            </div>
+          </div>
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50">

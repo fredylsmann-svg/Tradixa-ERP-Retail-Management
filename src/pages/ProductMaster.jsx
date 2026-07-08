@@ -42,6 +42,16 @@ export default function ProductMaster({ store }) {
   const [showActionColumnGuide, setShowActionColumnGuide] = useState(false);
   const [readyForActionGuide, setReadyForActionGuide] = useState(false);
 
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      if (searchQuery !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   useEffect(() => {
     if (store?.id) loadProducts();
 
@@ -54,7 +64,7 @@ export default function ProductMaster({ store }) {
     return () => {
       window.removeEventListener('refresh_data', handleRefreshEvent);
     };
-  }, [store, currentPage, pageSize]);
+  }, [store, currentPage, pageSize, debouncedSearch]);
 
   useEffect(() => {
     if (isLoading || !store?.id) return;
@@ -107,7 +117,11 @@ export default function ProductMaster({ store }) {
     const { data, totalCount } = await api.entities.Product.filter(
       { store_id: store.id },
       '-created_at',
-      { page: currentPage, pageSize }
+      {
+        page: currentPage,
+        pageSize,
+        ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['name', 'sku', 'barcode'] } : {})
+      }
     );
     setProducts(data || []);
     setTotalData(totalCount || 0);
@@ -135,11 +149,7 @@ export default function ProductMaster({ store }) {
 
   const formatCurrency = (value) => formatNumber(value || 0);
 
-  const filteredProducts = currentProducts.filter(p =>
-    p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.barcode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.sku?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = currentProducts;
 
   const getStatusBadge = (status) => {
     const styles = {

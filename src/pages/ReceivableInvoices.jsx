@@ -36,9 +36,19 @@ export default function ReceivableInvoices({ store }) {
     }
   }, [viewingInvoice]);
 
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      if (searchQuery !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   useEffect(() => {
     if (store?.id) loadData();
-  }, [store, selectedDate, currentPage, pageSize, searchQuery]);
+  }, [store, selectedDate, currentPage, pageSize, debouncedSearch]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -48,10 +58,8 @@ export default function ReceivableInvoices({ store }) {
       {
         page: currentPage,
         pageSize,
-        startDate: selectedDate,
-        endDate: selectedDate,
-        dateField: 'created_date',
-        search: searchQuery
+        ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['invoice_number', 'customer_name'] } : {}),
+        ...(!debouncedSearch ? { startDate: selectedDate, endDate: selectedDate, dateField: 'created_date' } : {})
       }
     );
     setReceivables(response.data || []);

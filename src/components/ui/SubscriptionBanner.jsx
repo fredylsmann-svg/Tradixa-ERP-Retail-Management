@@ -35,21 +35,21 @@ export default function SubscriptionBanner({ store }) {
     const daysLeft = Math.ceil((graceEndDate - now) / (1000 * 60 * 60 * 24));
 
     return (
-      <div className="mx-4 mb-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 text-white px-5 py-4 shadow-lg animate-in fade-in slide-in-from-top-2 duration-500">
+      <div className="mx-4 mb-4 rounded-2xl bg-red-50 border border-red-200 text-red-950 px-5 py-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <AlertTriangle className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="font-black text-sm tracking-tight">⚠️ Masa Tenggang Aktif — {daysLeft} Hari Tersisa</h4>
-            <p className="text-xs text-red-100 mt-1 leading-relaxed">
+            <h4 className="font-bold text-sm tracking-tight">⚠️ Masa Tenggang Aktif — {daysLeft} Hari Tersisa</h4>
+            <p className="text-xs text-red-700/90 mt-1 leading-relaxed">
               Subscription Anda berakhir pada <strong>{formatDate(expiresAt)}</strong>. 
               Anda memiliki masa tenggang hingga <strong>{formatDate(graceEndDate)}</strong> untuk memperpanjang. 
               Setelah itu, akun akan otomatis downgrade ke paket Free dan modul Pro akan terkunci.
             </p>
             <button
               onClick={() => navigate('/PricingPage')}
-              className="mt-3 inline-flex items-center gap-2 bg-white text-red-700 px-4 py-2 rounded-xl text-xs font-black hover:bg-red-50 transition-all hover:scale-[1.02] shadow-lg"
+              className="mt-3 inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-700 transition-all hover:scale-[1.02] shadow-sm"
             >
               <CreditCard className="w-3.5 h-3.5" />
               Perpanjang Sekarang
@@ -63,22 +63,22 @@ export default function SubscriptionBanner({ store }) {
   // === PERINGATAN: Mendekati expired (H-7 atau kurang) ===
   if (daysUntilExpiry > 0 && daysUntilExpiry <= 7) {
     return (
-      <div className="mx-4 mb-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white px-5 py-3.5 shadow-lg animate-in fade-in slide-in-from-top-2 duration-500">
+      <div className="mx-4 mb-4 rounded-2xl bg-orange-50 border border-orange-200 text-orange-950 px-5 py-3.5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-            <Clock className="w-4.5 h-4.5 text-white" />
+          <div className="w-9 h-9 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center flex-shrink-0">
+            <Clock className="w-4.5 h-4.5 text-orange-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="font-black text-sm tracking-tight">
+            <h4 className="font-bold text-sm tracking-tight">
               Subscription berakhir dalam {daysUntilExpiry} hari ({formatDate(expiresAt)})
             </h4>
-            <p className="text-[11px] text-amber-100 mt-0.5">
+            <p className="text-[11px] text-orange-700/90 mt-0.5">
               Perpanjang sebelum {formatDate(expiresAt)} agar akses Pro tidak terputus.
             </p>
           </div>
           <button
             onClick={() => navigate('/PricingPage')}
-            className="flex-shrink-0 inline-flex items-center gap-1.5 bg-white text-amber-700 px-4 py-2 rounded-xl text-xs font-black hover:bg-amber-50 transition-all hover:scale-[1.02] shadow-lg"
+            className="flex-shrink-0 inline-flex items-center gap-1.5 bg-orange-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-orange-700 transition-all hover:scale-[1.02] shadow-sm"
           >
             <CreditCard className="w-3.5 h-3.5" />
             Perpanjang

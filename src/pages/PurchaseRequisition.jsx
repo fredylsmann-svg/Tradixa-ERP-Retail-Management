@@ -78,6 +78,16 @@ export default function PurchaseRequisition({ store }) {
     items: [{ product_id: '', description: '', category: '', qty: 1, unit: 'pcs', price: 0 }]
   });
 
+  // Debounce search term
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      if (searchTerm !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     if (store?.id) {
       loadPrs();
@@ -85,7 +95,7 @@ export default function PurchaseRequisition({ store }) {
       loadCurrentUser();
       loadProducts();
     }
-  }, [store, selectedDate, currentPage, pageSize]);
+  }, [store, selectedDate, currentPage, pageSize, debouncedSearch, statusFilter]);
 
   const loadProducts = async () => {
     const data = await api.entities.Product.filter({ store_id: store.id });
@@ -117,16 +127,18 @@ export default function PurchaseRequisition({ store }) {
   const loadPrs = async () => {
     setIsLoading(true);
     try {
+      const filters = { store_id: store.id };
+      if (statusFilter !== 'Semua Status') filters.status = statusFilter;
+      const fetchOptions = {
+        page: currentPage,
+        pageSize,
+        ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['pr_number', 'requester'] } : {}),
+        ...(!debouncedSearch ? { startDate: selectedDate, endDate: selectedDate, dateField: 'created_date' } : {})
+      };
       const { data, totalCount } = await api.entities.PurchaseRequisition.filter(
-        { store_id: store.id },
+        filters,
         '-created_date',
-        {
-          page: currentPage,
-          pageSize,
-          startDate: selectedDate,
-          endDate: selectedDate,
-          dateField: 'created_date'
-        }
+        fetchOptions
       );
       setPrs(data || []);
       setTotalData(totalCount || 0);
@@ -155,13 +167,7 @@ export default function PurchaseRequisition({ store }) {
     return () => window.removeEventListener('fcm-received', handleFCMRefresh);
   }, [store]);
 
-  const currentPrs = prs.filter(pr => {
-    const isStatusMatch = statusFilter === 'Semua Status' || pr.status === statusFilter;
-    const isSearchMatch = !searchTerm ||
-      pr.pr_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pr.requester?.toLowerCase().includes(searchTerm.toLowerCase());
-    return isStatusMatch && isSearchMatch;
-  });
+  const currentPrs = prs;
 
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID').format(val || 0);
 

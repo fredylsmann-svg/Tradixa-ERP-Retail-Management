@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Eye, Upload, Loader2 } from 'lucide-react';
+import { Plus, Eye, Upload, Loader2, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
 import PageDatePicker from '@/components/layout/PageDatePicker';
@@ -43,11 +43,22 @@ export default function StockOut({ store }) {
     notes: ''
   });
 
+  // Search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      if (searchTerm !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     if (store?.id) {
       loadData();
     }
-  }, [store, selectedDate, currentPage, pageSize]);
+  }, [store, selectedDate, currentPage, pageSize, debouncedSearch]);
 
   const handleOpenForm = () => {
     const limits = getEffectiveLimits(store);
@@ -67,9 +78,8 @@ export default function StockOut({ store }) {
         {
           page: currentPage,
           pageSize,
-          startDate: selectedDate,
-          endDate: selectedDate,
-          dateField: 'created_date'
+          ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['reference', 'product_name'] } : {}),
+          ...(!debouncedSearch ? { startDate: selectedDate, endDate: selectedDate, dateField: 'created_date' } : {})
         }
       ),
       api.entities.Product.filter({ store_id: store.id })
@@ -170,6 +180,17 @@ export default function StockOut({ store }) {
 
       <Card>
         <CardContent className="p-0">
+          <div className="p-4 border-b">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                placeholder="Cari referensi atau nama produk..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-11 rounded-xl"
+              />
+            </div>
+          </div>
           <div className="overflow-x-auto" id="print-stockout">
             <Table>
               <TableHeader>

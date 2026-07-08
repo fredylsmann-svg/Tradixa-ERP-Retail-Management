@@ -118,13 +118,23 @@ export default function PurchaseOrders({ store }) {
     }
   }, [viewingOrder]);
 
+  // Debounce search term
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      if (searchTerm !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     if (store?.id) {
       loadData();
       const saved = localStorage.getItem(`signatures_${store.id}_admin`);
       if (saved) setSignatureHistory(JSON.parse(saved));
     }
-  }, [store, selectedDate, currentPage, pageSize]);
+  }, [store, selectedDate, currentPage, pageSize, debouncedSearch, statusFilter]);
 
   // REALTIME: Auto-update PO detail when supplier signs (no manual refresh needed)
   useEffect(() => {
@@ -148,17 +158,20 @@ export default function PurchaseOrders({ store }) {
 
   const loadData = async () => {
     setIsLoading(true);
+    const filters = { store_id: store.id };
+    if (statusFilter !== 'Semua Status') filters.status = statusFilter;
+    const fetchOptions = {
+      page: currentPage,
+      pageSize,
+      ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['po_number', 'supplier_name'] } : {}),
+      ...(!debouncedSearch ? { startDate: selectedDate, endDate: selectedDate, dateField: 'created_date' } : {})
+    };
+
     const [ordersResponse, suppliersData, productsData, prsData, receiptsData] = await Promise.all([
       api.entities.PurchaseOrder.filter(
-        { store_id: store.id }, 
+        filters, 
         '-created_date',
-        {
-          page: currentPage,
-          pageSize,
-          startDate: selectedDate,
-          endDate: selectedDate,
-          dateField: 'created_date'
-        }
+        fetchOptions
       ),
       api.entities.Supplier.filter({ store_id: store.id }),
       api.entities.Product.filter({ store_id: store.id }),
@@ -191,13 +204,7 @@ export default function PurchaseOrders({ store }) {
   };
 
   // Filter by global selected date, status, and search term
-  const filteredOrders = orders.filter(o => {
-    const isStatusMatch = statusFilter === 'Semua Status' || o.status === statusFilter;
-    const isSearchMatch = !searchTerm ||
-      o.po_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    return isStatusMatch && isSearchMatch;
-  });
+  const filteredOrders = orders;
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
 

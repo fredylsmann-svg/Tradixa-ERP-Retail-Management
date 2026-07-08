@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, ArrowUpRight, ArrowDownRight, ArrowLeftRight, Loader2, Eye, CheckCircle, XCircle, ShoppingBag, Banknote } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownRight, ArrowLeftRight, Loader2, Eye, CheckCircle, XCircle, ShoppingBag, Banknote, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
@@ -99,9 +99,20 @@ export default function BankTransactions({ store }) {
     bank_account_id: '', transaction_type: 'Credit', amount: '', description: '', reference: ''
   });
 
+  // Search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      if (searchTerm !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     if (store?.id) loadData();
-  }, [store, selectedDate, currentPage, pageSize]);
+  }, [store, selectedDate, currentPage, pageSize, debouncedSearch]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -112,9 +123,8 @@ export default function BankTransactions({ store }) {
         {
           page: currentPage,
           pageSize,
-          startDate: selectedDate,
-          endDate: selectedDate,
-          dateField: 'created_date'
+          ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['description', 'reference'] } : {}),
+          ...(!debouncedSearch ? { startDate: selectedDate, endDate: selectedDate, dateField: 'created_date' } : {})
         }
       ),
       api.entities.BankAccount.filter({ store_id: store.id })
@@ -402,6 +412,17 @@ export default function BankTransactions({ store }) {
 
       <Card>
         <CardContent className="p-0">
+          <div className="p-4 border-b">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                placeholder="Cari deskripsi atau referensi..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-11 rounded-xl"
+              />
+            </div>
+          </div>
           <div id="print-banktx">
           <Table>
             <TableHeader>

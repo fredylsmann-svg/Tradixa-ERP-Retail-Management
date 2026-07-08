@@ -38,9 +38,19 @@ export default function PayableInvoices({ store }) {
     }
   }, [viewingInvoice]);
 
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      if (searchQuery !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   useEffect(() => {
     if (store?.id) loadData();
-  }, [store, selectedDate, currentPage, pageSize]);
+  }, [store, selectedDate, currentPage, pageSize, debouncedSearch]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -50,9 +60,8 @@ export default function PayableInvoices({ store }) {
       {
         page: currentPage,
         pageSize,
-        startDate: selectedDate,
-        endDate: selectedDate,
-        dateField: 'created_date'
+        ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['invoice_number', 'supplier_name'] } : {}),
+        ...(!debouncedSearch ? { startDate: selectedDate, endDate: selectedDate, dateField: 'created_date' } : {})
       }
     );
     setPayables(response.data || []);
@@ -60,11 +69,7 @@ export default function PayableInvoices({ store }) {
     setIsLoading(false);
   };
 
-  const filteredPayables = payables.filter(p => {
-    if (!searchQuery) return true;
-    return p.invoice_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           p.supplier_name?.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const filteredPayables = payables;
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
 

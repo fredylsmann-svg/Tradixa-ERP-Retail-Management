@@ -34,6 +34,16 @@ export default function InventoryLedger({ store }) {
   const [pageSize, setPageSize] = useState(25);
   const { selectedDate, formattedDate } = useGlobalDate();
 
+  // Debounce search term
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      if (searchTerm !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     if (store?.id) {
       loadData();
@@ -128,10 +138,10 @@ export default function InventoryLedger({ store }) {
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID').format(val);
 
   const filteredMovements = enrichedMovements.filter(m => {
-    const matchesSearch = 
-      m.product_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      m.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.sku.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !debouncedSearch ||
+      m.product_name.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
+      m.reference.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      m.sku.toLowerCase().includes(debouncedSearch.toLowerCase());
     
     const matchesType = typeFilter === 'all' || m.movement_type === typeFilter;
     const matchesD = matchesDate(m, selectedDate);

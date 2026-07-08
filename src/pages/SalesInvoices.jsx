@@ -32,6 +32,16 @@ export default function SalesInvoices({ store }) {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const { selectedDate, formattedDate, isToday } = useGlobalDate();
 
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      if (searchQuery !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   useEffect(() => {
     if (store?.id) loadData();
 
@@ -44,20 +54,20 @@ export default function SalesInvoices({ store }) {
     return () => {
       window.removeEventListener('refresh_data', handleRefreshEvent);
     };
-  }, [store, selectedDate, currentPage, pageSize]);
+  }, [store, selectedDate, currentPage, pageSize, debouncedSearch]);
 
   const loadData = async () => {
     setIsLoading(true);
+    const fetchOptions = {
+      page: currentPage,
+      pageSize,
+      ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['invoice_number', 'customer_name'] } : {}),
+      ...(!debouncedSearch ? { startDate: selectedDate, endDate: selectedDate, dateField: 'created_date' } : {})
+    };
     const response = await api.entities.SalesTransaction.filter(
       { store_id: store.id },
       '-created_at',
-      {
-        page: currentPage,
-        pageSize,
-        startDate: selectedDate,
-        endDate: selectedDate,
-        dateField: 'created_date'
-      }
+      fetchOptions
     );
     setTransactions(response.data || []);
     setTotalData(response.totalCount || 0);
@@ -66,10 +76,7 @@ export default function SalesInvoices({ store }) {
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
 
-  const filteredTransactions = transactions.filter(tx =>
-    tx.invoice_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tx.customer_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTransactions = transactions;
 
   const sendInvoiceEmail = async () => {
     if (!emailingInvoice) return;

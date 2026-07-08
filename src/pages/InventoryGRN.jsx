@@ -120,6 +120,16 @@ export default function InventoryGRN({ store }) {
   const [isManualLocation, setIsManualLocation] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
 
+  // Debounce search term
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      if (searchTerm !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     if (store?.id) {
       loadHistory();
@@ -130,7 +140,7 @@ export default function InventoryGRN({ store }) {
       const saved = localStorage.getItem(`signatures_${store.id}_manager`);
       if (saved) setSignatureHistory(JSON.parse(saved));
     }
-  }, [store, selectedDate, currentPage, pageSize]);
+  }, [store, selectedDate, currentPage, pageSize, debouncedSearch]);
 
   const loadLocations = async () => {
     try {
@@ -163,16 +173,17 @@ export default function InventoryGRN({ store }) {
   const loadHistory = async () => {
     setIsLoading(true);
     try {
+      const fetchOptions = {
+        page: currentPage,
+        pageSize,
+        ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['igrn_number', 'po_number', 'supplier_name'] } : {}),
+        ...(!debouncedSearch ? { startDate: selectedDate, endDate: selectedDate, dateField: 'created_date' } : {})
+      };
+
       const { data, totalCount } = await api.entities.InventoryGRN.filter(
         { store_id: store.id },
         '-created_date',
-        {
-          page: currentPage,
-          pageSize,
-          startDate: selectedDate,
-          endDate: selectedDate,
-          dateField: 'created_date'
-        }
+        fetchOptions
       );
       setHistory(data || []);
       setTotalData(totalCount || 0);
@@ -756,12 +767,7 @@ export default function InventoryGRN({ store }) {
     setIsSaving(false);
   };
 
-  const filteredHistory = history.filter(h => {
-    const isSearchMatch = h.igrn_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      h.po_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      h.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    return isSearchMatch;
-  });
+  const filteredHistory = history;
 
   if (isLoading && view === 'list' && history.length === 0) {
     return <div className="p-10 text-center"><Loader2 className="w-10 h-10 animate-spin mx-auto text-slate-300" /></div>;

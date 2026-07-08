@@ -3,16 +3,86 @@ import { api } from '@/api/client';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Search, Package, Users, Receipt, Truck, Loader2, X } from 'lucide-react';
+import { Search, Package, Users, Receipt, Truck, Loader2, X, LayoutGrid } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { cn } from '@/lib/utils';
+
+const AVAILABLE_MODULES = [
+  { name: 'Dashboard', page: 'Dashboard' },
+  { name: 'Design Studio', page: 'DesignStudio' },
+  { name: 'Inventory Workflow', page: 'InventoryWorkflow' },
+  { name: 'Product Master', page: 'ProductMaster' },
+  { name: 'Location Settings', page: 'ProductLocations' },
+  { name: 'Stock In', page: 'StockIn' },
+  { name: 'Stock Out', page: 'StockOut' },
+  { name: 'Inventory Ledger', page: 'InventoryLedger' },
+  { name: 'Inventory Reports', page: 'InventoryReports' },
+  { name: 'Low Stock Alert', page: 'LowStockAlert' },
+  { name: 'WMS Workflow', page: 'WMSWorkflow' },
+  { name: 'Warehouse Dashboard', page: 'WarehouseDashboard' },
+  { name: 'Pick List', page: 'PickList' },
+  { name: 'Outbound Delivery', page: 'OutboundDelivery' },
+  { name: 'Transfer Gudang', page: 'WarehouseTransfer' },
+  { name: 'Stock Opname', page: 'StockOpname' },
+  { name: 'Procurement Workflow', page: 'ProcurementWorkflow' },
+  { name: 'Suppliers', page: 'Suppliers' },
+  { name: 'Purchase Requisition', page: 'PurchaseRequisition' },
+  { name: 'Purchase Orders', page: 'PurchaseOrders' },
+  { name: 'Goods Receipt', page: 'GoodsReceipt' },
+  { name: 'Inventory GRN', page: 'InventoryGRN' },
+  { name: 'Supplier Return', page: 'SupplierReturn' },
+  { name: 'Customer Master', page: 'CustomerMaster' },
+  { name: 'Customer Segmentation', page: 'CustomerSegmentation' },
+  { name: 'Marketing Automation', page: 'MarketingAutomation' },
+  { name: 'Discount Management', page: 'DiscountManagement' },
+  { name: 'Loyalty Program', page: 'LoyaltyProgram' },
+  { name: 'Sales Workflow', page: 'SalesWorkflow' },
+  { name: 'Sales Transaction', page: 'SalesTransaction' },
+  { name: 'Sales Return', page: 'SalesReturn' },
+  { name: 'Sales Invoices', page: 'SalesInvoices' },
+  { name: 'Revenue Reports', page: 'RevenueReports' },
+  { name: 'Bank Accounts', page: 'BankAccounts' },
+  { name: 'Bank Transactions', page: 'BankTransactions' },
+  { name: 'Fund Transfer', page: 'FundTransfers' },
+  { name: 'Cash Register', page: 'CashRegister' },
+  { name: 'Bank Reconciliation', page: 'BankReconciliation' },
+  { name: 'Account Receivables', page: 'Receivables' },
+  { name: 'Account Receivable Invoices', page: 'ReceivableInvoices' },
+  { name: 'Account Payables', page: 'Payables' },
+  { name: 'Account Payable Invoices', page: 'PayableInvoices' },
+  { name: 'Payments', page: 'Payments' },
+  { name: 'Operational Expenses', page: 'Expenses' },
+  { name: 'Tax Management', page: 'TaxManagement' },
+  { name: 'Journal Entries', page: 'JournalEntries' },
+  { name: 'Chart of Accounts', page: 'ChartOfAccounts' },
+  { name: 'Employee Management', page: 'HRISManagement' },
+  { name: 'Sales Performance', page: 'SalesPerformance' },
+  { name: 'User Management', page: 'UserManagement' },
+  { name: 'Financial Statements', page: 'FinancialStatements' },
+  { name: 'Stock Report', page: 'StockReport' },
+  { name: 'Sales Report', page: 'SalesReport' },
+  { name: 'Reports', page: 'Reports' },
+  { name: 'Agent Workflow', page: 'FinancialAgentWorkflow' },
+  { name: 'Dashboard Agent', page: 'DashboardAgent' },
+  { name: 'Transaksi Agen', page: 'TransaksiAgen' },
+  { name: 'Daftar Layanan', page: 'DaftarLayanan' },
+  { name: 'Saldo & Kas Agen', page: 'SaldoKasAgen' },
+  { name: 'Laporan Fee', page: 'LaporanFee' },
+  { name: 'Agent Performance', page: 'AgentPerformance' },
+  { name: 'Pengaturan Agen', page: 'PengaturanAgen' },
+  { name: 'Audit Log', page: 'AuditLog' },
+  { name: 'Company Settings', page: 'CompanySettings' },
+  { name: 'User Preferences', page: 'SystemSettings' },
+  { name: 'Tradixa Assistant', page: 'TradixaAssistant' }
+];
 
 export default function GlobalSearch({ store }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState({
+    modules: [],
     products: [],
     customers: [],
     transactions: [],
@@ -32,7 +102,7 @@ export default function GlobalSearch({ store }) {
 
   useEffect(() => {
     if (!query.trim() || !store?.id) {
-      setResults({ products: [], customers: [], transactions: [], suppliers: [] });
+      setResults({ modules: [], products: [], customers: [], transactions: [], suppliers: [] });
       return;
     }
 
@@ -40,35 +110,38 @@ export default function GlobalSearch({ store }) {
       setIsSearching(true);
       const searchQuery = query.toLowerCase();
 
+      // Client-side module filtering
+      const filteredModules = AVAILABLE_MODULES.filter(m => 
+        m.name.toLowerCase().includes(searchQuery)
+      ).slice(0, 4);
+
       const [products, customers, transactions, suppliers] = await Promise.all([
-        api.entities.Product.filter({ store_id: store.id }).then(items =>
-          items.filter(p => 
-            p.name?.toLowerCase().includes(searchQuery) || 
-            p.barcode?.includes(searchQuery) ||
-            p.sku?.includes(searchQuery)
-          ).slice(0, 5)
-        ),
-        api.entities.Customer.filter({ store_id: store.id }).then(items =>
-          items.filter(c => 
-            c.name?.toLowerCase().includes(searchQuery) ||
-            c.phone?.includes(searchQuery)
-          ).slice(0, 5)
-        ),
-        api.entities.SalesTransaction.filter({ store_id: store.id }).then(items =>
-          items.filter(t => 
-            t.invoice_number?.toLowerCase().includes(searchQuery) ||
-            t.customer_name?.toLowerCase().includes(searchQuery)
-          ).slice(0, 5)
-        ),
-        api.entities.Supplier.filter({ store_id: store.id }).then(items =>
-          items.filter(s => 
-            s.name?.toLowerCase().includes(searchQuery) ||
-            s.phone?.includes(searchQuery)
-          ).slice(0, 5)
-        )
+        api.entities.Product.filter(
+          { store_id: store.id },
+          null,
+          { search: searchQuery, searchColumns: ['name', 'barcode', 'sku'], page: 1, pageSize: 5 }
+        ).then(res => res.data || []),
+        
+        api.entities.Customer.filter(
+          { store_id: store.id },
+          null,
+          { search: searchQuery, searchColumns: ['name', 'phone'], page: 1, pageSize: 5 }
+        ).then(res => res.data || []),
+        
+        api.entities.SalesTransaction.filter(
+          { store_id: store.id },
+          null,
+          { search: searchQuery, searchColumns: ['invoice_number', 'customer_name'], page: 1, pageSize: 5 }
+        ).then(res => res.data || []),
+        
+        api.entities.Supplier.filter(
+          { store_id: store.id },
+          null,
+          { search: searchQuery, searchColumns: ['name', 'phone'], page: 1, pageSize: 5 }
+        ).then(res => res.data || [])
       ]);
 
-      setResults({ products, customers, transactions, suppliers });
+      setResults({ modules: filteredModules, products, customers, transactions, suppliers });
       setIsSearching(false);
     }, 300);
 
@@ -77,7 +150,7 @@ export default function GlobalSearch({ store }) {
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value || 0);
 
-  const totalResults = results.products.length + results.customers.length + 
+  const totalResults = results.modules.length + results.products.length + results.customers.length + 
                       results.transactions.length + results.suppliers.length;
 
   return (
@@ -94,7 +167,7 @@ export default function GlobalSearch({ store }) {
       </button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] p-0" hideClose={true}>
+        <DialogContent className="max-w-2xl max-h-[80vh] p-0" hideClose={true} hideFullscreen={true}>
           <div className="sticky top-0 bg-white border-b border-slate-200 p-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -132,6 +205,30 @@ export default function GlobalSearch({ store }) {
               </div>
             ) : (
               <div className="space-y-6">
+                {results.modules.length > 0 && (
+                  <div>
+                    <h3 className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-3">
+                      <LayoutGrid className="w-4 h-4" />
+                      MODULES & PAGES
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {results.modules.map(module => (
+                        <Link
+                          key={module.page}
+                          to={createPageUrl(module.page)}
+                          onClick={() => setIsOpen(false)}
+                          className="flex items-center gap-3 p-3 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-xl transition-all"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-white shadow-sm border border-slate-200 flex items-center justify-center">
+                            <LayoutGrid className="w-4 h-4 text-slate-600" />
+                          </div>
+                          <span className="font-bold text-sm text-slate-900">{module.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {results.products.length > 0 && (
                   <div>
                     <h3 className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-3">

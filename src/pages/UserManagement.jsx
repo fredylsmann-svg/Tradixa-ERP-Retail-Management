@@ -131,6 +131,15 @@ export default function UserManagement({ store }) {
   });
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const [roleFilter, setRoleFilter] = useState('Semua Role');
 
   useEffect(() => {
@@ -355,8 +364,8 @@ export default function UserManagement({ store }) {
   };
 
   const filteredUsers = users.filter(u => {
-    const matchesSearch = (u.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !debouncedSearch || (u.full_name?.toLowerCase() || '').includes(debouncedSearch.toLowerCase()) ||
+      u.email.toLowerCase().includes(debouncedSearch.toLowerCase());
     const matchesRole = roleFilter === 'Semua Role' || u.role === roleFilter.toLowerCase();
     return matchesSearch && matchesRole;
   });

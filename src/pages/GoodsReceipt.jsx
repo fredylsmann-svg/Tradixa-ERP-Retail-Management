@@ -108,6 +108,16 @@ export default function GoodsReceipt({ store }) {
   const [signerName, setSignerName] = useState('Administrator');
   const [signerRole, setSignerRole] = useState('');
 
+  // Debounce search term
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      if (searchTerm !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     if (store?.id) {
       loadData();
@@ -120,7 +130,7 @@ export default function GoodsReceipt({ store }) {
         storage_location: localStorage.getItem(`last_gr_storage_location_${store.id}`) || '',
       }));
     }
-  }, [store, selectedDate, currentPage, pageSize]);
+  }, [store, selectedDate, currentPage, pageSize, debouncedSearch, statusFilter]);
 
   // REALTIME: Auto-update GRN detail when driver signs from public portal
   useEffect(() => {
@@ -144,17 +154,20 @@ export default function GoodsReceipt({ store }) {
   const loadData = async () => {
     setIsLoading(true);
     try {
+      const filters = { store_id: store.id };
+      if (statusFilter !== 'Semua Status') filters.status = statusFilter;
+      const fetchOptions = {
+        page: currentPage,
+        pageSize,
+        ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['gr_number', 'po_number', 'supplier_name'] } : {}),
+        ...(!debouncedSearch ? { startDate: selectedDate, endDate: selectedDate, dateField: 'created_date' } : {})
+      };
+
       const [receiptsResponse, poData, locationsData, suppliersData] = await Promise.all([
         api.entities.GoodsReceipt.filter(
-          { store_id: store.id },
+          filters,
           '-created_date',
-          {
-            page: currentPage,
-            pageSize,
-            startDate: selectedDate,
-            endDate: selectedDate,
-            dateField: 'created_date'
-          }
+          fetchOptions
         ),
         api.entities.PurchaseOrder.filter({ store_id: store.id }),
         api.entities.ProductLocation.filter({ store_id: store.id }),
@@ -191,14 +204,7 @@ export default function GoodsReceipt({ store }) {
     setIsLoading(false);
   };
 
-  const filteredReceipts = receipts.filter(r => {
-    const isStatusMatch = statusFilter === 'Semua Status' || r.status === statusFilter;
-    const isSearchMatch = !searchTerm ||
-      r.gr_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.po_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.supplier_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    return isStatusMatch && isSearchMatch;
-  });
+  const filteredReceipts = receipts;
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
 

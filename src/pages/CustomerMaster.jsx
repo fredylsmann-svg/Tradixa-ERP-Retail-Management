@@ -76,16 +76,30 @@ export default function CustomerMaster({ store }) {
     }
   };
 
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      if (searchQuery !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   useEffect(() => {
     if (store?.id) loadCustomers();
-  }, [store, currentPage, pageSize]); // Re-fetch when page or size changes
+  }, [store, currentPage, pageSize, debouncedSearch]); // Re-fetch when page or size changes
 
   const loadCustomers = async () => {
     setIsLoading(true);
     const { data, totalCount } = await api.entities.Customer.filter(
       { store_id: store.id }, 
       '-created_date', 
-      { page: currentPage, pageSize }
+      {
+        page: currentPage,
+        pageSize,
+        ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['name', 'phone', 'email'] } : {})
+      }
     );
     setCustomers(data || []);
     setTotalData(totalCount || 0);
@@ -188,11 +202,7 @@ export default function CustomerMaster({ store }) {
     }
   };
 
-  const filteredCustomers = customers.filter(c =>
-    c.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCustomers = customers;
 
   if (isLoading) {
     return (

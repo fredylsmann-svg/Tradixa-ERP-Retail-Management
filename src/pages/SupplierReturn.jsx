@@ -44,9 +44,20 @@ export default function SupplierReturn({ store }) {
   const [isUploading, setIsUploading] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', onConfirm: null });
 
+  // Search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      if (searchTerm !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     if (store?.id) loadData();
-  }, [store, selectedDate, currentPage, pageSize]);
+  }, [store, selectedDate, currentPage, pageSize, debouncedSearch]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -58,9 +69,8 @@ export default function SupplierReturn({ store }) {
           {
             page: currentPage,
             pageSize,
-            startDate: selectedDate,
-            endDate: selectedDate,
-            dateField: 'created_date'
+            ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['return_number', 'supplier_name'] } : {}),
+            ...(!debouncedSearch ? { startDate: selectedDate, endDate: selectedDate, dateField: 'created_date' } : {})
           }
         ),
         api.entities.Supplier.filter({ store_id: store.id }),
@@ -458,6 +468,17 @@ export default function SupplierReturn({ store }) {
 
       <Card>
         <CardContent className="p-0">
+          <div className="p-4 border-b">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                placeholder="Cari no. retur atau supplier..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-11 rounded-xl"
+              />
+            </div>
+          </div>
           <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none">
             <Table className="min-w-[700px]">
               <TableHeader>

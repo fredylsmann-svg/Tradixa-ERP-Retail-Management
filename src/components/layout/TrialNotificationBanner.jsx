@@ -42,7 +42,7 @@ export default function TrialNotificationBanner({ store }) {
   const waUrl = `https://wa.me/6281383882120?text=${waMessage}`;
 
   return (
-    <div className="w-full bg-amber-400 text-slate-900 px-4 py-2 shadow-md z-[45] border-b border-amber-500 animate-in slide-in-from-top duration-300">
+    <div className="w-full bg-amber-400/90 backdrop-blur-md text-amber-950 px-4 py-2 shadow-sm z-[45] border-b border-amber-500/30 animate-in slide-in-from-top duration-300">
       <div className="flex items-center justify-between gap-4 flex-nowrap overflow-x-auto no-scrollbar">
         
         {/* Left Section: Badge */}

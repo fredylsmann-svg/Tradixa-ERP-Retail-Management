@@ -62,6 +62,17 @@ export default function SalesTransaction({ store }) {
   const [voidAuthorizer, setVoidAuthorizer] = useState('Owner');
   const [isVoiding, setIsVoiding] = useState(false);
 
+  // Search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      if (searchTerm !== debouncedSearch) setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     if (viewingTransaction?.payment_method === 'Piutang / Termin' && store?.id) {
       api.entities.Receivable.filter({ store_id: store.id, invoice_number: viewingTransaction.invoice_number })
@@ -404,7 +415,7 @@ export default function SalesTransaction({ store }) {
 
   useEffect(() => {
     if (store?.id) loadTransactions();
-  }, [store, selectedDate, currentPage, pageSize]);
+  }, [store, selectedDate, currentPage, pageSize, debouncedSearch]);
 
   // REALTIME: Auto-update QRIS modal and transactions list when paid
   useEffect(() => {
@@ -468,17 +479,18 @@ export default function SalesTransaction({ store }) {
   const loadTransactions = async () => {
     setIsLoading(true);
     
+    const fetchOptions = {
+      page: currentPage,
+      pageSize,
+      ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['invoice_number', 'customer_name'] } : {}),
+      ...(!debouncedSearch ? { startDate: selectedDate, endDate: selectedDate, dateField: 'created_date' } : {})
+    };
+
     // Fetch paginated data for the selected date
     const { data, totalCount } = await api.entities.SalesTransaction.filter(
       { store_id: store.id }, 
       '-created_date',
-      {
-        page: currentPage,
-        pageSize,
-        startDate: selectedDate,
-        endDate: selectedDate,
-        dateField: 'created_date'
-      }
+      fetchOptions
     );
     setAllTransactions(data || []);
     setTotalData(totalCount || 0);
@@ -731,6 +743,17 @@ export default function SalesTransaction({ store }) {
 
       <Card>
         <CardContent className="p-0">
+          <div className="p-4 border-b">
+            <div className="relative">
+              <Eye className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                placeholder="Cari invoice atau nama pelanggan..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-11 rounded-xl"
+              />
+            </div>
+          </div>
           <div className="overflow-x-auto" id="print-sales">
             <Table>
               <TableHeader>
