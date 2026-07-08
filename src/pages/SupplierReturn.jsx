@@ -674,7 +674,7 @@ export default function SupplierReturn({ store }) {
                   <Button
                     type="button"
                     onClick={addItem}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white h-11 font-bold rounded-xl shadow-md shadow-blue-100"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white h-11 font-bold rounded-xl shadow-md"
                   >
                     Tambah Barang Retur
                   </Button>
@@ -723,7 +723,7 @@ export default function SupplierReturn({ store }) {
               <Button type="button" variant="ghost" onClick={() => setShowForm(false)} className="flex-1 font-bold text-slate-500 h-12 rounded-2xl">Batal</Button>
               <Button
                 onClick={handleSubmit}
-                className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-black text-sm rounded-2xl shadow-xl shadow-blue-100 h-12 transition-all active:scale-95 disabled:opacity-50"
+                className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-black text-sm rounded-2xl shadow-xl h-12 transition-all active:scale-95 disabled:opacity-50"
                 disabled={isSaving || formData.items.length === 0 || !formData.supplier_id}
               >
                 {isSaving ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ArrowRightLeft className="w-5 h-5 mr-2" />}

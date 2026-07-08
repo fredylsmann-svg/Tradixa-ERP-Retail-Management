@@ -264,7 +264,7 @@ export default function PublicReturnReview() {
 
             <Button 
               onClick={handleVerify}
-              className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-black text-lg rounded-2xl shadow-xl shadow-blue-100 transition-all active:scale-95"
+              className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-black text-lg rounded-2xl shadow-xl transition-all active:scale-95"
             >
               <span className="flex items-center justify-center gap-3">
                 BUKA REVIEW RETUR
@@ -309,7 +309,7 @@ export default function PublicReturnReview() {
           </div>
         </div>
 
-        <Card className="rounded-3xl border-none shadow-xl shadow-blue-100/50 overflow-hidden">
+        <Card className="rounded-3xl border-none shadow-xl overflow-hidden">
           <CardHeader className="bg-white border-b p-6">
             <CardTitle className="text-lg font-bold text-slate-800">Informasi Retur</CardTitle>
           </CardHeader>

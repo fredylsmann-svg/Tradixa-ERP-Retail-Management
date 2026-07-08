@@ -413,7 +413,7 @@ export default function Payments({ store }) {
 
             <div className="flex gap-3 pt-4">
               <Button type="button" variant="ghost" onClick={() => setShowForm(false)} className="flex-1 h-12 rounded-xl font-bold text-slate-500">Batal</Button>
-              <Button className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white h-12 rounded-xl font-black shadow-xl shadow-blue-100" disabled={isSaving}>
+              <Button className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white h-12 rounded-xl font-black shadow-xl" disabled={isSaving}>
                 {isSaving ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ArrowRightLeft className="w-5 h-5 mr-2" />}
                 PROSES PEMBAYARAN
               </Button>

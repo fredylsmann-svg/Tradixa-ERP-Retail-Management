@@ -402,7 +402,7 @@ export default function BankTransactions({ store }) {
             <Button 
               onClick={handleBulkApprove} 
               disabled={isLoading || !selectedIds.some(id => transactions.find(t => t.id === id)?.status === 'Pending')}
-              className="bg-white text-blue-600 hover:bg-white/90 h-9 px-4 text-xs font-bold rounded-lg shadow-xl shadow-blue-900/20 disabled:opacity-50"
+              className="bg-white text-blue-600 hover:bg-white/90 h-9 px-4 text-xs font-bold rounded-lg shadow-xl disabled:opacity-50"
             >
               Approve Terpilih
             </Button>

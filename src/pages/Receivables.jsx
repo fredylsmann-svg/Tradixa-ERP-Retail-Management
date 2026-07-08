@@ -677,7 +677,7 @@ export default function Receivables({ store }) {
         </CardContent>
       </Card>
 
-      <Card className="rounded-xl border-none shadow-xl shadow-blue-100/50 overflow-hidden">
+      <Card className="rounded-xl border-none shadow-xl overflow-hidden">
         <CardContent className="p-0">
           <Table id="print-receivables-table">
             <TableHeader className="bg-slate-50/50">

@@ -87,7 +87,7 @@ export default function PrintInvoice({ invoice, store, onClose, forceThermal = f
 
   return (
     <Dialog open={true} onOpenChange={(val) => { if (!val) onClose(); }}>
-      <DialogContent hideClose className="!max-w-none !w-full !h-full !m-0 !p-0 !rounded-none border-none overflow-auto bg-white z-[9999] flex flex-col">
+      <DialogContent hideClose hideFullscreen className="!max-w-none !w-full !h-full !m-0 !p-0 !rounded-none border-none overflow-auto bg-white z-[9999] flex flex-col">
         {/* Inject print margin overrides for Thermal layout */}
         {printLayout === 'Thermal' && (
           <style>{`
@@ -114,7 +114,7 @@ export default function PrintInvoice({ invoice, store, onClose, forceThermal = f
               <Printer className="w-4 h-4 text-slate-500" /> {printLayout === 'Thermal' ? 'Struk Thermal' : `Standard (${printLayout})`}
             </div>
             <div className="w-px h-8 bg-slate-200" />
-            <Button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200">
+            <Button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 shadow-lg">
               Cetak Sekarang
             </Button>
             <Button variant="outline" onClick={onClose} className="rounded-full">

@@ -151,7 +151,7 @@ export default function ReceivableInvoices({ store }) {
       />
       <PageDatePicker />
 
-      <Card className="rounded-xl border-none shadow-xl shadow-blue-100/50 overflow-hidden" id="print-receivables-detailed">
+      <Card className="rounded-xl border-none shadow-xl overflow-hidden" id="print-receivables-detailed">
         <CardContent className="pt-6">
           <div className="relative max-w-md mb-6 px-4">
             <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />

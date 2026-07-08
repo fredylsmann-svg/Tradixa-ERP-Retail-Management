@@ -111,7 +111,7 @@ export default function PublicInvoice() {
           </Button>
         </div>
 
-        <div id="invoice-inner-content" className="bg-white rounded-xl shadow-2xl shadow-blue-100/40 p-8 md:p-16 border border-slate-200 overflow-hidden relative min-h-[1000px] flex flex-col">
+        <div id="invoice-inner-content" className="bg-white rounded-xl shadow-2xl p-8 md:p-16 border border-slate-200 overflow-hidden relative min-h-[1000px] flex flex-col">
           {/* Watermark */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] rotate-[-35deg] select-none">
             <h1 className="text-[150px] font-black tracking-tighter">TRADIXA</h1>

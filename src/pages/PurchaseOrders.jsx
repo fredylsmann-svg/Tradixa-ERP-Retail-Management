@@ -989,7 +989,7 @@ export default function PurchaseOrders({ store }) {
           <DialogFooter className="p-4 border-t bg-slate-50 shrink-0 flex justify-end gap-3">
             <Button variant="outline" onClick={() => setShowPrDialog(false)} className="rounded-xl h-11 px-6 font-bold">Batal</Button>
             <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 px-8 font-black shadow-lg shadow-blue-100"
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 px-8 font-black shadow-lg"
               onClick={handleCreatePoFromPr}
               disabled={!selectedPr || !poFromPrData.supplier_id || isSaving}
             >
@@ -1417,7 +1417,7 @@ export default function PurchaseOrders({ store }) {
                               <div className="flex justify-end mt-2 relative z-10 pt-2 border-t border-slate-800">
                                 <button 
                                   onClick={dismissPORefreshGuide} 
-                                  className="text-[11px] font-bold bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20 active:scale-95"
+                                  className="text-[11px] font-bold bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg active:scale-95"
                                 >
                                   Mengerti & Lanjutkan
                                 </button>

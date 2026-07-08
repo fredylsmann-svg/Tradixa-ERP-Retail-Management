@@ -46,7 +46,7 @@ export default function PrintPayment({ payment, store, onClose }) {
 
   return (
     <Dialog open={true} onOpenChange={(val) => { if (!val) onClose(); }}>
-      <DialogContent hideClose className="!max-w-none !w-full !h-full !m-0 !p-0 !rounded-none border-none overflow-auto bg-white z-[9999] flex flex-col">
+      <DialogContent hideClose hideFullscreen className="!max-w-none !w-full !h-full !m-0 !p-0 !rounded-none border-none overflow-auto bg-white z-[9999] flex flex-col">
         <div className="sticky top-0 bg-white/80 backdrop-blur-md border-b z-20 px-6 py-4 flex justify-between items-center print:hidden">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
@@ -58,7 +58,7 @@ export default function PrintPayment({ payment, store, onClose }) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button onClick={handlePrint} className="bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200">
+            <Button onClick={handlePrint} className="bg-emerald-600 hover:bg-emerald-700 shadow-lg">
               Cetak Sekarang
             </Button>
             <Button variant="outline" onClick={onClose} className="rounded-full">

@@ -261,7 +261,7 @@ export default function PricingPage({ store }) {
           const isCurrent = plan.id === currentPlan;
           const isPopular = plan.id === 'pro';
           return (
-            <Card key={plan.id} className={`relative overflow-hidden flex flex-col justify-between transition-all duration-300 ${isPopular ? 'border-2 border-blue-500 shadow-xl shadow-blue-100 dark:shadow-blue-900/20 scale-[1.02]' : 'border-slate-200 dark:border-slate-800 dark:bg-slate-900/50 hover:shadow-lg'}`}>
+            <Card key={plan.id} className={`relative overflow-hidden flex flex-col justify-between transition-all duration-300 ${isPopular ? 'border-2 border-blue-500 shadow-xl dark:shadow-blue-900/20 scale-[1.02]' : 'border-slate-200 dark:border-slate-800 dark:bg-slate-900/50 hover:shadow-lg'}`}>
               {isPopular && (
                 <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-center py-1.5 text-[10px] font-black uppercase tracking-widest">
                   Paling Populer

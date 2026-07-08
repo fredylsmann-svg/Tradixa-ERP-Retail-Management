@@ -615,7 +615,7 @@ export default function Payables({ store }) {
         </CardContent>
       </Card>
 
-      <Card className="rounded-xl border-none shadow-xl shadow-blue-100/50 overflow-hidden">
+      <Card className="rounded-xl border-none shadow-xl overflow-hidden">
         <CardContent className="p-0">
           <Table id="print-payables-table">
             <TableHeader className="bg-slate-50/50">
@@ -758,7 +758,7 @@ export default function Payables({ store }) {
             <DialogTitle className="text-2xl font-black text-slate-900">Pelunasan Hutang</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 pt-4 px-8 pb-8 overflow-y-auto">
-            <div className="bg-blue-600 p-6 rounded-xl text-white shadow-xl shadow-blue-100">
+            <div className="bg-blue-600 p-6 rounded-xl text-white shadow-xl">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Sisa Kewajiban</p>
               <p className="text-3xl font-black">Rp {formatCurrency(paymentDialog?.remaining_amount || 0)}</p>
             </div>

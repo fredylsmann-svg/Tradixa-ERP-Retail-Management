@@ -2083,7 +2083,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
 
                   <div className="flex justify-end pt-6">
                     <Button
-                      className="h-14 px-10 bg-blue-600 hover:bg-blue-700 text-white font-black text-lg rounded-2xl shadow-xl shadow-blue-100 transition-all active:scale-95 flex items-center justify-center w-fit"
+                      className="h-14 px-10 bg-blue-600 hover:bg-blue-700 text-white font-black text-lg rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center w-fit"
                       disabled={cart.length === 0 || isLoading}
                       onClick={handleSubmit}
                     >

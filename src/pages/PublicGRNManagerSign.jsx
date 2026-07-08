@@ -204,7 +204,7 @@ export default function PublicGRNManagerSign() {
             </div>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <Badge className="bg-blue-600 text-white font-black border-none px-4 py-1.5 rounded-xl text-[10px] uppercase shadow-lg shadow-blue-100">
+            <Badge className="bg-blue-600 text-white font-black border-none px-4 py-1.5 rounded-xl text-[10px] uppercase shadow-lg">
               GOODS RECEIPT NOTES
             </Badge>
             <p className="text-xs text-slate-400">{grn.timestamp_wib}</p>

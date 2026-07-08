@@ -276,7 +276,7 @@ export default function Login() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowForm(true)}
-              className="px-12 h-[60px] bg-white text-blue-600 rounded-full font-black text-lg shadow-2xl shadow-blue-500/20 hover:bg-blue-50 transition-all uppercase tracking-widest"
+              className="px-12 h-[60px] bg-white text-blue-600 rounded-full font-black text-lg shadow-2xl hover:bg-blue-50 transition-all uppercase tracking-widest"
             >
               LOGIN
             </motion.button>

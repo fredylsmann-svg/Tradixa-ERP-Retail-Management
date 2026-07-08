@@ -35,14 +35,14 @@ export default function SubscriptionBanner({ store }) {
     const daysLeft = Math.ceil((graceEndDate - now) / (1000 * 60 * 60 * 24));
 
     return (
-      <div className="mx-4 mb-4 rounded-2xl bg-red-50 border border-red-200 text-red-950 px-5 py-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+      <div className="mx-4 mb-4 rounded-2xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-950 dark:text-red-100 px-5 py-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
+          <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="font-bold text-sm tracking-tight">⚠️ Masa Tenggang Aktif — {daysLeft} Hari Tersisa</h4>
-            <p className="text-xs text-red-700/90 mt-1 leading-relaxed">
+            <p className="text-xs text-red-700/90 dark:text-red-200/90 mt-1 leading-relaxed">
               Subscription Anda berakhir pada <strong>{formatDate(expiresAt)}</strong>. 
               Anda memiliki masa tenggang hingga <strong>{formatDate(graceEndDate)}</strong> untuk memperpanjang. 
               Setelah itu, akun akan otomatis downgrade ke paket Free dan modul Pro akan terkunci.
@@ -63,16 +63,16 @@ export default function SubscriptionBanner({ store }) {
   // === PERINGATAN: Mendekati expired (H-7 atau kurang) ===
   if (daysUntilExpiry > 0 && daysUntilExpiry <= 7) {
     return (
-      <div className="mx-4 mb-4 rounded-2xl bg-orange-50 border border-orange-200 text-orange-950 px-5 py-3.5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+      <div className="mx-4 mb-4 rounded-2xl bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/50 text-orange-950 dark:text-orange-100 px-5 py-3.5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center flex-shrink-0">
-            <Clock className="w-4.5 h-4.5 text-orange-600" />
+          <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800/50 flex items-center justify-center flex-shrink-0">
+            <Clock className="w-4.5 h-4.5 text-orange-600 dark:text-orange-400" />
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="font-bold text-sm tracking-tight">
               Subscription berakhir dalam {daysUntilExpiry} hari ({formatDate(expiresAt)})
             </h4>
-            <p className="text-[11px] text-orange-700/90 mt-0.5">
+            <p className="text-[11px] text-orange-700/90 dark:text-orange-200/90 mt-0.5">
               Perpanjang sebelum {formatDate(expiresAt)} agar akses Pro tidak terputus.
             </p>
           </div>

@@ -332,7 +332,7 @@ export default function Expenses({ store }) {
         }
       </div>
 
-      <Card className="rounded-xl border-none shadow-xl shadow-blue-100/50 overflow-hidden" id="print-expenses-detailed">
+      <Card className="rounded-xl border-none shadow-sm overflow-hidden" id="print-expenses-detailed">
         <CardHeader className="py-6 border-b px-8 bg-white">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />

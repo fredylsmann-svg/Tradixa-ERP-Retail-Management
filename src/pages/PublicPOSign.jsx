@@ -1230,7 +1230,7 @@ export default function PublicPOSign() {
             <div className="grid md:grid-cols-2">
               <div className="p-10 md:p-14 bg-slate-900 text-white flex flex-col justify-between rounded-[36px]">
                 <div className="space-y-6">
-                  <div className="w-16 h-16 rounded-3xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-900/50">
+                  <div className="w-16 h-16 rounded-3xl bg-blue-600 flex items-center justify-center shadow-lg">
                     <ShieldCheck className="w-8 h-8" />
                   </div>
                   <div className="space-y-3">

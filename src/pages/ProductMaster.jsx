@@ -244,7 +244,7 @@ export default function ProductMaster({ store }) {
                     <div className="flex justify-end mt-2 relative z-10 pt-2 border-t border-slate-800">
                       <button 
                         onClick={dismissAddProductGuide} 
-                        className="text-[11px] font-bold bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20 active:scale-95"
+                        className="text-[11px] font-bold bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg active:scale-95"
                       >
                         Mengerti <ChevronRight className="w-3.5 h-3.5" />
                       </button>
@@ -401,7 +401,7 @@ export default function ProductMaster({ store }) {
                               <div className="flex justify-end mt-2 relative z-10 pt-2 border-t border-slate-800">
                                 <button 
                                   onClick={dismissActionGuide} 
-                                  className="text-[11px] font-bold bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20 active:scale-95"
+                                  className="text-[11px] font-bold bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg active:scale-95"
                                 >
                                   Mengerti & Selesai
                                 </button>

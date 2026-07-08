@@ -69,7 +69,7 @@ function MiniCalendar({ value, onChange, onClose }) {
             <button key={idx} onClick={() => cell.current && handleSelect(cell.day)} disabled={!cell.current}
               className={`w-9 h-9 mx-auto rounded-lg text-sm font-medium transition-all
                 ${!cell.current ? 'text-slate-300 cursor-default' : 'hover:bg-blue-50 cursor-pointer'}
-                ${isSelected ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-600/30' : ''}
+                ${isSelected ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md' : ''}
                 ${isToday && !isSelected ? 'bg-blue-50 text-blue-600 font-bold ring-1 ring-blue-200' : ''}
                 ${cell.current && !isSelected && !isToday ? 'text-slate-700' : ''}
               `}>{cell.day}</button>
