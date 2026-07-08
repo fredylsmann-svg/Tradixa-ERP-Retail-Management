@@ -354,8 +354,11 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
       </div>
 
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto py-4 min-h-0">
-        {finalMenuGroups.map((group) => (
+        {finalMenuGroups.map((group, index) => (
           <div key={group.title} className="mb-2">
+            {group.title === 'Overview' && index > 0 && (
+              <div className="mb-2 mt-4 border-t border-slate-200 dark:border-slate-800 w-full" />
+            )}
             <button
               onClick={(e) => toggleGroup(e, group.title)}
               className="w-full flex items-center justify-between px-4 py-3 text-base font-bold text-slate-900 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors tracking-wide text-left"
