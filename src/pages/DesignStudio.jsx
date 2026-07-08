@@ -82,14 +82,10 @@ export default function DesignStudio({ store }) {
       if (dataUrl.startsWith('data:image')) {
         const res = await fetch(dataUrl);
         const blob = await res.blob();
-        const fileName = `${store.id}/signature-${Date.now()}.png`;
-        const { error: uploadError } = await supabase.storage.from('logos').upload(fileName, blob, { upsert: true });
-
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(fileName);
-          finalUrl = publicUrl;
-          setSignatureUrl(finalUrl);
-        }
+        const file = new File([blob], `signature-${Date.now()}.png`, { type: 'image/png' });
+        const { uploadFile } = await import('@/utils/storageService');
+        finalUrl = await uploadFile(file, 'logo');
+        setSignatureUrl(finalUrl);
       }
 
       let updatedHistory = Array.isArray(signatureHistory) ? [...signatureHistory] : [];
@@ -130,12 +126,9 @@ export default function DesignStudio({ store }) {
       if (finalSignatureUrl && finalSignatureUrl.startsWith('data:image')) {
         const res = await fetch(finalSignatureUrl);
         const blob = await res.blob();
-        const fileName = `${store.id}/signature-${Date.now()}.png`;
-        const { error: uploadError } = await supabase.storage.from('logos').upload(fileName, blob, { upsert: true });
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(fileName);
-          finalSignatureUrl = publicUrl;
-        }
+        const file = new File([blob], `signature-${Date.now()}.png`, { type: 'image/png' });
+        const { uploadFile } = await import('@/utils/storageService');
+        finalSignatureUrl = await uploadFile(file, 'logo');
       }
 
       let updatedHistory = Array.isArray(signatureHistory) ? [...signatureHistory] : [];
@@ -192,9 +185,6 @@ export default function DesignStudio({ store }) {
         icon={Palette}
         actions={
           <>
-            <Button variant="outline" className="gap-2">
-              <Eye className="w-4 h-4" /> Preview All
-            </Button>
             <Button
               onClick={handleSaveBranding}
               className="bg-blue-600 gap-2"
@@ -794,6 +784,7 @@ export default function DesignStudio({ store }) {
           />
         </DialogContent>
       </Dialog>
+      
       <input
         type="file"
         id="logo-upload"
