@@ -520,11 +520,10 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* 2. Prevent the dialog's direct child wrapper from being */
-  /*    constrained to the dialog width. This lets wide content */
-  /*    (like invoice layouts) keep their natural width and */
-  /*    trigger the horizontal scrollbar above. */
-  [role="dialog"] > div:not([class*="absolute"]):not([class*="fixed"]) {
+  /* 2. ONLY expand dialogs that contain wide content like invoices */
+  /*    Uses :has() to target dialogs containing #invoice-print-area */
+  /*    This does NOT affect form dialogs (PR, PO, etc.) */
+  [role="dialog"]:has(#invoice-print-area) > div {
     min-width: fit-content;
   }
 }
