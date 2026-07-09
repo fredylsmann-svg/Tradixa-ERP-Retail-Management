@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Eye, ShoppingCart, Receipt, CalendarClock, Wallet, Phone, User, CreditCard, X, ZoomIn, CheckCircle2, Clock, ArrowRight, Lock, Loader2, QrCode, MessageSquare, Ban } from 'lucide-react';
+import { Plus, Eye, ShoppingCart, Receipt, CalendarClock, Wallet, Phone, User, CreditCard, X, ZoomIn, CheckCircle2, Clock, ArrowRight, Lock, Loader2, QrCode, MessageSquare, Ban, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import SalesTransactionForm from '@/components/product/SalesTransactionForm';
 import PrintInvoice from '@/components/invoice/PrintInvoice';
@@ -745,7 +745,7 @@ export default function SalesTransaction({ store }) {
         <CardContent className="p-0">
           <div className="p-4 border-b">
             <div className="relative">
-              <Eye className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Cari invoice atau nama pelanggan..."
                 value={searchTerm}
