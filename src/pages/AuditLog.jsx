@@ -11,6 +11,9 @@ import PageHeader from '@/components/layout/PageHeader';
 import PremiumGate from '@/components/ui/PremiumGate';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { useGlobalDate } from '@/contexts/DateContext';
+import PageDatePicker from '@/components/layout/PageDatePicker';
+import DataTablePagination from '@/components/ui/DataTablePagination';
 
 const formatWIB = (ts) => {
   if (!ts) return { date: '-', time: '' };
@@ -43,15 +46,42 @@ export default function AuditLog({ store }) {
   const [logs, setLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
   const [entityFilter, setEntityFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [totalData, setTotalData] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const { selectedDate } = useGlobalDate();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1); // Reset to page 1 on search
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const loadLogs = async () => {
     if (!store?.id) return;
     setIsLoading(true);
     try {
-      const data = await api.entities.SystemAuditLog.filter({ store_id: store.id }, '-created_at');
-      setLogs(data);
+      const fetchOptions = {
+        page: currentPage,
+        pageSize,
+        ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['description', 'user_name', 'entity_name', 'entity_id', 'action_type'] } : {}),
+        ...(selectedDate !== 'all_time' ? { startDate: selectedDate, endDate: selectedDate, dateField: 'timestamp_wib' } : {})
+      };
+
+      const filters = { store_id: store.id };
+      if (actionFilter !== 'all') filters.action_type = actionFilter;
+      if (entityFilter !== 'all') filters.entity_name = entityFilter;
+
+      const { data, totalCount } = await api.entities.SystemAuditLog.filter(filters, '-created_at', fetchOptions);
+      setLogs(data || []);
+      setTotalData(totalCount || 0);
     } catch (err) {
       console.error('Failed to load audit logs:', err);
     } finally {
@@ -71,7 +101,7 @@ export default function AuditLog({ store }) {
     return () => {
       window.removeEventListener('refresh_data', handleRefreshEvent);
     };
-  }, [store?.id]);
+  }, [store?.id, currentPage, pageSize, debouncedSearch, selectedDate, actionFilter, entityFilter]);
 
   const getActionBadge = (action) => {
     const styles = {
@@ -90,43 +120,51 @@ export default function AuditLog({ store }) {
     );
   };
 
-  const filteredLogs = logs.filter(log => {
-    const matchesSearch = 
-      (log.description?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (log.user_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (log.entity_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (log.entity_id?.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesAction = actionFilter === 'all' || log.action_type === actionFilter;
-    const matchesEntity = entityFilter === 'all' || log.entity_name === entityFilter;
-
-    return matchesSearch && matchesAction && matchesEntity;
-  });
+  const filteredLogs = logs;
 
   const uniqueEntities = [...new Set(logs.map(l => l.entity_name))].sort();
 
-  const exportCSV = () => {
-    const headers = ['No', 'Waktu', 'Entity', 'Entity ID', 'Aksi', 'Deskripsi', 'User', 'Email'];
-    const rows = filteredLogs.map((log, idx) => [
-      idx + 1,
-      (() => { const f = formatWIB(log.timestamp_wib); return f.date + ' ' + f.time; })(),
-      log.entity_name,
-      log.entity_id,
-      log.action_type,
-      log.description,
-      log.user_name,
-      log.user_email
-    ]);
+  const exportCSV = async () => {
+    if (!store?.id) return;
+    setIsExporting(true);
+    try {
+      const fetchOptions = {
+        ...(debouncedSearch ? { search: debouncedSearch, searchColumns: ['description', 'user_name', 'entity_name', 'entity_id', 'action_type'] } : {}),
+        ...(selectedDate !== 'all_time' ? { startDate: selectedDate, endDate: selectedDate, dateField: 'timestamp_wib' } : {})
+      };
 
-    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `audit_log_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const filters = { store_id: store.id };
+      if (actionFilter !== 'all') filters.action_type = actionFilter;
+      if (entityFilter !== 'all') filters.entity_name = entityFilter;
+
+      const dataToExport = await api.entities.SystemAuditLog.filter(filters, '-created_at', fetchOptions);
+
+      const headers = ['No', 'Waktu', 'Entity', 'Entity ID', 'Aksi', 'Deskripsi', 'User', 'Email'];
+      const rows = (dataToExport || []).map((log, idx) => [
+        idx + 1,
+        (() => { const f = formatWIB(log.timestamp_wib); return f.date + ' ' + f.time; })(),
+        log.entity_name,
+        log.entity_id,
+        log.action_type,
+        log.description,
+        log.user_name,
+        log.user_email
+      ]);
+
+      const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `audit_log_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Failed to export CSV:', error);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -142,6 +180,8 @@ export default function AuditLog({ store }) {
           </Button>
         }
       />
+
+      <PageDatePicker />
 
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1 group">
@@ -183,9 +223,9 @@ export default function AuditLog({ store }) {
 
           <div className="flex gap-2">
             <PremiumGate store={store} featureName="Export CSV">
-              <Button variant="outline" onClick={exportCSV} className="h-12 px-4 rounded-xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50">
-                <Download className="w-4 h-4 mr-2" />
-                CSV
+              <Button variant="outline" onClick={exportCSV} disabled={isExporting} className="h-12 px-4 rounded-xl border-slate-200 text-slate-600 font-bold hover:bg-slate-50">
+                {isExporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+                {isExporting ? 'Proses...' : 'CSV'}
               </Button>
             </PremiumGate>
             <PremiumGate store={store} featureName="Export PDF">
@@ -200,7 +240,8 @@ export default function AuditLog({ store }) {
 
       <Card className="rounded-xl border-none shadow-xl shadow-slate-200/50 overflow-hidden">
         <CardContent className="p-0">
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader className="bg-slate-50/50">
               <TableRow>
                 <TableHead className="pl-8 w-12">No.</TableHead>
@@ -213,71 +254,83 @@ export default function AuditLog({ store }) {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={6} className="py-8 text-center">
-                      <div className="flex items-center justify-center gap-2 text-slate-400">
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        Memuat data...
-                      </div>
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell colSpan={6} className="py-8 text-center">
+                        <div className="flex items-center justify-center gap-2 text-slate-400">
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          Memuat data...
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredLogs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-20 text-center">
+                      <History className="w-12 h-12 mx-auto mb-4 text-slate-200" />
+                      <p className="text-slate-500 font-medium">Belum ada riwayat aktivitas</p>
                     </TableCell>
                   </TableRow>
-                ))
-              ) : filteredLogs.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-20 text-center">
-                    <History className="w-12 h-12 mx-auto mb-4 text-slate-200" />
-                    <p className="text-slate-500 font-medium">Belum ada riwayat aktivitas</p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredLogs.map((log, idx) => (
-                  <TableRow key={log.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <TableCell className="pl-8 text-slate-400 font-bold">{idx + 1}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-slate-900">
-                          {formatWIB(log.timestamp_wib).date}
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-medium mt-0.5">
-                          {formatWIB(log.timestamp_wib).time}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-black text-slate-800 tracking-tight">{log.entity_name}</span>
-                        <span className="text-[10px] text-blue-500 font-mono mt-0.5">
-                          {log.entity_id?.substring(0, 8)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getActionBadge(log.action_type)}</TableCell>
-                    <TableCell className="max-w-[300px]">
-                      <p className="text-xs text-slate-600 leading-relaxed font-medium line-clamp-2">
-                        {log.description}
-                      </p>
-                    </TableCell>
-                    <TableCell className="pr-8">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
-                          <User className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-xs font-bold text-slate-900 truncate">
-                            {log.user_name}
+                ) : (
+                  filteredLogs.map((log, idx) => (
+                    <TableRow key={log.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <TableCell className="pl-8 text-slate-400 font-bold">{(currentPage - 1) * pageSize + idx + 1}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-slate-900">
+                            {formatWIB(log.timestamp_wib).date}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-medium truncate">
-                            {log.user_email}
+                          <span className="text-[10px] text-slate-400 font-medium mt-0.5">
+                            {formatWIB(log.timestamp_wib).time}
                           </span>
                         </div>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black text-slate-800 tracking-tight">{log.entity_name}</span>
+                          <span className="text-[10px] text-blue-500 font-mono mt-0.5">
+                            {log.entity_id?.substring(0, 8)}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getActionBadge(log.action_type)}</TableCell>
+                      <TableCell className="max-w-[300px]">
+                        <p className="text-xs text-slate-600 leading-relaxed font-medium line-clamp-2">
+                          {log.description}
+                        </p>
+                      </TableCell>
+                      <TableCell className="pr-8">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
+                            <User className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-bold text-slate-900 truncate">
+                              {log.user_name}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium truncate">
+                              {log.user_email}
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          
+          <div className="p-4 border-t">
+            <DataTablePagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(totalData / pageSize)}
+              totalData={totalData}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
