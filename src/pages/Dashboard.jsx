@@ -371,11 +371,13 @@ export default function Dashboard({ store }) {
         </Card>
       </div>
 
-      <div className="flex justify-center items-center py-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-          <RefreshCw className="w-3 h-3 animate-spin-slow" />
-          Terakhir diperbarui: {lastUpdated.toLocaleTimeString('id-ID')} WIB • Data tersinkronisasi otomatis
-        </p>
+      <div className="py-4 px-5 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 w-full">
+        <div className="flex items-center justify-center gap-3">
+          <RefreshCw className="w-3 h-3 animate-spin-slow text-slate-400 shrink-0" />
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed text-left sm:text-center">
+            Terakhir diperbarui: {lastUpdated.toLocaleTimeString('id-ID')} WIB <span className="hidden sm:inline">•</span><br className="sm:hidden" /> Data tersinkronisasi otomatis
+          </p>
+        </div>
       </div>
     </div>
   );
