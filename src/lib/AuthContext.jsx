@@ -238,6 +238,35 @@ export const AuthProvider = ({ children }) => {
     };
   }, [resolveUser]);
 
+  // Proactive token refresh when returning from background (iOS PWA fix)
+  // iOS aggressively kills PWA tabs. When user returns, token may be expired.
+  // This ensures we refresh it immediately instead of waiting for next API call to fail.
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && isAuthenticated) {
+        try {
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (error || !session) {
+            console.warn('[Tradixa Auth] Session lost after background, redirecting to login');
+            setUser(null);
+            setIsAuthenticated(false);
+            return;
+          }
+          // Token masih hidup — coba refresh supaya masa berlakunya diperpanjang
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            console.warn('[Tradixa Auth] Token refresh failed:', refreshError.message);
+          }
+        } catch (err) {
+          console.error('[Tradixa Auth] Visibility recovery error:', err);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isAuthenticated]);
+
   const login = async (email, password) => {
     try {
       setIsLoadingAuth(true);

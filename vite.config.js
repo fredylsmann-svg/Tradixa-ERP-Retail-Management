@@ -31,7 +31,20 @@ export default defineConfig({
         ]
       },
       workbox: {
-        importScripts: ['/firebase-messaging-sw.js']
+        // Firebase SW registers itself independently via firebaseMessaging.js
+        // Do NOT importScripts here — it causes double-registration & cache conflicts
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api/, /^\/firebase-messaging-sw\.js/],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 }
+            }
+          }
+        ]
       }
     })
   ],
