@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, ShoppingCart, TrendingUp, AlertTriangle, DollarSign, Users, LayoutDashboard, Info, HelpCircle, RefreshCw } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -40,117 +40,59 @@ export default function Dashboard({ store }) {
   }, [store, range]);
 
   const loadDashboardData = async () => {
-    const [products, sales, payables, receivables] = await Promise.all([
-      api.entities.Product.filter({ store_id: store.id }),
-      api.entities.SalesTransaction.filter({ store_id: store.id }),
-      api.entities.Payable.filter({ store_id: store.id, status: 'Pending' }),
-      api.entities.Receivable.filter({ store_id: store.id, status: 'Pending' })
-    ]);
-
-    const lowStockCount = products.filter(p => p.stock <= p.reorder_level && p.stock > 0).length;
-    const totalRevenue = sales.reduce((sum, s) => sum + (s.total || 0), 0);
-    const totalProfit = sales.reduce((sum, s) => sum + (s.profit || 0), 0);
-    const totalPayables = payables.reduce((sum, p) => sum + (p.remaining_amount || p.amount || 0), 0);
-    const totalReceivables = receivables.reduce((sum, r) => sum + (r.remaining_amount || r.amount || 0), 0);
-
-    // Time-based stats
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    let currentSales = [];
-    let previousSales = [];
-    let periodLabel = 'kemarin';
-
-    if (range === 'daily') {
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-
-      currentSales = sales.filter(s => new Date(s.created_at || s.created_date) >= today);
-      previousSales = sales.filter(s => {
-        const d = new Date(s.created_at || s.created_date);
-        return d >= yesterday && d < today;
+    try {
+      // Single RPC call — replaces 4 heavy queries (~500 bytes instead of ~5MB)
+      const { data, error } = await supabase.rpc('get_dashboard_summary', {
+        p_store_id: store.id,
+        p_range: range,
+        p_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jakarta'
       });
-      periodLabel = 'kemarin';
-    } else if (range === 'weekly') {
-      const thisWeek = new Date(today);
-      thisWeek.setDate(thisWeek.getDate() - 7);
-      const lastWeek = new Date(thisWeek);
-      lastWeek.setDate(lastWeek.getDate() - 7);
 
-      currentSales = sales.filter(s => new Date(s.created_at || s.created_date) >= thisWeek);
-      previousSales = sales.filter(s => {
-        const d = new Date(s.created_at || s.created_date);
-        return d >= lastWeek && d < thisWeek;
-      });
-      periodLabel = 'minggu lalu';
-    } else {
-      const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const lastMonth = new Date(thisMonth);
-      lastMonth.setMonth(lastMonth.getMonth() - 1);
+      if (error) {
+        console.error('[Dashboard] RPC error:', error.message);
+        return;
+      }
 
-      currentSales = sales.filter(s => new Date(s.created_at || s.created_date) >= thisMonth);
-      previousSales = sales.filter(s => {
-        const d = new Date(s.created_at || s.created_date);
-        return d >= lastMonth && d < thisMonth;
+      // Calculate growth percentages from RPC results
+      const periodLabel = range === 'daily' ? 'kemarin' : range === 'weekly' ? 'minggu lalu' : 'bulan lalu';
+
+      const salesGrowth = data.prev_sales_count > 0
+        ? Math.round(((data.current_sales_count - data.prev_sales_count) / data.prev_sales_count) * 100)
+        : data.current_sales_count > 0 ? 100 : 0;
+
+      const revenueGrowth = data.prev_revenue > 0
+        ? Math.round(((data.current_revenue - data.prev_revenue) / data.prev_revenue) * 100)
+        : data.current_revenue > 0 ? 100 : 0;
+
+      const profitGrowth = data.prev_profit > 0
+        ? Math.round(((data.current_profit - data.prev_profit) / data.prev_profit) * 100)
+        : data.current_profit > 0 ? 100 : 0;
+
+      setStats({
+        totalProducts: data.total_products,
+        totalSales: data.total_sales,
+        revenue: data.total_revenue,
+        profit: data.total_profit,
+        lowStock: data.low_stock,
+        payables: data.total_payables,
+        receivables: data.total_receivables,
+        salesGrowth: salesGrowth !== 0 ? `${salesGrowth > 0 ? '+' : ''}${salesGrowth}% dari ${periodLabel}` : null,
+        revenueGrowth: revenueGrowth !== 0 ? `${revenueGrowth > 0 ? '+' : ''}${revenueGrowth}% dari ${periodLabel}` : null,
+        profitGrowth: profitGrowth !== 0 ? `${profitGrowth > 0 ? '+' : ''}${profitGrowth}% dari ${periodLabel}` : null,
+        productsGrowth: data.new_products_this_month
       });
-      periodLabel = 'bulan lalu';
+
+      setLastUpdated(new Date());
+
+      // Map chart data from RPC response
+      const chartData = data.chart_data || [];
+      setSalesData(chartData.map(d => ({ name: d.name, value: d.revenue })));
+      setOrderData(chartData.map(d => ({ name: d.name, orders: d.orders })));
+      setIsLoading(false);
+    } catch (err) {
+      console.error('[Dashboard] Failed to load:', err);
+      setIsLoading(false);
     }
-
-    const currentRev = currentSales.reduce((sum, s) => sum + (s.total || 0), 0);
-    const prevRev = previousSales.reduce((sum, s) => sum + (s.total || 0), 0);
-    const currentProf = currentSales.reduce((sum, s) => sum + (s.profit || 0), 0);
-    const prevProf = previousSales.reduce((sum, s) => sum + (s.profit || 0), 0);
-
-    const salesGrowth = previousSales.length > 0
-      ? Math.round(((currentSales.length - previousSales.length) / previousSales.length) * 100)
-      : currentSales.length > 0 ? 100 : 0;
-
-    const revenueGrowth = prevRev > 0
-      ? Math.round(((currentRev - prevRev) / prevRev) * 100)
-      : currentRev > 0 ? 100 : 0;
-
-    const profitGrowth = prevProf > 0
-      ? Math.round(((currentProf - prevProf) / prevProf) * 100)
-      : currentProf > 0 ? 100 : 0;
-
-    setStats({
-      totalProducts: products.length,
-      totalSales: sales.length,
-      revenue: totalRevenue,
-      profit: totalProfit,
-      lowStock: lowStockCount,
-      payables: totalPayables,
-      receivables: totalReceivables,
-      salesGrowth: salesGrowth !== 0 ? `${salesGrowth > 0 ? '+' : ''}${salesGrowth}% dari ${periodLabel}` : null,
-      revenueGrowth: revenueGrowth !== 0 ? `${revenueGrowth > 0 ? '+' : ''}${revenueGrowth}% dari ${periodLabel}` : null,
-      profitGrowth: profitGrowth !== 0 ? `${profitGrowth > 0 ? '+' : ''}${profitGrowth}% dari ${periodLabel}` : null,
-      productsGrowth: products.filter(p => new Date(p.created_at) >= new Date(today.getFullYear(), today.getMonth(), 1)).length
-    });
-
-    setLastUpdated(new Date());
-
-    // Generate sales chart data (last 7 days)
-    const last7Days = [];
-    const ordersByDay = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
-
-      const daySales = sales.filter(s => {
-        const saleDate = new Date(s.created_date);
-        return saleDate.toDateString() === date.toDateString();
-      });
-
-      const dayRevenue = daySales.reduce((sum, s) => sum + (s.total || 0), 0);
-
-      last7Days.push({ name: dateStr, value: dayRevenue });
-      ordersByDay.push({ name: dateStr, orders: daySales.length });
-    }
-
-    setSalesData(last7Days);
-    setOrderData(ordersByDay);
-    setIsLoading(false);
   };
 
   const formatCurrency = (value) => {

@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import {
   LineChart as LineChartIcon, TrendingUp, TrendingDown, BarChart3,
   DollarSign, Wallet, Loader2, RefreshCw, Printer, FileSpreadsheet, FileText
@@ -118,124 +118,103 @@ export default function FinancialStatements({ store }) {
   const [period, setPeriod] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [journalEntries, setJournalEntries] = useState([]);
-  const [expenses, setExpenses] = useState([]);
-  const [salesTx, setSalesTx] = useState([]);
+  const [f, setF] = useState({
+    revenue: 0, hpp: 0, grossProfit: 0, grossMargin: 0, totalOpex: 0, opex: {},
+    netProfit: 0, netMargin: 0, totalDiscount: 0, kas: 0, piutang: 0, persediaan: 0,
+    totalAssets: 0, hutang: 0, equity: 0, retainedEarnings: 0, totalCashIn: 0,
+    cashIn: {}, totalCashOut: 0, cashOut: {}, netCashFlow: 0, txCount: 0, journalCount: 0
+  });
+  const [prevF, setPrevF] = useState({ revenue: 0, netProfit: 0 });
 
-  useEffect(() => { loadAllData(); }, []);
+  // Helper: aggregate detail arrays from RPC into { category: totalAmount }
+  const aggregateDetail = (detailArray) => {
+    if (!Array.isArray(detailArray)) return {};
+    const result = {};
+    detailArray.forEach(item => {
+      const cat = item.category || 'Lainnya';
+      if (!result[cat]) result[cat] = 0;
+      result[cat] += Number(item.amount || 0);
+    });
+    return result;
+  };
 
-  const loadAllData = async () => {
+  const loadData = useCallback(async () => {
+    if (!store?.id) return;
     setIsLoading(true);
     try {
-      const [journals, journalLines, expenseData, sales] = await Promise.all([
-        api.entities.JournalEntry.filter({ status: 'Posted' }),
-        api.entities.JournalLine.filter({}),
-        api.entities.Expense.filter({}, '-date'),
-        api.entities.SalesTransaction.filter({}, '-created_date')
-      ]);
+      // Calculate date range based on period selection
+      let startDate = null;
+      let endDate = null;
+      const now = new Date();
 
-      // Map lines to their journal entry to get the date
-      const postedJournalIds = new Set(journals.map(j => j.id));
-      const validLines = journalLines.filter(l => postedJournalIds.has(l.journal_id)).map(l => {
-        const parent = journals.find(j => j.id === l.journal_id);
-        return { ...l, date: parent?.date };
+      if (period === 'month') {
+        startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+      } else if (period === 'year') {
+        startDate = `${now.getFullYear()}-01-01`;
+        endDate = `${now.getFullYear()}-12-31`;
+      } else if (period === 'custom' && (dateFrom || dateTo)) {
+        startDate = dateFrom || '2000-01-01';
+        endDate = dateTo || `${now.getFullYear()}-12-31`;
+      }
+      // period === 'all' → both null → RPC uses full range
+
+      const { data, error } = await supabase.rpc('get_financial_statements', {
+        p_store_id: store.id,
+        p_start_date: startDate,
+        p_end_date: endDate,
+        p_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jakarta'
       });
 
-      setJournalEntries(validLines);
-      setExpenses(expenseData);
-      setSalesTx(sales);
-    } catch (err) { console.error(err); } finally { setIsLoading(false); }
-  };
-
-  const filterByPeriod = (data, dateField = 'date') => {
-    if (!dateFrom && !dateTo && period === 'all') return data;
-    let from, to;
-    if (period === 'month') { const n = new Date(); from = new Date(n.getFullYear(), n.getMonth(), 1); to = new Date(n.getFullYear(), n.getMonth() + 1, 0); }
-    else if (period === 'year') { const n = new Date(); from = new Date(n.getFullYear(), 0, 1); to = new Date(n.getFullYear(), 11, 31); }
-    else if (dateFrom || dateTo) { from = dateFrom ? new Date(dateFrom) : new Date('2000-01-01'); to = dateTo ? new Date(dateTo) : new Date('2099-12-31'); }
-    else return data;
-    return data.filter(d => { const dd = new Date(d[dateField]); return dd >= from && dd <= to; });
-  };
-
-  const fj = useMemo(() => filterByPeriod(journalEntries, 'date'), [journalEntries, dateFrom, dateTo, period]);
-  const fe = useMemo(() => filterByPeriod(expenses, 'date'), [expenses, dateFrom, dateTo, period]);
-  const fsx = useMemo(() => filterByPeriod(salesTx, 'created_date'), [salesTx, dateFrom, dateTo, period]);
-
-  const calculateFinancials = (jData, eData, sData) => {
-    const at = {};
-    jData.forEach(j => {
-      const n = j.account_name;
-      if (!at[n]) at[n] = { debit: 0, credit: 0, type: j.account_type };
-      at[n].debit += Number(j.debit || 0);
-      at[n].credit += Number(j.credit || 0);
-    });
-
-    const revenue = (at['Pendapatan Penjualan']?.credit || 0) - (at['Pendapatan Penjualan']?.debit || 0);
-    const hpp = (at['Harga Pokok Penjualan (HPP)']?.debit || 0) - (at['Harga Pokok Penjualan (HPP)']?.credit || 0);
-    const grossProfit = revenue - hpp;
-
-    // Opex dihitung dari Journal Lines yang sudah Posted (bukan dari Expense langsung)
-    // Ini memastikan hanya transaksi yang sudah di-Accept/Post oleh akuntan yang muncul di Laporan Keuangan
-    const opex = {}; let totalOpex = 0;
-    jData.forEach(j => {
-      const name = j.account_name || '';
-      if (name.startsWith('Beban ') && Number(j.debit) > 0) {
-        const category = name.replace('Beban ', '');
-        if (!opex[category]) opex[category] = 0;
-        opex[category] += Number(j.debit);
-        totalOpex += Number(j.debit);
+      if (error) {
+        console.error('[FinancialStatements] RPC error:', error.message);
+        return;
       }
-    });
 
-    const netProfit = grossProfit - totalOpex;
-    const grossMargin = revenue > 0 ? ((grossProfit / revenue) * 100).toFixed(1) : 0;
-    const netMargin = revenue > 0 ? ((netProfit / revenue) * 100).toFixed(1) : 0;
+      // Map RPC response to the shape our UI components expect
+      const opex = aggregateDetail(data.opex_detail);
+      const cashIn = aggregateDetail(data.cash_in_detail);
+      const cashOut = aggregateDetail(data.cash_out_detail);
 
-    let kas = 0;
-    Object.keys(at).forEach(name => {
-      if (name.toLowerCase().includes('kas') || name.toLowerCase().includes('bank')) {
-        kas += (at[name].debit || 0) - (at[name].credit || 0);
-      }
-    });
+      setF({
+        revenue: Number(data.revenue || 0),
+        hpp: Number(data.hpp || 0),
+        grossProfit: Number(data.gross_profit || 0),
+        grossMargin: Number(data.gross_margin || 0),
+        totalOpex: Number(data.total_opex || 0),
+        opex,
+        netProfit: Number(data.net_profit || 0),
+        netMargin: Number(data.net_margin || 0),
+        totalDiscount: Number(data.total_discount || 0),
+        kas: Number(data.kas || 0),
+        piutang: Number(data.piutang || 0),
+        persediaan: Number(data.persediaan || 0),
+        totalAssets: Number(data.total_assets || 0),
+        hutang: Number(data.hutang || 0),
+        equity: Number(data.equity || 0),
+        retainedEarnings: Number(data.retained_earnings || 0),
+        totalCashIn: Number(data.total_cash_in || 0),
+        cashIn,
+        totalCashOut: Number(data.total_cash_out || 0),
+        cashOut,
+        netCashFlow: Number(data.net_cash_flow || 0),
+        txCount: Number(data.tx_count || 0),
+        journalCount: Number(data.journal_count || 0)
+      });
 
-    const piutang = (at['Piutang Usaha']?.debit || 0) - (at['Piutang Usaha']?.credit || 0);
-    const persediaan = (at['Persediaan Barang Dagang']?.debit || 0) - (at['Persediaan Barang Dagang']?.credit || 0);
-    const totalAssets = kas + piutang + persediaan;
-    const hutang = (at['Hutang Usaha']?.credit || 0) - (at['Hutang Usaha']?.debit || 0);
-    const equity = totalAssets - hutang;
+      setPrevF({
+        revenue: Number(data.prev_revenue || 0),
+        netProfit: Number(data.prev_net_profit || 0)
+      });
+    } catch (err) {
+      console.error('[FinancialStatements] Error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [store?.id, period, dateFrom, dateTo]);
 
-    const cashIn = {}; let totalCashIn = 0;
-    jData.filter(j => (j.account_name.toLowerCase().includes('kas') || j.account_name.toLowerCase().includes('bank')) && Number(j.debit) > 0).forEach(j => {
-      const c = j.description?.includes('Penjualan') ? 'Penerimaan Penjualan' : 'Penerimaan Lainnya';
-      if (!cashIn[c]) cashIn[c] = 0; cashIn[c] += Number(j.debit); totalCashIn += Number(j.debit);
-    });
-
-    const cashOut = {}; let totalCashOut = 0;
-    jData.filter(j => (j.account_name.toLowerCase().includes('kas') || j.account_name.toLowerCase().includes('bank')) && Number(j.credit) > 0).forEach(j => {
-      let c = 'Pengeluaran Lainnya';
-      if (j.description?.includes('Pembelian') || j.description?.includes('Stok')) c = 'Pembelian Barang Dagang';
-      else if (j.description?.includes('Beban')) c = 'Pembayaran Beban Operasional';
-      if (!cashOut[c]) cashOut[c] = 0; cashOut[c] += Number(j.credit); totalCashOut += Number(j.credit);
-    });
-
-    const totalDiscount = sData.reduce((s, tx) => s + Number(tx.discount || 0), 0);
-    return { revenue, hpp, grossProfit, grossMargin, totalOpex, opex, netProfit, netMargin, totalDiscount, kas, piutang, persediaan, totalAssets, hutang, equity, retainedEarnings: netProfit, totalCashIn, cashIn, totalCashOut, cashOut, netCashFlow: totalCashIn - totalCashOut, txCount: sData.length, journalCount: jData.length };
-  };
-
-  const f = useMemo(() => calculateFinancials(fj, fe, fsx), [fj, fe, fsx]);
-
-  const prevF = useMemo(() => {
-    // Calculate previous month data for MoM comparison
-    const now = new Date();
-    const startPrev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endPrev = new Date(now.getFullYear(), now.getMonth(), 0);
-
-    const pFj = journalEntries.filter(j => { const d = new Date(j.date); return d >= startPrev && d <= endPrev; });
-    const pFe = expenses.filter(e => { const d = new Date(e.date); return d >= startPrev && d <= endPrev; });
-    const pFsx = salesTx.filter(s => { const d = new Date(s.created_date); return d >= startPrev && d <= endPrev; });
-
-    return calculateFinancials(pFj, pFe, pFsx);
-  }, [journalEntries, expenses, salesTx]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const periodLabel = period === 'month' ? `Bulan ${new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}` : period === 'year' ? `Tahun ${new Date().getFullYear()}` : dateFrom || dateTo ? `${dateFrom} s/d ${dateTo}` : 'Seluruh Periode';
   const tabTitles = { pnl: 'LAPORAN LABA RUGI', balance: 'NERACA (BALANCE SHEET)', cashflow: 'LAPORAN ARUS KAS' };
@@ -266,7 +245,7 @@ export default function FinancialStatements({ store }) {
                 <FileSpreadsheet className="w-4 h-4" />Excel
               </Button>
             </PremiumGate>
-            <Button variant="outline" size="sm" onClick={loadAllData} className="gap-1.5 text-xs h-11 px-4 rounded-xl border-slate-200"><RefreshCw className="w-4 h-4" />Refresh</Button>
+            <Button variant="outline" size="sm" onClick={loadData} className="gap-1.5 text-xs h-11 px-4 rounded-xl border-slate-200"><RefreshCw className="w-4 h-4" />Refresh</Button>
           </div>
         }
       />
