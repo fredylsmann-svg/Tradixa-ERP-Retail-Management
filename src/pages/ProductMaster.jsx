@@ -32,7 +32,7 @@ export default function ProductMaster({ store }) {
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [printProducts, setPrintProducts] = useState([]); // Products to pass to modal
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
   const [totalData, setTotalData] = useState(0);
   const [totalProductCount, setTotalProductCount] = useState(0);
   const { selectedDate, formattedDate } = useGlobalDate();

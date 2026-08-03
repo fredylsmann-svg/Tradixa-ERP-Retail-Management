@@ -31,7 +31,7 @@ export default function InventoryLedger({ store }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
   const { selectedDate, formattedDate } = useGlobalDate();
 
   // Debounce search term

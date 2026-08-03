@@ -81,7 +81,7 @@ export default function InventoryGRN({ store }) {
   const [history, setHistory] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
   const [totalData, setTotalData] = useState(0);
   const [totalMovementCount, setTotalMovementCount] = useState(0);
   const { selectedDate } = useGlobalDate();

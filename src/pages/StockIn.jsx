@@ -24,7 +24,7 @@ export default function StockIn({ store }) {
   const [showForm, setShowForm] = useState(false);
   const [viewingItem, setViewingItem] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
   const [totalData, setTotalData] = useState(0);
   const [totalMovementCount, setTotalMovementCount] = useState(0);
   const { selectedDate, formattedDate, isToday } = useGlobalDate();

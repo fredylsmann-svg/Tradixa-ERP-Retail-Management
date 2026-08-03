@@ -86,7 +86,7 @@ export default function GoodsReceipt({ store }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua Status');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
   const [totalData, setTotalData] = useState(0);
   const [totalReceiptCount, setTotalReceiptCount] = useState(0);
   const [actualArrivalAt, setActualArrivalAt] = useState(moment().format('YYYY-MM-DDTHH:mm'));

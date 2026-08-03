@@ -24,7 +24,7 @@ export default function SalesInvoices({ store }) {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
   const [totalData, setTotalData] = useState(0);
   const [viewingInvoice, setViewingInvoice] = useState(null);
   const [printingInvoice, setPrintingInvoice] = useState(null);

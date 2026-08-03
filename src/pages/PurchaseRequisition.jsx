@@ -64,7 +64,7 @@ export default function PurchaseRequisition({ store }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua Status');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
   const [totalData, setTotalData] = useState(0);
   const [totalPrCount, setTotalPrCount] = useState(0);
   const { selectedDate, formattedDate } = useGlobalDate();

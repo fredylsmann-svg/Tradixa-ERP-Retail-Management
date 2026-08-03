@@ -43,7 +43,7 @@ export default function PurchaseOrders({ store }) {
   const [viewingOrder, setViewingOrder] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
   const [totalData, setTotalData] = useState(0);
   const [totalOrderCount, setTotalOrderCount] = useState(0);
   const { selectedDate, formattedDate, isToday } = useGlobalDate();

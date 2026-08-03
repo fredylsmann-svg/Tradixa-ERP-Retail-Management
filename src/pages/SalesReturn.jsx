@@ -25,7 +25,7 @@ export default function SalesReturn({ store }) {
   const [showForm, setShowForm] = useState(false);
   const [viewingReturn, setViewingReturn] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
   const [totalData, setTotalData] = useState(0);
 
   // Form states

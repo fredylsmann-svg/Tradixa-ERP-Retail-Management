@@ -88,7 +88,7 @@ export default function BankTransactions({ store }) {
   const [accounts, setAccounts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
   const [totalData, setTotalData] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);

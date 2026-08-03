@@ -31,7 +31,7 @@ export default function StockOut({ store }) {
   const [viewingItem, setViewingItem] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
   const [totalData, setTotalData] = useState(0);
   const [totalMovementCount, setTotalMovementCount] = useState(0);
   const { selectedDate, formattedDate, isToday } = useGlobalDate();
