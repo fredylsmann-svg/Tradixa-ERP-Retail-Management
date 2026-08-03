@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -17,67 +18,82 @@ import PremiumGate from '@/components/ui/PremiumGate';
 import { Printer, FileText, FileSpreadsheet } from 'lucide-react';
 
 export default function SalesPerformance({ store }) {
-  const [transactions, setTransactions] = useState([]);
-  const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isInitialRef = useRef(true);
   const { selectedDate } = useGlobalDate();
+
+  const [perfReport, setPerfReport] = useState({
+    performance_data: [],
+    pie_data: [],
+    grand_total: 0,
+    total_txs: 0
+  });
 
   useEffect(() => {
     if (store?.id) loadData();
-  }, [store]);
+  }, [store?.id, selectedDate]);
 
   const loadData = async () => {
-    setIsLoading(true);
-    const [txData, empData] = await Promise.all([
-      api.entities.SalesTransaction.filter({ store_id: store.id }),
-      api.entities.Employee.filter({ store_id: store.id, status: 'Active' })
-    ]);
-    setTransactions(txData);
-    setEmployees(empData);
-    setIsLoading(false);
+    if (isInitialRef.current) setIsLoading(true);
+    try {
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jakarta';
+      const { data: rpcRes, error } = await supabase.rpc('get_sales_performance', {
+        p_store_id: store.id,
+        p_selected_date: selectedDate || null,
+        p_timezone: userTimezone
+      });
+
+      if (error) {
+        console.warn('RPC get_sales_performance not available yet, falling back:', error.message);
+        const [txData, empData] = await Promise.all([
+          api.entities.SalesTransaction.filter({ store_id: store.id }),
+          api.entities.Employee.filter({ store_id: store.id, status: 'Active' })
+        ]);
+
+        const filteredTxs = (txData || []).filter(tx => matchesDate(tx, selectedDate));
+        const performanceData = (empData || []).map(emp => {
+          const empTxs = filteredTxs.filter(tx => tx.sales_pic === emp.name);
+          const totalSales = empTxs.reduce((sum, tx) => sum + (tx.total || 0), 0);
+          const totalTransactions = empTxs.length;
+          const avgTransaction = totalTransactions > 0 ? totalSales / totalTransactions : 0;
+          return {
+            id: emp.id,
+            name: emp.name,
+            photo_url: emp.photo_url,
+            totalSales,
+            totalTransactions,
+            avgTransaction,
+            lastCoordinates: null,
+            lastLocationName: '-'
+          };
+        }).sort((a, b) => b.totalSales - a.totalSales);
+
+        const grandTot = performanceData.reduce((sum, p) => sum + p.totalSales, 0);
+        const totalT = performanceData.reduce((sum, p) => sum + p.totalTransactions, 0);
+
+        setPerfReport({
+          performance_data: performanceData,
+          pie_data: [],
+          grand_total: grandTot,
+          total_txs: totalT
+        });
+      } else if (rpcRes) {
+        setPerfReport(rpcRes);
+      }
+    } catch (err) {
+      console.error('Error loading sales performance:', err);
+    } finally {
+      setIsLoading(false);
+      isInitialRef.current = false;
+    }
   };
 
-  const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
+  const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value || 0);
 
-  // Filter transactions by global selected date
-  const filteredTransactions = transactions.filter(tx => matchesDate(tx, selectedDate));
-
-  // Process Sales Performance by PIC
-  const performanceData = employees.map(emp => {
-    const empTxs = filteredTransactions.filter(tx => tx.sales_pic === emp.name);
-    // Sort transactions by created_at (assuming standard timestamp or wib) to get the latest
-    const sortedTxs = [...empTxs].sort((a, b) => new Date(b.created_at || b.timestamp_wib || 0) - new Date(a.created_at || a.timestamp_wib || 0));
-    
-    const totalSales = empTxs.reduce((sum, tx) => sum + tx.total, 0);
-    const totalTransactions = empTxs.length;
-    const avgTransaction = totalTransactions > 0 ? totalSales / totalTransactions : 0;
-    
-    const lastTxWithCoords = sortedTxs.find(tx => tx.sale_coordinates && tx.sale_coordinates.trim() !== '');
-    const lastCoordinates = lastTxWithCoords ? lastTxWithCoords.sale_coordinates : null;
-    const lastLocationName = lastTxWithCoords?.sale_location || '-';
-
-    return {
-      id: emp.id,
-      name: emp.name,
-      photo_url: emp.photo_url,
-      totalSales,
-      totalTransactions,
-      avgTransaction,
-      lastCoordinates,
-      lastLocationName
-    };
-  }).sort((a, b) => b.totalSales - a.totalSales);
-
-  // Group by Location
-  const locationStats = {};
-  filteredTransactions.forEach(tx => {
-    const loc = tx.sale_location || 'Lainnya';
-    if (!locationStats[loc]) {
-      locationStats[loc] = { name: loc, value: 0 };
-    }
-    locationStats[loc].value += tx.total;
-  });
-  const pieData = Object.values(locationStats).sort((a, b) => b.value - a.value).slice(0, 5);
+  const performanceData = perfReport.performance_data || [];
+  const pieData = perfReport.pie_data || [];
+  const grandTotal = perfReport.grand_total || 0;
+  const totalTxs = perfReport.total_txs || 0;
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -92,9 +108,6 @@ export default function SalesPerformance({ store }) {
       </div>
     );
   }
-
-  const grandTotal = performanceData.reduce((sum, p) => sum + p.totalSales, 0);
-  const totalTxs = performanceData.reduce((sum, p) => sum + p.totalTransactions, 0);
 
   return (
     <div className="space-y-6" id="print-sales-performance">

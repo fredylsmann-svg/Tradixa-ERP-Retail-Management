@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,70 +18,87 @@ import PremiumGate from '@/components/ui/PremiumGate';
 
 export default function RevenueReports({ store }) {
   const navigate = useNavigate();
-  const [transactions, setTransactions] = useState([]);
-  const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [period, setPeriod] = useState('7days');
 
+  const [reportData, setReportData] = useState({
+    chart_data: [],
+    total_revenue: 0,
+    total_profit: 0,
+    total_cost: 0,
+    total_orders: 0,
+    top_products: [],
+    payment_methods: [],
+    dead_stock: [],
+    slow_moving: []
+  });
+
   useEffect(() => {
     if (store?.id) loadData();
-  }, [store]);
+  }, [store?.id, period]);
 
   const loadData = async () => {
-    const [txData, prodData] = await Promise.all([
-      api.entities.SalesTransaction.filter({ store_id: store.id }, '-created_date'),
-      api.entities.Product.filter({ store_id: store.id })
-    ]);
-    setTransactions(txData);
-    setProducts(prodData || []);
-    setIsLoading(false);
+    setIsLoading(true);
+    const days = period === '7days' ? 7 : period === '14days' ? 14 : 30;
+    try {
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jakarta';
+      const { data: rpcRes, error } = await supabase.rpc('get_revenue_reports', {
+        p_store_id: store.id,
+        p_days: days,
+        p_timezone: userTimezone
+      });
+
+      if (error) {
+        console.warn('RPC get_revenue_reports not available yet, falling back:', error.message);
+        const [txData, prodData] = await Promise.all([
+          api.entities.SalesTransaction.filter({ store_id: store.id }, '-created_date'),
+          api.entities.Product.filter({ store_id: store.id })
+        ]);
+
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+
+        const paidTx = (txData || []).filter(t => t.payment_status === 'Paid');
+        const totalRev = paidTx.reduce((s, t) => s + (t.total || 0), 0);
+        const totalProf = paidTx.reduce((s, t) => s + (t.profit || 0), 0);
+
+        setReportData({
+          chart_data: [],
+          total_revenue: totalRev,
+          total_profit: totalProf,
+          total_cost: 0,
+          total_orders: paidTx.length,
+          top_products: [],
+          payment_methods: [],
+          dead_stock: [],
+          slow_moving: []
+        });
+      } else if (rpcRes) {
+        setReportData(rpcRes);
+      }
+    } catch (err) {
+      console.error('Error loading revenue reports:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleExport = () => {
     window.print();
   };
 
-  const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
-  const formatDateFull = (date) => new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }).format(date);
+  const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value || 0);
 
-  const getDaysData = (days) => {
-    const data = [];
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' });
-      const fullDateStr = formatDateFull(date);
-
-      const dayTx = transactions.filter(t => {
-        const txDate = new Date(t.created_date);
-        return txDate.toDateString() === date.toDateString() && t.payment_status === 'Paid';
-      });
-
-      const revenue = dayTx.reduce((sum, t) => sum + (t.total || 0), 0);
-      const profit = dayTx.reduce((sum, t) => sum + (t.profit || 0), 0);
-      const orders = dayTx.length;
-
-      // Filter out days with zero activity as requested
-      if (revenue > 0 || profit > 0 || orders > 0) {
-        data.push({
-          name: dateStr,
-          fullName: fullDateStr,
-          revenue,
-          profit,
-          orders
-        });
-      }
-    }
-    return data;
-  };
-
-  const chartData = period === '7days' ? getDaysData(7) : period === '14days' ? getDaysData(14) : getDaysData(30);
-
-  // Totals based on selected period's chartData
-  const totalRevenue = chartData.reduce((sum, d) => sum + d.revenue, 0);
-  const totalProfit = chartData.reduce((sum, d) => sum + d.profit, 0);
-  const totalOrders = chartData.reduce((sum, d) => sum + d.orders, 0);
+  const chartData = reportData.chart_data || [];
+  const totalRevenue = reportData.total_revenue || 0;
+  const totalProfit = reportData.total_profit || 0;
+  const totalCost = reportData.total_cost || 0;
+  const totalOrders = reportData.total_orders || 0;
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+  const topProducts = reportData.top_products || [];
+  const paymentMethods = reportData.payment_methods || [];
+  const deadStock = reportData.dead_stock || [];
+  const slowMoving = reportData.slow_moving || [];
 
   // Page appears instantly, numbers animate as they load
 
@@ -248,30 +266,15 @@ export default function RevenueReports({ store }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(() => {
-                const productStats = {};
-                transactions.filter(t => t.payment_status === 'Paid').forEach(tx => {
-                  tx.items?.forEach(item => {
-                    if (!productStats[item.product_id]) {
-                      productStats[item.product_id] = {
-                        name: item.product_name,
-                        qty: 0,
-                        revenue: 0,
-                        cost: 0
-                      };
-                    }
-                    productStats[item.product_id].qty += item.quantity;
-                    productStats[item.product_id].revenue += item.subtotal;
-                    productStats[item.product_id].cost += (item.buy_price || 0) * item.quantity;
-                  });
-                });
-
-                const sortedProducts = Object.values(productStats)
-                  .sort((a, b) => b.qty - a.qty)
-                  .slice(0, 10);
-
-                return sortedProducts.map((product, idx) => {
-                  const profit = product.revenue - product.cost;
+              {topProducts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-12 text-slate-500">
+                    Belum ada data penjualan
+                  </TableCell>
+                </TableRow>
+              ) : (
+                topProducts.map((product, idx) => {
+                  const profit = (product.revenue || 0) - (product.cost || 0);
                   const margin = product.revenue > 0 ? (profit / product.revenue * 100) : 0;
 
                   return (
@@ -287,8 +290,8 @@ export default function RevenueReports({ store }) {
                       </TableCell>
                     </TableRow>
                   );
-                });
-              })()}
+                })
+              )}
             </TableBody>
           </Table>
           </div>
@@ -304,13 +307,7 @@ export default function RevenueReports({ store }) {
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
-                  data={(() => {
-                    const methods = {};
-                    transactions.filter(t => t.payment_status === 'Paid').forEach(tx => {
-                      methods[tx.payment_method] = (methods[tx.payment_method] || 0) + 1;
-                    });
-                    return Object.entries(methods).map(([name, value]) => ({ name, value }));
-                  })()}
+                  data={paymentMethods}
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
@@ -358,7 +355,7 @@ export default function RevenueReports({ store }) {
                     );
                   }}
                 >
-                  {[1, 2, 3, 4, 5].map((_, index) => (
+                  {paymentMethods.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'][index % 5]} />
                   ))}
                 </Pie>
@@ -379,15 +376,7 @@ export default function RevenueReports({ store }) {
             </div>
             <div className="p-3 bg-white rounded-lg flex items-center justify-between border border-slate-100 border-t-4 border-t-red-500 shadow-sm">
               <span className="text-red-600">Total Biaya</span>
-              <span className="font-bold text-lg text-red-600">Rp {formatCurrency((() => {
-                let totalCost = 0;
-                transactions.filter(t => t.payment_status === 'Paid').forEach(tx => {
-                  tx.items?.forEach(item => {
-                    totalCost += (item.buy_price || 0) * item.quantity;
-                  });
-                });
-                return totalCost;
-              })())}</span>
+              <span className="font-bold text-lg text-red-600">Rp {formatCurrency(totalCost)}</span>
             </div>
             <div className="p-3 bg-white rounded-lg flex items-center justify-between border border-slate-100 border-t-4 border-t-emerald-500 shadow-sm">
               <span className="text-emerald-600">Total Keuntungan</span>
@@ -411,39 +400,9 @@ export default function RevenueReports({ store }) {
         <TabsContent value="inventory">
           {(() => {
             const days = period === '7days' ? 7 : period === '14days' ? 14 : 30;
-            const cutoffDate = new Date();
-            cutoffDate.setDate(cutoffDate.getDate() - days);
 
-            const prodStats = products.map(p => ({
-              id: p.id,
-              name: p.name,
-              sku: p.sku || '-',
-              stock: p.stock || 0,
-              buy_price: p.purchase_price || p.price || 0,
-              qtySold: 0
-            }));
-
-            transactions.filter(t => t.payment_status === 'Paid').forEach(tx => {
-              const txDate = new Date(tx.created_date);
-              if (txDate >= cutoffDate) {
-                tx.items?.forEach(item => {
-                  const p = prodStats.find(x => x.id === item.product_id);
-                  if (p) p.qtySold += item.quantity;
-                });
-              }
-            });
-
-            // Filter out items with 0 stock that also didn't sell (just empty items)
-            const activeInventory = prodStats.filter(p => p.stock > 0 || p.qtySold > 0);
-            
-            const deadStock = activeInventory.filter(p => p.stock > 0 && p.qtySold === 0)
-                                             .sort((a,b) => (b.stock * b.buy_price) - (a.stock * a.buy_price)); // sort by locked value
-            
-            const slowMoving = activeInventory.filter(p => p.stock > 0 && p.qtySold > 0 && p.qtySold <= 2)
-                                              .sort((a,b) => (b.stock * b.buy_price) - (a.stock * a.buy_price));
-
-            const totalDeadValue = deadStock.reduce((sum, p) => sum + (p.stock * p.buy_price), 0);
-            const totalSlowValue = slowMoving.reduce((sum, p) => sum + (p.stock * p.buy_price), 0);
+            const totalDeadValue = deadStock.reduce((sum, p) => sum + (p.stock * (p.buy_price || 0)), 0);
+            const totalSlowValue = slowMoving.reduce((sum, p) => sum + (p.stock * (p.buy_price || 0)), 0);
 
             return (
               <div className="space-y-6">

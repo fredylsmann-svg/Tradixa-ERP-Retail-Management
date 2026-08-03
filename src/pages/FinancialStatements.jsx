@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -115,6 +115,7 @@ function fsExport(mode, storeName, storeAddress, storeLogoUrl, reportTitle, peri
 export default function FinancialStatements({ store }) {
   const [activeTab, setActiveTab] = useState('pnl');
   const [isLoading, setIsLoading] = useState(true);
+  const isInitialRef = useRef(true);
   const [period, setPeriod] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -140,7 +141,7 @@ export default function FinancialStatements({ store }) {
 
   const loadData = useCallback(async () => {
     if (!store?.id) return;
-    setIsLoading(true);
+    if (isInitialRef.current) setIsLoading(true);
     try {
       // Calculate date range based on period selection
       let startDate = null;
@@ -160,11 +161,12 @@ export default function FinancialStatements({ store }) {
       }
       // period === 'all' → both null → RPC uses full range
 
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jakarta';
       const { data, error } = await supabase.rpc('get_financial_statements', {
         p_store_id: store.id,
         p_start_date: startDate,
         p_end_date: endDate,
-        p_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jakarta'
+        p_timezone: userTimezone
       });
 
       if (error) {
@@ -211,6 +213,7 @@ export default function FinancialStatements({ store }) {
       console.error('[FinancialStatements] Error:', err);
     } finally {
       setIsLoading(false);
+      isInitialRef.current = false;
     }
   }, [store?.id, period, dateFrom, dateTo]);
 

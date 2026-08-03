@@ -975,7 +975,10 @@ export default function PurchaseRequisition({ store }) {
                           {viewingPr.items?.map((item, idx) => (
                             <TableRow key={idx}>
                               <TableCell className="font-medium text-slate-700 text-sm">
-                                {item.description}
+                                <p>{item.description}</p>
+                                {item.justification && item.justification !== 'Auto-generated PR from Item Master' && (
+                                  <p className="text-[11px] font-normal text-slate-500 mt-1 italic leading-tight">Alasan: {item.justification}</p>
+                                )}
                               </TableCell>
                               <TableCell className="text-sm">
                                 <Badge variant="outline" className="bg-slate-50 text-[10px] uppercase font-bold text-slate-500">

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -14,75 +16,105 @@ import {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
 export default function WarehouseDashboard({ store }) {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
-  const [products, setProducts] = useState([]);
-  const [locations, setLocations] = useState([]);
-  const [transfers, setTransfers] = useState([]);
-  const [outbounds, setOutbounds] = useState([]);
-  const [grns, setGrns] = useState([]);
+  const [dashboardData, setDashboardData] = useState({
+    total_sku: 0,
+    total_units: 0,
+    total_value: 0,
+    low_stock_count: 0,
+    pending_transfers: 0,
+    today_grn: 0,
+    today_outbound: 0,
+    today_transfer: 0,
+    warehouse_stock: [],
+    category_data: [],
+    top_products: [],
+    locations: [],
+    transfers: []
+  });
 
   useEffect(() => {
     if (store?.id) loadAll();
-  }, [store]);
+  }, [store?.id]);
 
   const loadAll = async () => {
+    setIsLoading(true);
     try {
-      const [prodData, locData, transferData, outData, grnData] = await Promise.all([
-        api.entities.Product.filter({ store_id: store.id }),
-        api.entities.ProductLocation.filter({ store_id: store.id }),
-        api.entities.WarehouseTransfer?.filter({ store_id: store.id }).catch(() => []),
-        api.entities.OutboundDelivery.filter({ store_id: store.id }),
-        api.entities.GoodsReceipt.filter({ store_id: store.id })
-      ]);
-      setProducts(prodData || []);
-      setLocations(locData || []);
-      setTransfers(transferData || []);
-      setOutbounds(outData || []);
-      setGrns(grnData || []);
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jakarta';
+      const { data: rpcRes, error } = await supabase.rpc('get_warehouse_dashboard', {
+        p_store_id: store.id,
+        p_timezone: userTimezone
+      });
+
+      if (error) {
+        console.warn('RPC get_warehouse_dashboard not available, falling back:', error.message);
+        const [prodData, locData, transferData, outData, grnData] = await Promise.all([
+          api.entities.Product.filter({ store_id: store.id }),
+          api.entities.ProductLocation.filter({ store_id: store.id }),
+          api.entities.WarehouseTransfer?.filter({ store_id: store.id }).catch(() => []),
+          api.entities.OutboundDelivery.filter({ store_id: store.id }),
+          api.entities.GoodsReceipt.filter({ store_id: store.id })
+        ]);
+        const prods = prodData || [];
+        const today = new Date().toISOString().split('T')[0];
+        
+        const locs = locData || [];
+        const whs = locs.filter(l => l.type === 'store');
+        const wStock = whs.map(w => {
+          const wProds = prods.filter(p => p.warehouse_name === w.name);
+          return {
+            name: w.name.length > 15 ? w.name.substring(0, 15) + '...' : w.name,
+            fullName: w.name,
+            units: wProds.reduce((s, p) => s + (p.stock || 0), 0),
+            skus: wProds.length,
+            value: wProds.reduce((s, p) => s + ((p.stock || 0) * (p.buy_price || p.price || 0)), 0)
+          };
+        });
+
+        const cMap = {};
+        prods.forEach(p => {
+          const c = p.category || 'Lainnya';
+          cMap[c] = (cMap[c] || 0) + (p.stock || 0);
+        });
+        const cData = Object.entries(cMap).map(([n, v]) => ({ name: n, value: v })).sort((a, b) => b.value - a.value).slice(0, 8);
+
+        setDashboardData({
+          total_sku: prods.length,
+          total_units: prods.reduce((s, p) => s + (p.stock || 0), 0),
+          total_value: prods.reduce((s, p) => s + ((p.stock || 0) * (p.buy_price || p.price || 0)), 0),
+          low_stock_count: prods.filter(p => p.stock <= (p.reorder_level || 0)).length,
+          pending_transfers: (transferData || []).filter(t => t.status === 'In Transit').length,
+          today_grn: (grnData || []).filter(g => g.created_at?.startsWith(today)).length,
+          today_outbound: (outData || []).filter(o => o.created_at?.startsWith(today)).length,
+          today_transfer: (transferData || []).filter(t => t.created_at?.startsWith(today)).length,
+          warehouse_stock: wStock,
+          category_data: cData,
+          top_products: prods.sort((a, b) => (b.stock || 0) - (a.stock || 0)).slice(0, 10),
+          locations: locs,
+          transfers: transferData || []
+        });
+      } else if (rpcRes) {
+        setDashboardData(rpcRes);
+      }
     } catch (e) {
       console.warn('Dashboard load error:', e.message);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const formatCurrency = (v) => new Intl.NumberFormat('id-ID').format(v || 0);
 
-  // Calculations
-  const totalSKU = products.length;
-  const totalUnits = products.reduce((s, p) => s + (p.stock || 0), 0);
-  const totalValue = products.reduce((s, p) => s + ((p.stock || 0) * (p.buy_price || p.price || 0)), 0);
+  const {
+    total_sku: totalSKU, total_units: totalUnits, total_value: totalValue,
+    low_stock_count: lowStockCount, pending_transfers: pendingTransfers,
+    today_grn: todayGRN, today_outbound: todayOutbound, today_transfer: todayTransfer,
+    warehouse_stock: warehouseStock, category_data: categoryData, top_products: topProducts,
+    locations, transfers
+  } = dashboardData;
+
   const warehouses = locations.filter(l => l.type === 'store');
-  const lowStockCount = products.filter(p => p.stock <= (p.reorder_level || 0)).length;
-  const pendingTransfers = transfers.filter(t => t.status === 'In Transit').length;
-
-  // Stock per warehouse
-  const warehouseStock = warehouses.map(w => {
-    const prods = products.filter(p => p.warehouse_name === w.name);
-    return {
-      name: w.name.length > 15 ? w.name.substring(0, 15) + '...' : w.name,
-      fullName: w.name,
-      units: prods.reduce((s, p) => s + (p.stock || 0), 0),
-      skus: prods.length,
-      value: prods.reduce((s, p) => s + ((p.stock || 0) * (p.buy_price || p.price || 0)), 0)
-    };
-  });
-
-  // Category distribution
-  const categoryMap = {};
-  products.forEach(p => {
-    const cat = p.category || 'Lainnya';
-    categoryMap[cat] = (categoryMap[cat] || 0) + (p.stock || 0);
-  });
-  const categoryData = Object.entries(categoryMap).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 8);
-
-  // Top moving products (by stock — proxy for activity)
-  const topProducts = [...products].sort((a, b) => (b.stock || 0) - (a.stock || 0)).slice(0, 10);
-
-  // Today's activity
-  const today = new Date().toISOString().split('T')[0];
-  const todayGRN = grns.filter(g => g.created_at?.startsWith(today)).length;
-  const todayOutbound = outbounds.filter(o => o.created_at?.startsWith(today)).length;
-  const todayTransfer = transfers.filter(t => t.created_at?.startsWith(today)).length;
 
   if (isLoading) {
     return (

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -16,123 +17,110 @@ import { BarChart3 } from 'lucide-react';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 
 export default function SalesReport({ store }) {
-  const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isInitialRef = useRef(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedProduct, setSelectedProduct] = useState('All');
-  const [products, setProducts] = useState([]);
   const [compareMode, setCompareMode] = useState(false);
-  const [prevPeriodData, setPrevPeriodData] = useState(null);
+
+  const [reportData, setReportData] = useState({
+    daily_revenue: 0,
+    daily_count: 0,
+    total_revenue: 0,
+    total_profit: 0,
+    total_transactions: 0,
+    prev_period: { revenue: 0, profit: 0, count: 0 },
+    chart_data: [],
+    payment_chart_data: [],
+    best_sellers: [],
+    transactions: [],
+    products: []
+  });
 
   useEffect(() => {
     if (store?.id) loadData();
-  }, [store]);
+  }, [store?.id, startDate, endDate, selectedProduct]);
 
   const loadData = async () => {
-    const [txData, prodData] = await Promise.all([
-      api.entities.SalesTransaction.filter({ store_id: store.id }),
-      api.entities.Product.filter({ store_id: store.id })
-    ]);
-    setTransactions(txData);
-    setProducts(prodData);
-    setIsLoading(false);
+    if (isInitialRef.current) setIsLoading(true);
+    try {
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jakarta';
+      const { data: rpcRes, error } = await supabase.rpc('get_sales_report', {
+        p_store_id: store.id,
+        p_start_date: startDate || null,
+        p_end_date: endDate || null,
+        p_product_id: selectedProduct || 'All',
+        p_timezone: userTimezone
+      });
+
+      if (error) {
+        console.warn('RPC get_sales_report not available yet, falling back to client filter:', error.message);
+        // Fallback to legacy client-side calculation if RPC is missing
+        const [txData, prodData] = await Promise.all([
+          api.entities.SalesTransaction.filter({ store_id: store.id }),
+          api.entities.Product.filter({ store_id: store.id })
+        ]);
+        
+        const filtered = txData.filter(tx => {
+          const txDate = new Date(tx.created_date);
+          const start = startDate ? new Date(startDate) : null;
+          const end = endDate ? new Date(endDate) : null;
+          if (end) end.setHours(23, 59, 59, 999);
+          const matchDate = (!start || txDate >= start) && (!end || txDate <= end);
+          const matchProduct = selectedProduct === 'All' || tx.items?.some(i => i.product_id === selectedProduct);
+          return matchDate && matchProduct;
+        });
+
+        const totRev = filtered.reduce((s, t) => s + (t.total || 0), 0);
+        const totProf = filtered.reduce((s, t) => s + (t.profit || 0), 0);
+        const todayStr = new Date().toDateString();
+        const daily = filtered.filter(t => new Date(t.created_date).toDateString() === todayStr);
+
+        setReportData({
+          daily_revenue: daily.reduce((s, t) => s + (t.total || 0), 0),
+          daily_count: daily.length,
+          total_revenue: totRev,
+          total_profit: totProf,
+          total_transactions: filtered.length,
+          prev_period: { revenue: 0, profit: 0, count: 0 },
+          chart_data: [],
+          payment_chart_data: [],
+          best_sellers: [],
+          transactions: filtered,
+          products: prodData || []
+        });
+      } else if (rpcRes) {
+        setReportData(rpcRes);
+      }
+    } catch (err) {
+      console.error('Error loading sales report data:', err);
+    } finally {
+      setIsLoading(false);
+      isInitialRef.current = false;
+    }
   };
 
-  const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
+  const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value || 0);
 
-  // Filter transactions
-  const filteredTransactions = transactions.filter(tx => {
-    const txDate = new Date(tx.created_date);
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
-    
-    const matchDate = (!start || txDate >= start) && (!end || txDate <= end);
-    const matchProduct = selectedProduct === 'All' || 
-      tx.items?.some(item => item.product_id === selectedProduct);
-    
-    return matchDate && matchProduct;
-  });
+  const filteredTransactions = reportData.transactions || [];
+  const products = reportData.products || [];
+  const bestSellers = reportData.best_sellers || [];
+  const chartData = reportData.chart_data || [];
+  const paymentChartData = reportData.payment_chart_data || [];
+  const prevPeriodData = reportData.prev_period || { revenue: 0, profit: 0, count: 0 };
+  const dailyRevenue = reportData.daily_revenue || 0;
+  const dailySalesCount = reportData.daily_count || 0;
+  const totalRevenue = reportData.total_revenue || 0;
+  const totalProfit = reportData.total_profit || 0;
+  const totalTransactions = reportData.total_transactions || 0;
 
-  // Calculate stats
-  const totalRevenue = filteredTransactions.reduce((sum, tx) => sum + tx.total, 0);
-  const totalProfit = filteredTransactions.reduce((sum, tx) => sum + tx.profit, 0);
-  const totalTransactions = filteredTransactions.length;
-
-  // Daily sales
-  const today = new Date().toDateString();
-  const dailySales = filteredTransactions.filter(tx => 
-    new Date(tx.created_date).toDateString() === today
-  );
-  const dailyRevenue = dailySales.reduce((sum, tx) => sum + tx.total, 0);
-
-  // Weekly sales
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  const weeklySales = filteredTransactions.filter(tx => 
-    new Date(tx.created_date) >= oneWeekAgo
-  );
-  const weeklyRevenue = weeklySales.reduce((sum, tx) => sum + tx.total, 0);
-
-  // Monthly sales
-  const oneMonthAgo = new Date();
-  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-  const monthlySales = filteredTransactions.filter(tx => 
-    new Date(tx.created_date) >= oneMonthAgo
-  );
-  const monthlyRevenue = monthlySales.reduce((sum, tx) => sum + tx.total, 0);
-
-  // Best selling products
-  const productSales = {};
-  filteredTransactions.forEach(tx => {
-    tx.items?.forEach(item => {
-      if (!productSales[item.product_id]) {
-        productSales[item.product_id] = {
-          name: item.product_name,
-          quantity: 0,
-          revenue: 0
-        };
-      }
-      productSales[item.product_id].quantity += item.quantity;
-      productSales[item.product_id].revenue += item.subtotal;
-    });
-  });
-
-  const bestSellers = Object.values(productSales)
-    .sort((a, b) => b.quantity - a.quantity)
-    .slice(0, 10);
-
-  // Chart data - Last 7 days
-  const chartData = [];
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    const dateStr = date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
-    
-    const daySales = filteredTransactions.filter(tx => {
-      const txDate = new Date(tx.created_date);
-      return txDate.toDateString() === date.toDateString();
-    });
-    
-    const dayRevenue = daySales.reduce((sum, tx) => sum + tx.total, 0);
-    chartData.push({ name: dateStr, value: dayRevenue });
-  }
-
-  // Payment method distribution
-  const paymentData = {};
-  filteredTransactions.forEach(tx => {
-    paymentData[tx.payment_method] = (paymentData[tx.payment_method] || 0) + 1;
-  });
-  const paymentChartData = Object.entries(paymentData).map(([method, count]) => ({
-    name: method,
-    value: count
-  }));
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
   const exportToCSV = () => {
     const headers = ['Tanggal', 'Invoice', 'Pelanggan', 'Total', 'Keuntungan', 'Metode Pembayaran'];
     const rows = filteredTransactions.map(tx => [
-      tx.timestamp_wib, tx.invoice_number, tx.customer_name, tx.total, tx.profit, tx.payment_method
+      tx.timestamp_wib || tx.created_date, tx.invoice_number, tx.customer_name, tx.total, tx.profit, tx.payment_method
     ]);
     const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -145,7 +133,7 @@ export default function SalesReport({ store }) {
 
   const exportToPDF = () => {
     const content = `
-      <h1>Laporan Penjualan - ${store.store_name}</h1>
+      <h1>Laporan Penjualan - ${store?.store_name || ''}</h1>
       <p>Periode: ${startDate || 'Awal'} - ${endDate || 'Akhir'}</p>
       <p>Total Transaksi: ${totalTransactions}</p>
       <p>Total Pendapatan: Rp ${formatCurrency(totalRevenue)}</p>
@@ -176,31 +164,6 @@ export default function SalesReport({ store }) {
     if (!newWindow) { window.alert('Pop-up blocked! Izinkan pop-up untuk export.'); return; }
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
-
-  // Compare with previous period
-  useEffect(() => {
-    if (compareMode && startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-      
-      const prevStart = new Date(start);
-      prevStart.setDate(prevStart.getDate() - daysDiff);
-      const prevEnd = new Date(start);
-      prevEnd.setDate(prevEnd.getDate() - 1);
-
-      const prevTxs = transactions.filter(tx => {
-        const txDate = new Date(tx.created_date);
-        return txDate >= prevStart && txDate <= prevEnd;
-      });
-
-      const prevRevenue = prevTxs.reduce((sum, tx) => sum + tx.total, 0);
-      const prevProfit = prevTxs.reduce((sum, tx) => sum + tx.profit, 0);
-      const prevCount = prevTxs.length;
-
-      setPrevPeriodData({ revenue: prevRevenue, profit: prevProfit, count: prevCount });
-    }
-  }, [compareMode, startDate, endDate, transactions]);
 
   const calculateChange = (current, previous) => {
     if (!previous) return 0;
@@ -249,7 +212,7 @@ export default function SalesReport({ store }) {
                 <p className="text-3xl font-black text-white mt-1 tracking-tight drop-shadow-md">
                   <AnimatedNumber value={dailyRevenue} prefix="Rp " />
                 </p>
-                <p className="text-xs text-white/80 mt-1 font-medium">{dailySales.length} transaksi</p>
+                <p className="text-xs text-white/80 mt-1 font-medium">{dailySalesCount} transaksi</p>
               </div>
             </div>
           </CardContent>

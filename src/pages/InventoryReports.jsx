@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -19,51 +20,82 @@ import PremiumGate from '@/components/ui/PremiumGate';
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
 export default function InventoryReports({ store }) {
-  const [products, setProducts] = useState([]);
-  const [movements, setMovements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
 
+  const [invReport, setInvReport] = useState({
+    total_stock_value: 0,
+    total_items: 0,
+    total_in: 0,
+    total_out: 0,
+    category_data: [],
+    stock_by_category: [],
+    products: [],
+    movements: []
+  });
+
   useEffect(() => {
     if (store?.id) loadData();
-  }, [store]);
+  }, [store?.id]);
 
   const loadData = async () => {
-    const [productsData, movementsData] = await Promise.all([
-      api.entities.Product.filter({ store_id: store.id }),
-      api.entities.StockMovement.filter({ store_id: store.id })
-    ]);
-    setProducts(productsData);
-    setMovements(movementsData);
-    setIsLoading(false);
+    setIsLoading(true);
+    try {
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jakarta';
+      const { data: rpcRes, error } = await supabase.rpc('get_inventory_reports', {
+        p_store_id: store.id,
+        p_timezone: userTimezone
+      });
+
+      if (error) {
+        console.warn('RPC get_inventory_reports not available yet, falling back:', error.message);
+        const [productsData, movementsData] = await Promise.all([
+          api.entities.Product.filter({ store_id: store.id }),
+          api.entities.StockMovement.filter({ store_id: store.id })
+        ]);
+        const prods = productsData || [];
+        const movs = movementsData || [];
+        const totVal = prods.reduce((s, p) => s + ((p.stock || 0) * (p.buy_price || p.price || 0)), 0);
+        const totItems = prods.reduce((s, p) => s + (p.stock || 0), 0);
+        const totIn = movs.filter(m => m.movement_type === 'in').reduce((s, m) => s + (m.quantity || 0), 0);
+        const totOut = movs.filter(m => m.movement_type === 'out').reduce((s, m) => s + (m.quantity || 0), 0);
+
+        setInvReport({
+          total_stock_value: totVal,
+          total_items: totItems,
+          total_in: totIn,
+          total_out: totOut,
+          category_data: [],
+          stock_by_category: [],
+          products: prods,
+          movements: movs
+        });
+      } else if (rpcRes) {
+        setInvReport(rpcRes);
+      }
+    } catch (err) {
+      console.error('Error loading inventory report data:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
+  const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value || 0);
 
+  const products = invReport.products || [];
   const filteredProducts = selectedCategory === 'all' 
     ? products 
     : products.filter(p => p.category === selectedCategory);
 
-  const categories = [...new Set(products.map(p => p.category))];
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
 
-  const totalStockValue = products.reduce((sum, p) => sum + (p.stock * p.buy_price), 0);
-  const totalItems = products.reduce((sum, p) => sum + p.stock, 0);
-  const totalIn = movements.filter(m => m.movement_type === 'in').reduce((sum, m) => sum + m.quantity, 0);
-  const totalOut = movements.filter(m => m.movement_type === 'out').reduce((sum, m) => sum + m.quantity, 0);
-
-  const categoryData = categories.map(cat => ({
-    name: cat,
-    value: products.filter(p => p.category === cat).reduce((sum, p) => sum + p.stock, 0)
-  }));
-
-  const stockByCategory = categories.map(cat => {
-    const catProducts = products.filter(p => p.category === cat);
-    return {
-      name: cat,
-      stock: catProducts.reduce((sum, p) => sum + p.stock, 0),
-      value: catProducts.reduce((sum, p) => sum + (p.stock * p.buy_price), 0)
-    };
-  });
+  const totalStockValue = invReport.total_stock_value || 0;
+  const totalItems = invReport.total_items || 0;
+  const totalIn = invReport.total_in || 0;
+  const totalOut = invReport.total_out || 0;
+  const categoryData = invReport.category_data || [];
+  const stockByCategory = invReport.stock_by_category || [];
+  const movements = invReport.movements || [];
 
   const handleExportExcel = () => {
     try {

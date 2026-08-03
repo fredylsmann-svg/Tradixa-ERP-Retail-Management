@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -23,18 +24,17 @@ const InfoTip = ({ text }) => {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <span role="button" tabIndex={0} onClick={() => setOpen(!open)}
-          className="w-4 h-4 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition-colors shrink-0 ml-1.5 cursor-pointer">
-          <Info className="w-2.5 h-2.5 pointer-events-none" />
-        </span>
+        <button
+          type="button"
+          className="inline-flex items-center text-slate-400 hover:text-slate-600 transition-colors ml-1"
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => setOpen(false)}
+        >
+          <Info className="w-3.5 h-3.5" />
+        </button>
       </PopoverTrigger>
-      <PopoverContent side="top" className="w-64 p-3 bg-white border-none shadow-2xl rounded-2xl z-[100]">
-        <div className="flex gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-             <Info className="w-4 h-4 text-blue-600" />
-          </div>
-          <p className="text-[11px] leading-relaxed text-slate-600 font-medium">{text}</p>
-        </div>
+      <PopoverContent side="top" className="max-w-xs text-xs bg-slate-800 text-white border-slate-700 shadow-xl p-2.5">
+        {text}
       </PopoverContent>
     </Popover>
   );
@@ -45,8 +45,6 @@ export default function StockReport({ store }) {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
   const [compareMode, setCompareMode] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [batches, setBatches] = useState([]);
@@ -59,45 +57,45 @@ export default function StockReport({ store }) {
 
   useEffect(() => {
     if (store?.id) loadData();
-  }, [store]);
+  }, [store?.id]);
 
   const loadData = async () => {
-    const data = await api.entities.Product.filter({ store_id: store.id });
-    setProducts(data);
-    setIsLoading(false);
-    loadBatches();
-    loadSerials();
-  };
-
-  const loadBatches = async () => {
+    setIsLoading(true);
     setIsBatchLoading(true);
-    const data = await api.entities.InventoryBatch.filter({ store_id: store.id, status: 'Available' });
-    setBatches(data);
-    setIsBatchLoading(false);
-  };
-
-  const loadSerials = async () => {
     setIsSerialLoading(true);
     try {
-      const data = await api.entities.InventorySerial.filter({ store_id: store.id });
-      setSerials(data || []);
-      
-      const soldIds = (data || []).map(s => s.sales_transaction_id).filter(Boolean);
-      if (soldIds.length > 0) {
-        const stData = await api.entities.SalesTransaction.filter({ store_id: store.id });
-        setSalesTransactions(stData || []);
-      }
+      const { data: rpcRes, error } = await supabase.rpc('get_stock_report', {
+        p_store_id: store.id
+      });
 
-      const igrnIds = (data || []).map(s => s.inventory_grn_id).filter(Boolean);
-      if (igrnIds.length > 0) {
-        const igrnData = await api.entities.InventoryGRN.filter({ store_id: store.id });
+      if (error) {
+        console.warn('RPC get_stock_report not available yet, falling back:', error.message);
+        const [pData, bData, sData, stData, igrnData] = await Promise.all([
+          api.entities.Product.filter({ store_id: store.id }),
+          api.entities.InventoryBatch.filter({ store_id: store.id, status: 'Available' }).catch(() => []),
+          api.entities.InventorySerial.filter({ store_id: store.id }).catch(() => []),
+          api.entities.SalesTransaction.filter({ store_id: store.id }).catch(() => []),
+          api.entities.InventoryGRN.filter({ store_id: store.id }).catch(() => [])
+        ]);
+        setProducts(pData || []);
+        setBatches(bData || []);
+        setSerials(sData || []);
+        setSalesTransactions(stData || []);
         setInventoryGrns(igrnData || []);
+      } else if (rpcRes) {
+        setProducts(rpcRes.products || []);
+        setBatches(rpcRes.batches || []);
+        setSerials(rpcRes.serials || []);
+        setSalesTransactions(rpcRes.sales_transactions || []);
+        setInventoryGrns(rpcRes.inventory_grns || []);
       }
-    } catch (e) {
-      console.warn('[Tradixa] InventorySerial table may not exist yet:', e.message);
-      setSerials([]);
+    } catch (err) {
+      console.error('Error loading stock report data:', err);
+    } finally {
+      setIsLoading(false);
+      setIsBatchLoading(false);
+      setIsSerialLoading(false);
     }
-    setIsSerialLoading(false);
   };
 
   const formatCurrency = (value) => new Intl.NumberFormat('id-ID').format(value);
@@ -296,41 +294,51 @@ export default function StockReport({ store }) {
         <CardContent className="p-0">
           <div className="p-6 border-b bg-slate-50/30 flex items-center justify-between">
             <div className="flex gap-2 p-1 bg-white border rounded-2xl shadow-sm overflow-x-auto whitespace-nowrap">
-              <button
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => setActiveTab('general')}
-                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center ${activeTab === 'general' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer flex items-center ${activeTab === 'general' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
               >
                 General Stock
                 <InfoTip text="Laporan stok keseluruhan yang merangkum total saldo barang di semua gudang tanpa membedakan batch." />
-              </button>
-              <button
+              </div>
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => setActiveTab('batch')}
-                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center ${activeTab === 'batch' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer flex items-center ${activeTab === 'batch' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
               >
                 Batch Tracking
                 <InfoTip text="Detail rincian stok per nomor batch. Berguna untuk pelacakan barang dengan metode FIFO, FEFO, atau LIFO." />
-              </button>
-              <button
+              </div>
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => setActiveTab('expiry')}
-                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center ${activeTab === 'expiry' ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer flex items-center ${activeTab === 'expiry' ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
               >
                 Expiry Monitor
                 <InfoTip text="Pemantauan khusus untuk barang yang mendekati tanggal kadaluarsa. Memudahkan pencegahan kerugian akibat barang expired." />
-              </button>
-              <button
+              </div>
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => setActiveTab('serial')}
-                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center ${activeTab === 'serial' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer flex items-center ${activeTab === 'serial' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
               >
                 Serial Tracking
                 <InfoTip text="Pelacakan unit per unit berdasarkan nomor seri (IMEI/SN). Berguna untuk produk seperti smartphone, laptop, dan mesin." />
-              </button>
-              <button
+              </div>
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={() => setActiveTab('slow_moving')}
-                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center ${activeTab === 'slow_moving' ? 'bg-slate-700 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer flex items-center ${activeTab === 'slow_moving' ? 'bg-slate-700 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
               >
                 Slow Moving
                 <InfoTip text="Daftar barang dengan perputaran stok rendah (tidak terjual dalam 30+ hari terakhir). Berguna untuk strategi cuci gudang." />
-              </button>
+              </div>
             </div>
 
             <div className="flex-1 max-w-md ml-8">

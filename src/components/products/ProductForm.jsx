@@ -10,14 +10,16 @@ import { Upload, Scan, Loader2, X, PackageOpen, LayoutGrid, Info, Plus, Boxes, C
 import BarcodeScanner from '@/components/barcode/BarcodeScanner';
 import { NumberInput } from '@/components/ui/number-input';
 import imageCompression from 'browser-image-compression';
-import { getEffectiveLimits } from '@/planConfig';
+import { getEffectiveLimits, DEV_EMAILS } from '@/planConfig';
 import { supabase } from '@/lib/supabase';
 import { toast as sonnerToast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 const CATEGORIES = ['Elektronik', 'Makanan', 'Minuman', 'Pakaian', 'Kesehatan', 'Kecantikan', 'Rumah Tangga', 'Alat Tulis', 'Rokok', 'Sembako', 'Lainnya'];
 export const UNITS = ['Pcs', 'Batang', 'Bungkus', 'Sachet', 'Dus', 'Pack', 'Bal', 'Karton', 'Kg', 'Liter'];
 
 export default function ProductForm({ open, onClose, product, store, storeId, onSuccess, existingProducts = [] }) {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [imageFile, setImageFile] = useState(null);
@@ -388,8 +390,9 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
                       const isPaidPro = store?.plan === 'pro' && store?.has_used_trial === false;
                       const isPaidPremium = store?.plan === 'premium';
                       const isEnterprise = store?.plan === 'enterprise';
+                      const isDev = user?.email && DEV_EMAILS.includes(user.email.toLowerCase());
 
-                      if (!(isPaidPro || isPaidPremium || isEnterprise)) {
+                      if (!isDev && !(isPaidPro || isPaidPremium || isEnterprise)) {
                         sonnerToast.error('Fitur Pelacakan Batch & Serial terkunci. Silakan upgrade paket Anda untuk menggunakan.', { duration: 5000 });
                         return; // Do not update state
                       }

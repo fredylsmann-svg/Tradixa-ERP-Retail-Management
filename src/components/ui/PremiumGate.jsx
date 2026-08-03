@@ -2,6 +2,8 @@ import React from 'react';
 import { Lock } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/lib/AuthContext';
+import { DEV_EMAILS } from '@/planConfig';
 
 /**
  * PremiumGate
@@ -17,6 +19,7 @@ export default function PremiumGate({
 }) {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Premium Paid Logic (Global switch)
   // has_used_trial: false means they have PAID and are no longer in trial.
@@ -26,7 +29,9 @@ export default function PremiumGate({
 
   // Determine access based on required plan
   let hasAccess = false;
-  if (requiredPlan === 'premium') {
+  if (user?.email && DEV_EMAILS.includes(user.email.toLowerCase())) {
+    hasAccess = true;
+  } else if (requiredPlan === 'premium') {
     hasAccess = isPaidPremium || isEnterprise;
   } else {
     hasAccess = isPaidPro || isPaidPremium || isEnterprise;

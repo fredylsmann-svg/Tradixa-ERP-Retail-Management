@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -29,88 +30,47 @@ export default function Reports({ store }) {
     setIsLoading(true);
     
     try {
-      if (reportType === 'sales') {
-        const transactions = await api.entities.SalesTransaction.filter({ store_id: store.id });
-        const filtered = transactions.filter(t => {
-          const tDate = moment(t.created_date);
-          return tDate.isBetween(dateFrom, dateTo, 'day', '[]');
-        });
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Jakarta';
+      const { data: rpcRes, error } = await supabase.rpc('get_general_reports', {
+        p_store_id: store.id,
+        p_report_type: reportType,
+        p_date_from: dateFrom || null,
+        p_date_to: dateTo || null,
+        p_timezone: userTimezone
+      });
 
-        const totalRevenue = filtered.reduce((sum, t) => sum + (t.total || 0), 0);
-        const totalProfit = filtered.reduce((sum, t) => sum + (t.profit || 0), 0);
-        const totalOrders = filtered.length;
-        const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-
-        const productSales = {};
-        filtered.forEach(t => {
-          t.items?.forEach(item => {
-            if (!productSales[item.product_name]) {
-              productSales[item.product_name] = { qty: 0, revenue: 0 };
-            }
-            productSales[item.product_name].qty += item.quantity || 0;
-            productSales[item.product_name].revenue += item.subtotal || 0;
+      if (error) {
+        console.warn('RPC get_general_reports not available yet, falling back:', error.message);
+        if (reportType === 'sales') {
+          const transactions = await api.entities.SalesTransaction.filter({ store_id: store.id });
+          const filtered = transactions.filter(t => moment(t.created_date).isBetween(dateFrom, dateTo, 'day', '[]'));
+          const totalRevenue = filtered.reduce((sum, t) => sum + (t.total || 0), 0);
+          const totalProfit = filtered.reduce((sum, t) => sum + (t.profit || 0), 0);
+          const totalOrders = filtered.length;
+          const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+          setReportData({
+            summary: { totalRevenue, totalProfit, totalOrders, avgOrderValue },
+            transactions: filtered,
+            topProducts: []
           });
-        });
-
-        const topProducts = Object.entries(productSales)
-          .map(([name, data]) => ({ name, ...data }))
-          .sort((a, b) => b.revenue - a.revenue)
-          .slice(0, 10);
-
-        setReportData({
-          summary: { totalRevenue, totalProfit, totalOrders, avgOrderValue },
-          transactions: filtered,
-          topProducts
-        });
-      } else if (reportType === 'inventory') {
-        const products = await api.entities.Product.filter({ store_id: store.id });
-        const movements = await api.entities.StockMovement.filter({ store_id: store.id });
-        
-        const filtered = movements.filter(m => {
-          const mDate = moment(m.created_date);
-          return mDate.isBetween(dateFrom, dateTo, 'day', '[]');
-        });
-
-        const totalProducts = products.length;
-        const totalValue = products.reduce((sum, p) => sum + (p.stock || 0) * (p.buy_price || 0), 0);
-        const lowStock = products.filter(p => p.status === 'Low Stock' || p.status === 'Out of Stock').length;
-        const totalStockIn = filtered.filter(m => m.movement_type === 'in').reduce((sum, m) => sum + (m.quantity || 0), 0);
-        const totalStockOut = filtered.filter(m => m.movement_type === 'out').reduce((sum, m) => sum + (m.quantity || 0), 0);
-
-        setReportData({
-          summary: { totalProducts, totalValue, lowStock, totalStockIn, totalStockOut },
-          products,
-          movements: filtered
-        });
-      } else if (reportType === 'financial') {
-        const [transactions, receivables, payables, bankTransactions] = await Promise.all([
-          api.entities.SalesTransaction.filter({ store_id: store.id }),
-          api.entities.Receivable.filter({ store_id: store.id }),
-          api.entities.Payable.filter({ store_id: store.id }),
-          api.entities.BankTransaction.filter({ store_id: store.id })
-        ]);
-
-        const filteredTrans = transactions.filter(t => {
-          const tDate = moment(t.created_date);
-          return tDate.isBetween(dateFrom, dateTo, 'day', '[]');
-        });
-
-        const filteredBank = bankTransactions.filter(b => {
-          const bDate = moment(b.created_date);
-          return bDate.isBetween(dateFrom, dateTo, 'day', '[]');
-        });
-
-        const totalRevenue = filteredTrans.reduce((sum, t) => sum + (t.total || 0), 0);
-        const totalReceivable = receivables.reduce((sum, r) => sum + (r.remaining_amount || 0), 0);
-        const totalPayable = payables.reduce((sum, p) => sum + (p.remaining_amount || 0), 0);
-        const cashIn = filteredBank.filter(b => b.transaction_type === 'Credit').reduce((sum, b) => sum + (b.amount || 0), 0);
-        const cashOut = filteredBank.filter(b => b.transaction_type === 'Debit').reduce((sum, b) => sum + (b.amount || 0), 0);
-
-        setReportData({
-          summary: { totalRevenue, totalReceivable, totalPayable, cashIn, cashOut },
-          transactions: filteredTrans,
-          bankTransactions: filteredBank
-        });
+        } else if (reportType === 'inventory') {
+          const products = await api.entities.Product.filter({ store_id: store.id });
+          const movements = await api.entities.StockMovement.filter({ store_id: store.id });
+          const filtered = movements.filter(m => moment(m.created_date).isBetween(dateFrom, dateTo, 'day', '[]'));
+          setReportData({
+            summary: { totalProducts: products.length, totalValue: 0, lowStock: 0, totalStockIn: 0, totalStockOut: 0 },
+            products,
+            movements: filtered
+          });
+        } else if (reportType === 'financial') {
+          setReportData({
+            summary: { totalRevenue: 0, totalReceivable: 0, totalPayable: 0, cashIn: 0, cashOut: 0 },
+            transactions: [],
+            bankTransactions: []
+          });
+        }
+      } else if (rpcRes) {
+        setReportData(rpcRes);
       }
     } catch (error) {
       console.error('Error generating report:', error);
@@ -121,7 +81,7 @@ export default function Reports({ store }) {
 
   useEffect(() => {
     if (store?.id) generateReport();
-  }, [store, reportType]);
+  }, [store?.id, reportType, dateFrom, dateTo]);
 
   const exportToCSV = () => {
     if (!reportData) return;
