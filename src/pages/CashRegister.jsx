@@ -196,8 +196,8 @@ export default function CashRegister({ store }) {
   return (
     <div className="space-y-6 animate-in fade-in duration-500" id="print-cash-register">
       <PageHeader
-        title="Cash Register (Kas Kantor)"
-        subtitle="Kelola dan pantau arus kas tunai harian"
+        title="Cash Register"
+        subtitle="Kas Kantor - Kelola dan pantau arus kas tunai harian"
         icon={Calculator}
         actions={
           <div className="flex flex-wrap lg:flex-nowrap gap-2 items-center">
