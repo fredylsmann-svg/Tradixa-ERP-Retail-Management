@@ -4,7 +4,14 @@
 -- Menghemat ~83% round-trips dan mengurangi egress secara drastis
 -- ================================================================
 
-CREATE OR REPLACE FUNCTION get_notification_summary(p_store_id UUID, p_today_date TEXT DEFAULT NULL)
+-- Hapus versi lama agar tidak terjadi duplikasi (Overload Ambiguity)
+-- Hapus versi lama agar tidak terjadi duplikasi (Overload Ambiguity)
+DROP FUNCTION IF EXISTS get_notification_summary(uuid);
+DROP FUNCTION IF EXISTS get_notification_summary(uuid, text);
+DROP FUNCTION IF EXISTS get_notification_summary(text);
+DROP FUNCTION IF EXISTS get_notification_summary(text, text);
+
+CREATE OR REPLACE FUNCTION get_notification_summary(p_store_id TEXT, p_today_date TEXT DEFAULT NULL)
 RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -118,5 +125,8 @@ END;
 $$;
 
 -- Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION get_notification_summary(UUID, TEXT) TO authenticated;
-GRANT EXECUTE ON FUNCTION get_notification_summary(UUID, TEXT) TO anon;
+GRANT EXECUTE ON FUNCTION get_notification_summary(TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_notification_summary(TEXT, TEXT) TO anon;
+
+-- Segarkan (Refresh) PostgREST cache secara paksa agar API langsung bisa digunakan
+NOTIFY pgrst, 'reload schema';

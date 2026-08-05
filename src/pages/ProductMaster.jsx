@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,6 +42,7 @@ export default function ProductMaster({ store }) {
   const [sortBy, setSortBy] = useState('name');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [dynamicCategories, setDynamicCategories] = useState([]);
   const { selectedDate, formattedDate } = useGlobalDate();
   const { toast } = useToast();
 
@@ -59,7 +61,10 @@ export default function ProductMaster({ store }) {
   }, [searchQuery]);
 
   useEffect(() => {
-    if (store?.id) loadProducts();
+    if (store?.id) {
+      loadProducts();
+      loadCategories();
+    }
 
     // Listener untuk tombol refresh di Header
     const handleRefreshEvent = () => {
@@ -144,6 +149,37 @@ export default function ProductMaster({ store }) {
       setTotalProductCount(allTimeCount || 0);
     }
     setIsLoading(false);
+  };
+
+  const loadCategories = async () => {
+    if (!store?.id) return;
+    try {
+      console.log('Fetching categories for store:', store.id);
+      const { data, error } = await supabase.rpc('get_store_categories', {
+        p_store_id: store.id
+      });
+      
+      if (error) {
+        console.error('RPC Error:', error);
+        toast({
+          title: "Gagal Memuat Kategori",
+          description: error.message || "Terjadi kesalahan saat memuat kategori.",
+          variant: "destructive"
+        });
+        return;
+      } 
+      
+      if (data) {
+        setDynamicCategories(data.map(item => item.category));
+      }
+    } catch (err) {
+      console.error('Catch Error:', err);
+      toast({
+        title: "Sistem Error",
+        description: err.message || "Gagal menghubungi server database.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Master data should typically show all items
@@ -345,14 +381,22 @@ export default function ProductMaster({ store }) {
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Pilih Kategori" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="max-h-[300px] overflow-y-auto">
                             <SelectItem value="all">Semua Kategori</SelectItem>
-                            <SelectItem value="Sembako">Sembako</SelectItem>
-                            <SelectItem value="Minuman">Minuman</SelectItem>
-                            <SelectItem value="Makanan">Makanan</SelectItem>
-                            <SelectItem value="Kebutuhan Rumah">Kebutuhan Rumah</SelectItem>
-                            <SelectItem value="Produk Beku">Produk Beku</SelectItem>
-                            <SelectItem value="Kosmetik">Kosmetik</SelectItem>
+                            {dynamicCategories.length > 0 ? (
+                              dynamicCategories.map(cat => (
+                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                              ))
+                            ) : (
+                              <>
+                                <SelectItem value="Sembako">Sembako</SelectItem>
+                                <SelectItem value="Minuman">Minuman</SelectItem>
+                                <SelectItem value="Makanan">Makanan</SelectItem>
+                                <SelectItem value="Kebutuhan Rumah">Kebutuhan Rumah</SelectItem>
+                                <SelectItem value="Produk Beku">Produk Beku</SelectItem>
+                                <SelectItem value="Kosmetik">Kosmetik</SelectItem>
+                              </>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
