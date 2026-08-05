@@ -9,6 +9,7 @@ import {
   Settings, Clock, ShieldCheck, DollarSign
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const steps = [
   {
@@ -152,6 +153,7 @@ const steps = [
 
 export default function InventoryWorkflow() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="space-y-6">
@@ -162,7 +164,7 @@ export default function InventoryWorkflow() {
             <Workflow className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-wide">Inventory Workflow</h1>
+            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-wide">{t('sidebar.Inventory Workflow', { defaultValue: 'Inventory Workflow' })}</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">SOP Manajemen Stok Enterprise dengan Otomatisasi Batch (FIFO/LIFO/FEFO)</p>
           </div>
         </div>

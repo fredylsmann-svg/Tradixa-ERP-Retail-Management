@@ -98,7 +98,11 @@ export default function PickList({ store }) {
             sku: item.sku || products.find(p => p.id === item.product_id)?.sku || '',
             qty: item.qty || item.quantity || 1,
             picked_qty: 0,
-            location: products.find(p => p.id === item.product_id)?.warehouse_name || '-',
+            location: (() => {
+              const p = products.find(p => p.id === item.product_id);
+              if (!p) return '-';
+              return p.warehouse_name ? (p.location_name ? `${p.warehouse_name} (Rak: ${p.location_name})` : p.warehouse_name) : (p.location_name || '-');
+            })(),
             orders: [order.sales_transactions?.invoice_number || order.id?.substring(0, 8)]
           };
         }
@@ -404,7 +408,7 @@ export default function PickList({ store }) {
               <Button 
                 onClick={() => setIsScanningMode(!isScanningMode)}
                 variant={isScanningMode ? "default" : "outline"}
-                className={isScanningMode ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                className={`mr-24 ${isScanningMode ? "bg-emerald-600 hover:bg-emerald-700" : ""}`}
               >
                 <ScanLine className="w-4 h-4 mr-2" />
                 {isScanningMode ? "Tutup Scanner" : "Mode Scanner"}

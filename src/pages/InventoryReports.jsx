@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Package, TrendingUp, TrendingDown, BarChart3, Download, Printer, FileText } from 'lucide-react';
+import { Package, TrendingUp, TrendingDown, BarChart3, Download, Printer, FileText, ChevronRight } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { PremiumBarChart } from '@/components/ui/PremiumChart';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,6 +22,11 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 export default function InventoryReports({ store }) {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [expandedRows, setExpandedRows] = useState({});
+
+  const toggleExpand = (key) => {
+    setExpandedRows(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const [invReport, setInvReport] = useState({
     total_stock_value: 0,
@@ -71,6 +76,10 @@ export default function InventoryReports({ store }) {
           movements: movs
         });
       } else if (rpcRes) {
+        const productsData = await api.entities.Product.filter({ store_id: store.id }).catch(() => null);
+        if (productsData && productsData.length > 0) {
+          rpcRes.products = productsData;
+        }
         setInvReport(rpcRes);
       }
     } catch (err) {
@@ -87,6 +96,31 @@ export default function InventoryReports({ store }) {
     ? products 
     : products.filter(p => p.category === selectedCategory);
 
+  const groupedProductsMap = {};
+  filteredProducts.forEach(p => {
+    const key = p.sku || p.name;
+    if (!groupedProductsMap[key]) {
+      groupedProductsMap[key] = { ...p, stock: 0, locations: [] };
+    }
+    groupedProductsMap[key].stock += (p.stock || 0);
+    
+    // Group locations by warehouse, rack, buy_price, and expired_date to accurately reflect batches
+    const locKey = `${p.warehouse_name || 'Gudang'}-${p.location_name || 'TanpaRak'}-${p.buy_price}-${p.expired_date}`;
+    const existingLoc = groupedProductsMap[key].locations.find(l => `${l.warehouse_name || 'Gudang'}-${l.location_name || 'TanpaRak'}-${l.buy_price}-${l.expired_date}` === locKey);
+    
+    if (existingLoc) {
+      existingLoc.stock += (p.stock || 0);
+    } else {
+      groupedProductsMap[key].locations.push({ ...p });
+    }
+  });
+  
+  // Recalculate status based on the aggregated stock
+  const groupedProducts = Object.values(groupedProductsMap).map(p => ({
+    ...p,
+    status: p.stock > 10 ? 'In Stock' : (p.stock > 0 ? 'Low Stock' : 'Out of Stock')
+  }));
+
   const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
 
   const totalStockValue = invReport.total_stock_value || 0;
@@ -99,12 +133,12 @@ export default function InventoryReports({ store }) {
 
   const handleExportExcel = () => {
     try {
-      const dataToExport = filteredProducts.map(p => ({
+      const dataToExport = groupedProducts.map(p => ({
         'Nama Produk': p.name,
         'Kategori': p.category,
-        'Stok': `${p.stock} ${p.unit}`,
+        'Stok Total': `${p.stock} ${p.unit || 'pcs'}`,
         'Harga Beli': p.buy_price,
-        'Nilai Stok': p.stock * p.buy_price,
+        'Nilai Stok Total': p.stock * p.buy_price,
         'Kadaluarsa': p.expired_date || '-',
         'Status': p.status
       }));
@@ -364,23 +398,63 @@ export default function InventoryReports({ store }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product, idx) => (
-                <TableRow key={product.id}>
-                  <TableCell className="text-xs font-medium text-slate-400">{idx + 1}</TableCell>
-                  <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell>{product.category}</TableCell>
-                  <TableCell className="text-right">{product.stock} {product.unit}</TableCell>
-                  <TableCell className="text-right">Rp {formatCurrency(product.buy_price)}</TableCell>
-                  <TableCell className="text-right font-medium">Rp {formatCurrency(product.stock * product.buy_price)}</TableCell>
-                  <TableCell>{product.expired_date || '-'}</TableCell>
-                  <TableCell>
-                    <Badge className={
-                      product.status === 'In Stock' ? 'bg-emerald-100 text-emerald-700' :
-                      product.status === 'Low Stock' ? 'bg-amber-100 text-amber-700' :
-                      'bg-red-100 text-red-700'
-                    }>{product.status}</Badge>
-                  </TableCell>
-                </TableRow>
+              {groupedProducts.map((product, idx) => (
+                <React.Fragment key={product.id || idx}>
+                  <TableRow className="relative">
+                    <TableCell className="text-xs font-medium text-slate-400 pl-8">
+                      {product.locations && product.locations.length > 1 && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="absolute left-1 h-6 w-6 shrink-0" 
+                          onClick={() => toggleExpand(product.sku || product.name)}
+                        >
+                          <ChevronRight strokeWidth={3} className={`w-4 h-4 text-black transition-transform ${expandedRows[product.sku || product.name] ? 'rotate-90' : ''}`} />
+                        </Button>
+                      )}
+                      {idx + 1}
+                    </TableCell>
+                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell>{product.category}</TableCell>
+                    <TableCell className="text-right">{product.stock} {product.unit || 'pcs'}</TableCell>
+                    <TableCell className="text-right">Rp {formatCurrency(product.buy_price)}</TableCell>
+                    <TableCell className="text-right font-medium">Rp {formatCurrency(product.stock * product.buy_price)}</TableCell>
+                    <TableCell>{product.expired_date || '-'}</TableCell>
+                    <TableCell>
+                      <Badge className={
+                        product.status === 'In Stock' ? 'bg-emerald-100 text-emerald-700' :
+                        product.status === 'Low Stock' ? 'bg-amber-100 text-amber-700' :
+                        'bg-red-100 text-red-700'
+                      }>{product.status}</Badge>
+                    </TableCell>
+                  </TableRow>
+                  {expandedRows[product.sku || product.name] && product.locations && product.locations.length > 1 && product.locations.map((loc, childIdx) => (
+                    <TableRow key={`child-${loc.id}-${childIdx}`} className="bg-slate-50/50">
+                      <TableCell className="pl-12 text-xs text-slate-400">└</TableCell>
+                      <TableCell className="text-sm text-slate-600">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span>{loc.name}</span>
+                          {loc.sku && <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{loc.sku}</span>}
+                        </div>
+                        <Badge variant="outline" className="text-[10px] bg-white">
+                          {loc.warehouse_name ? (loc.location_name ? `${loc.warehouse_name} (Rak: ${loc.location_name})` : loc.warehouse_name) : (loc.location_name || 'Gudang')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-slate-500">{loc.category}</TableCell>
+                      <TableCell className="text-right text-sm">{loc.stock} {loc.unit || 'pcs'}</TableCell>
+                      <TableCell className="text-right text-sm">Rp {formatCurrency(loc.buy_price)}</TableCell>
+                      <TableCell className="text-right text-sm font-medium">Rp {formatCurrency(loc.stock * loc.buy_price)}</TableCell>
+                      <TableCell className="text-sm">{loc.expired_date || '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={
+                          loc.stock > 10 ? 'border-emerald-200 text-emerald-600' :
+                          loc.stock > 0 ? 'border-amber-200 text-amber-600' :
+                          'border-red-200 text-red-600'
+                        }>{loc.stock > 0 ? 'Tersedia' : 'Kosong'}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </React.Fragment>
               ))}
             </TableBody>
           </Table>
@@ -405,19 +479,19 @@ export default function InventoryReports({ store }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product, idx) => {
-                const productMovements = movements.filter(m => m.product_id === product.id);
+              {groupedProducts.map((product, idx) => {
+                const productMovements = movements.filter(m => m.product_id === product.id || m.product_name === product.name);
                 const stockIn = productMovements.filter(m => m.movement_type === 'in').reduce((sum, m) => sum + m.quantity, 0);
                 const stockOut = productMovements.filter(m => m.movement_type === 'out').reduce((sum, m) => sum + m.quantity, 0);
                 
                 return (
-                  <TableRow key={product.id}>
+                  <TableRow key={product.id || idx}>
                     <TableCell className="text-xs font-medium text-slate-400">{idx + 1}</TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell>{product.category}</TableCell>
                     <TableCell className="text-center text-emerald-600 font-medium">+{stockIn}</TableCell>
                     <TableCell className="text-center text-red-600 font-medium">-{stockOut}</TableCell>
-                    <TableCell className="text-center font-bold">{product.stock} {product.unit}</TableCell>
+                    <TableCell className="text-center font-bold">{product.stock} {product.unit || 'pcs'}</TableCell>
                     <TableCell className="text-right font-medium">Rp {formatCurrency(product.stock * product.buy_price)}</TableCell>
                   </TableRow>
                 );

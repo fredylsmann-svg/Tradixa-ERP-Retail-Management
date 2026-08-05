@@ -16,8 +16,12 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast as sonnerToast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import { useUserPreferences } from '@/contexts/UserPreferencesContext';
 
 export default function Header({ store, isSidebarOpen, setIsSidebarOpen, isMobileOpen, setIsMobileOpen }) {
+  const { i18n } = useTranslation();
+  const { changeLanguage } = useUserPreferences();
   const { user, logout } = useAuth();
   const { settings, updateSetting } = useSettings();
   const theme = settings.theme || 'light';

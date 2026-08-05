@@ -136,7 +136,7 @@ export default function DashboardAgent({ store }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Dashboard Layanan Agen"
+        title="Agent Dashboard"
         subtitle="Ringkasan keseluruhan transaksi dan pendapatan agen Anda."
         icon={LayoutDashboard}
       />

@@ -111,7 +111,7 @@ export default function WarehouseDashboard({ store }) {
     low_stock_count: lowStockCount, pending_transfers: pendingTransfers,
     today_grn: todayGRN, today_outbound: todayOutbound, today_transfer: todayTransfer,
     warehouse_stock: warehouseStock, category_data: categoryData, top_products: topProducts,
-    locations, transfers
+    locations, transfers, products
   } = dashboardData;
 
   const warehouses = locations.filter(l => l.type === 'store');
@@ -196,7 +196,7 @@ export default function WarehouseDashboard({ store }) {
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(v) => formatCurrency(v)} labelFormatter={(l) => warehouseStock.find(w => w.name === l)?.fullName || l} />
-                  <Bar dataKey="units" fill="#3b82f6" radius={[6, 6, 0, 0]} name="Unit" />
+                  <Bar dataKey="units" fill="#3b82f6" radius={[6, 6, 0, 0]} name="Unit" minPointSize={5} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -244,7 +244,7 @@ export default function WarehouseDashboard({ store }) {
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Package className="w-5 h-5 text-emerald-500" />
-            Pergerakan Stok Terbaru
+            10 Produk dengan Stok Terbanyak
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -261,13 +261,19 @@ export default function WarehouseDashboard({ store }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {topProducts.map((p, idx) => (
-                <TableRow key={p.id}>
-                  <TableCell className="text-center text-slate-400">{idx + 1}</TableCell>
-                  <TableCell className="font-bold text-slate-800">{p.name}</TableCell>
-                  <TableCell className="text-xs font-mono text-slate-400">{p.sku || '-'}</TableCell>
-                  <TableCell className="text-sm">{p.warehouse_name || '-'}</TableCell>
-                  <TableCell className="text-center font-black text-slate-800">{formatCurrency(p.stock)}</TableCell>
+              {(topProducts || []).map((p, idx) => {
+                const fullProd = products?.find(x => x.id === p.id) || p;
+                const wName = p.warehouse_name || fullProd.warehouse_name;
+                const lName = p.location_name || fullProd.location_name;
+                const displayLocation = wName ? (lName ? `${wName} (${lName})` : wName) : (lName || '-');
+                
+                return (
+                  <TableRow key={p.id}>
+                    <TableCell className="text-center text-slate-400">{idx + 1}</TableCell>
+                    <TableCell className="font-bold text-slate-800">{p.name}</TableCell>
+                    <TableCell className="text-xs font-mono text-slate-400">{p.sku || '-'}</TableCell>
+                    <TableCell className="text-sm">{displayLocation}</TableCell>
+                    <TableCell className="text-center font-black text-slate-800">{formatCurrency(p.stock)}</TableCell>
                   <TableCell className="text-right text-sm font-medium">Rp {formatCurrency((p.stock || 0) * (p.buy_price || p.price || 0))}</TableCell>
                   <TableCell>
                     <Badge className={p.stock === 0 ? 'bg-red-100 text-red-700' : p.stock <= (p.reorder_level || 0) ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}>
@@ -275,9 +281,10 @@ export default function WarehouseDashboard({ store }) {
                     </Badge>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              );
+            })}
+          </TableBody>
+        </Table>
         </CardContent>
       </Card>
 

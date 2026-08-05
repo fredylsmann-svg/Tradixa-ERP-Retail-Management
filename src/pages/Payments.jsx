@@ -193,7 +193,7 @@ export default function Payments({ store }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Payments (Pelunasan)"
+        title="Payments"
         subtitle="Rekam dan kelola pelunasan Piutang (AR) & Utang (AP)"
         icon={HandCoins}
         actions={

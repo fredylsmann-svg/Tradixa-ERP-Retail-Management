@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '@/api/client';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -101,6 +102,7 @@ function OpnameFlowchart() {
 }
 
 export default function StockOpname({ store }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { toggleQuickAccess, isQuickAccess } = useQuickAccess();
   const isFavorited = isQuickAccess('Stock Opname');
@@ -476,7 +478,7 @@ export default function StockOpname({ store }) {
           </div>
           <div>
             <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-wide flex items-center gap-2">
-              Stock Opname
+              {t('sidebar.Stock Opname', { defaultValue: 'Stock Opname' })}
               <button
                 onClick={() => {
                   toggleQuickAccess('Stock Opname');

@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { exportToPDF, exportToExcel } from '@/components/layout/ExportToolbar';
 import { Printer, FileText, FileSpreadsheet } from 'lucide-react';
 import PremiumGate from '@/components/ui/PremiumGate';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function ProductLocations({ store }) {
   const { toast } = useToast();
@@ -139,7 +140,7 @@ export default function ProductLocations({ store }) {
     <div className="space-y-8 pb-20" id="print-location-settings">
       <PageHeader
         title="Location Settings"
-        subtitle="Kelola titik lokasi gudang/toko dan rak penyimpanan internal"
+        subtitle="Kelola titik lokasi gudang utama dan rak penyimpanan internal"
         icon={MapPin}
         actions={
           <div className="flex flex-wrap lg:flex-nowrap gap-2 w-full sm:w-auto justify-end">
@@ -162,7 +163,7 @@ export default function ProductLocations({ store }) {
             </div>
             <Button onClick={() => { setEditingLocation(null); setFormData({ name: '', description: '', type: 'store', address: '', postal_code: '', coordinates: '', reference: '' }); setShowForm(true); }} className="bg-emerald-600 hover:bg-emerald-700 h-11 px-4 md:px-6 font-semibold rounded-xl text-white whitespace-nowrap w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
-              Tambah Gudang/Toko
+              Tambah Gudang Utama
             </Button>
             <Button onClick={() => { setEditingLocation(null); setFormData({ name: '', description: '', type: 'rack', address: '', postal_code: '', coordinates: '', reference: '' }); setShowForm(true); }} className="bg-blue-600 hover:bg-blue-700 h-11 px-4 md:px-6 font-semibold rounded-xl text-white whitespace-nowrap w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
@@ -186,18 +187,18 @@ export default function ProductLocations({ store }) {
         />
       </div>
 
-      {/* Section 1: Lokasi Penyimpanan (Gudang/Toko) */}
+      {/* Section 1: Lokasi Penyimpanan (Gudang Utama) */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <MapPin className="w-5 h-5 text-emerald-500" />
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Lokasi Penyimpanan (Gudang/Toko)</h2>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Lokasi Penyimpanan (Gudang Utama)</h2>
         </div>
         <Card className="border shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50 dark:bg-slate-800/50">
                 <TableHead className="w-12 text-center">No</TableHead>
-                <TableHead>Nama Gudang/Toko</TableHead>
+                <TableHead>Nama Gudang</TableHead>
                 <TableHead>Alamat & Kode Pos</TableHead>
                 <TableHead>Ref / Asal</TableHead>
                 <TableHead>Isi Barang</TableHead>
@@ -212,7 +213,7 @@ export default function ProductLocations({ store }) {
               ) : filterList(stores).length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-12 text-slate-400 italic text-sm">
-                    Belum ada lokasi gudang/toko ditambahkan
+                    Belum ada lokasi gudang utama ditambahkan
                   </TableCell>
                 </TableRow>
               ) : (
@@ -229,7 +230,7 @@ export default function ProductLocations({ store }) {
                     </TableCell>
                     <TableCell>
                       {(() => {
-                        const locProducts = products.filter(p => p.warehouse_name === loc.name);
+                        const locProducts = products.filter(p => p.warehouse_name === loc.name || p.location_name === loc.name);
                         if (locProducts.length === 0) return <span className="text-[10px] text-slate-300 italic">Kosong</span>;
                         return (
                           <div className="flex flex-wrap gap-1 max-w-[220px] py-1">
@@ -241,15 +242,25 @@ export default function ProductLocations({ store }) {
                             {locProducts.length > 2 && (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <div className="text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 font-black cursor-pointer flex items-center gap-0.5">
+                                  <div className="text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 font-black cursor-pointer flex items-center gap-0.5 hover:bg-blue-100 transition-colors">
                                     <Info className="w-2.5 h-2.5" />
                                     +{locProducts.length - 2}
                                   </div>
                                 </PopoverTrigger>
-                                <PopoverContent side="top" className="w-[200px] p-2 bg-slate-900 text-white border-none rounded-lg shadow-xl z-50">
-                                  <p className="text-[10px] font-bold leading-relaxed">
-                                    {locProducts.slice(2).map(p => p.name).join(', ')}
-                                  </p>
+                                <PopoverContent side="top" className="w-[220px] p-0 bg-slate-900 text-white border-none rounded-lg shadow-xl z-50 overflow-hidden">
+                                  <div className="bg-slate-800 px-3 py-2 border-b border-slate-700">
+                                    <p className="text-xs font-bold text-slate-200">Daftar Barang ({loc.name})</p>
+                                  </div>
+                                  <div className="max-h-[250px] overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-700">
+                                    <div className="flex flex-col gap-0.5">
+                                      {locProducts.slice(2).map((p, i) => (
+                                        <div key={p.id} className="text-[10px] px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2">
+                                          <span className="text-slate-500 font-mono">{i + 1}.</span>
+                                          <span className="font-medium text-slate-200">{p.name}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
                                 </PopoverContent>
                               </Popover>
                             )}
@@ -337,13 +348,29 @@ export default function ProductLocations({ store }) {
                               </div>
                             ))}
                             {locProducts.length > 2 && (
-                              <div 
-                                className="text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 font-black cursor-help flex items-center gap-0.5"
-                                title={locProducts.slice(2).map(p => p.name).join(', ')}
-                              >
-                                <Info className="w-2.5 h-2.5" />
-                                +{locProducts.length - 2}
-                              </div>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <div className="text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 font-black cursor-pointer flex items-center gap-0.5 hover:bg-blue-100 transition-colors">
+                                    <Info className="w-2.5 h-2.5" />
+                                    +{locProducts.length - 2}
+                                  </div>
+                                </PopoverTrigger>
+                                <PopoverContent side="top" className="w-[220px] p-0 bg-slate-900 text-white border-none rounded-lg shadow-xl z-50 overflow-hidden">
+                                  <div className="bg-slate-800 px-3 py-2 border-b border-slate-700">
+                                    <p className="text-xs font-bold text-slate-200">Daftar Barang ({loc.name})</p>
+                                  </div>
+                                  <div className="max-h-[250px] overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-700">
+                                    <div className="flex flex-col gap-0.5">
+                                      {locProducts.slice(2).map((p, i) => (
+                                        <div key={p.id} className="text-[10px] px-2 py-1.5 hover:bg-slate-800 rounded flex items-center gap-2">
+                                          <span className="text-slate-500 font-mono">{i + 1}.</span>
+                                          <span className="font-medium text-slate-200">{p.name}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
                             )}
                           </div>
                         );
@@ -400,6 +427,7 @@ export default function ProductLocations({ store }) {
                 <TableHead className="w-12 text-center">No</TableHead>
                 <TableHead>Nama Lokasi</TableHead>
                 <TableHead>Alamat & Kode Pos</TableHead>
+                <TableHead>Sumber Stok Gudang</TableHead>
                 <TableHead>Koordinat</TableHead>
                 <TableHead>Keterangan</TableHead>
                 <TableHead className="text-center">Aksi</TableHead>
@@ -410,7 +438,7 @@ export default function ProductLocations({ store }) {
                 Array(2).fill(0).map((_, i) => <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-10 w-full" /></TableCell></TableRow>)
               ) : filterList(salesLocations).length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-slate-400 italic text-sm">
+                  <TableCell colSpan={7} className="text-center py-12 text-slate-400 italic text-sm">
                     Belum ada lokasi penjualan ditambahkan
                   </TableCell>
                 </TableRow>
@@ -422,6 +450,11 @@ export default function ProductLocations({ store }) {
                     <TableCell>
                       <div className="text-sm text-slate-600">{loc.address || '-'}</div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase">{loc.postal_code}</div>
+                    </TableCell>
+                    <TableCell>
+                      {loc.reference ? (
+                        <span className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">{loc.reference}</span>
+                      ) : <span className="text-slate-300 italic text-[11px]">-</span>}
                     </TableCell>
                     <TableCell>
                       {loc.coordinates ? (
@@ -455,12 +488,12 @@ export default function ProductLocations({ store }) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {formData.type === 'store' ? <MapPin className="w-5 h-5 text-emerald-500" /> : formData.type === 'sales' ? <Store className="w-5 h-5 text-orange-500" /> : <Columns3 className="w-5 h-5 text-blue-500" />}
-              {editingLocation ? 'Edit' : 'Tambah'} {formData.type === 'store' ? 'Gudang/Toko' : formData.type === 'sales' ? 'Lokasi Penjualan' : 'Rak'}
+              {editingLocation ? 'Edit' : 'Tambah'} {formData.type === 'store' ? 'Gudang Utama' : formData.type === 'sales' ? 'Lokasi Penjualan' : 'Rak'}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase text-slate-400">{formData.type === 'store' ? 'Nama Lokasi (Gudang/Toko) *' : formData.type === 'sales' ? 'Nama Lokasi Penjualan *' : 'Nama Rak *'}</Label>
+              <Label className="text-xs font-bold uppercase text-slate-400">{formData.type === 'store' ? 'Nama Gudang Utama *' : formData.type === 'sales' ? 'Nama Lokasi Penjualan *' : 'Nama Rak *'}</Label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -512,14 +545,38 @@ export default function ProductLocations({ store }) {
                   </div>
                 </div>
                 {formData.type === 'sales' && (
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase text-slate-400">Keterangan</Label>
-                    <Input
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Misal: Toko cabang utara, area pasar"
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-slate-400">
+                        Sumber Stok Default (Gudang)
+                      </Label>
+                      <Select 
+                        value={formData.reference} 
+                        onValueChange={(val) => setFormData({ ...formData, reference: val })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih sumber stok default..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none" className="text-slate-400 italic">Pilih manual di kasir...</SelectItem>
+                          {locations.filter(l => l.type === 'store').map(s => (
+                            <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] text-slate-500">
+                        Stok di mesin kasir otomatis akan dipotong dari gudang ini.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-slate-400">Keterangan</Label>
+                      <Input
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        placeholder="Misal: Toko cabang utara, area pasar"
+                      />
+                    </div>
+                  </>
                 )}
               </>
             ) : (

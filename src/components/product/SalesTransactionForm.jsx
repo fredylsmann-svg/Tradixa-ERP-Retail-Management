@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { Search, ShoppingCart, Plus, Minus, Trash2, Loader2, Upload, X, Package, ShieldCheck, CheckCircle2, Info, Receipt, CreditCard, Truck, AlertTriangle, QrCode, Boxes } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Minus, Trash2, Loader2, Upload, X, Package, ShieldCheck, CheckCircle2, Info, Receipt, CreditCard, Truck, AlertTriangle, QrCode, Boxes, Settings, Store } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { NumberInput } from '@/components/ui/number-input';
 import { formatNumber } from '@/components/utils/currencyFormatter';
@@ -44,7 +44,10 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
   const [selectedCustomer, setSelectedCustomer] = useState('walk-in');
   const [customerName, setCustomerName] = useState('Walk-in Customer');
   const [salesPic, setSalesPic] = useState('');
-  const [saleLocation, setSaleLocation] = useState('');
+  const [posMode, setPosMode] = useState(() => localStorage.getItem('tradixa_pos_mode') || 'store');
+  const [saleLocation, setSaleLocation] = useState(() => localStorage.getItem('tradixa_pos_location') || '');
+  const [canvassingWarehouse, setCanvassingWarehouse] = useState(() => localStorage.getItem('tradixa_pos_canvassing_warehouse') || '');
+  const [showPosSettings, setShowPosSettings] = useState(false);
   const [saleCoordinates, setSaleCoordinates] = useState('');
   const [discount, setDiscount] = useState(0);
   const [selectedDiscount, setSelectedDiscount] = useState(null);
@@ -365,10 +368,31 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
 
   const formatCurrency = (value) => formatNumber(value || 0);
 
-  const filteredProducts = products.filter(p =>
-    p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.barcode?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          p.barcode?.toLowerCase().includes(searchQuery.toLowerCase());
+                          
+    let matchesLocation = false;
+    
+    if (posMode === 'store') {
+      if (!saleLocation || saleLocation === 'none') {
+        matchesLocation = false; // Wajib pilih toko, jika tidak kosongkan etalase
+      } else {
+        const activeSalesLoc = salesLocations.find(loc => loc.name === saleLocation);
+        if (activeSalesLoc && activeSalesLoc.reference) {
+          matchesLocation = p.warehouse_name === activeSalesLoc.reference || p.location_name === activeSalesLoc.reference;
+        } else {
+          matchesLocation = (p.warehouse_name === saleLocation) || (p.location_name === saleLocation);
+        }
+      }
+    } else {
+      // Canvassing Mode
+      matchesLocation = (!canvassingWarehouse || canvassingWarehouse === 'none') || 
+                        (p.warehouse_name === canvassingWarehouse);
+    }
+    
+    return matchesSearch && matchesLocation;
+  });
 
   const addToCart = (product) => {
     // If the product has multiple UoM pricing options (uom_prices length > 1)
@@ -1284,7 +1308,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
     setSelectedCustomer('walk-in');
     setCustomerName('Walk-in Customer');
     setSalesPic('');
-    setSaleLocation('');
+    // DO NOT reset saleLocation and canvassingWarehouse as they are locked session states
     setSaleCoordinates('');
     setDiscount(0);
     setManualDiscount('');
@@ -1340,6 +1364,8 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
       window.removeEventListener('mouseup', stopResizing);
     };
   }, [resize, stopResizing]);
+
+  const uniqueWarehouses = [...new Set(products.map(p => p.warehouse_name).filter(Boolean))];
 
   return (
     <>
@@ -1640,19 +1666,22 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Lokasi Penjualan</Label>
-                      <Select value={saleLocation} onValueChange={setSaleLocation}>
-                        <SelectTrigger className="h-10 border-slate-100 bg-slate-50 rounded-xl">
-                          <SelectValue placeholder="Pilih Lokasi..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Tanpa Lokasi</SelectItem>
-                          {salesLocations.map(loc => (
-                            <SelectItem key={loc.id} value={loc.name}>{loc.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <div className="space-y-1.5 flex flex-col justify-end">
+                      <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pengaturan Mesin Kasir</Label>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setShowPosSettings(true)}
+                        className={`h-10 w-full justify-between px-3 ${!saleLocation && posMode === 'store' ? 'border-red-400 bg-red-50 text-red-600 animate-pulse' : 'border-slate-200 bg-slate-50'}`}
+                      >
+                        <span className="truncate font-semibold text-xs">
+                          {posMode === 'store' ? (
+                            saleLocation ? saleLocation : '⚠️ Pilih Lokasi Toko!'
+                          ) : (
+                            `Canvassing (${canvassingWarehouse || 'Semua Gudang'})`
+                          )}
+                        </span>
+                        <Settings className="w-4 h-4 text-slate-500 shrink-0 ml-2" />
+                      </Button>
                     </div>
                   </div>
 
@@ -2430,6 +2459,115 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
           forceThermal={true}
         />
       )}
+
+      {/* POS Settings Modal */}
+      <Dialog open={showPosSettings} onOpenChange={setShowPosSettings}>
+        <DialogContent className="max-w-md bg-white border-none shadow-2xl rounded-2xl overflow-hidden p-0">
+          <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Settings className="w-24 h-24" />
+            </div>
+            <h2 className="text-xl font-black relative z-10 flex items-center gap-2">
+              <Settings className="w-5 h-5 text-blue-400" />
+              Pengaturan Mesin Kasir
+            </h2>
+            <p className="text-sm text-slate-300 mt-1 relative z-10 font-medium">
+              Konfigurasi mode operasional dan sumber stok
+            </p>
+          </div>
+          
+          <div className="p-6 space-y-6">
+            <div className="space-y-3">
+              <Label className="text-xs font-black uppercase text-slate-400 tracking-widest">Mode Operasional</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPosMode('store');
+                    localStorage.setItem('tradixa_pos_mode', 'store');
+                  }}
+                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${posMode === 'store' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-100 hover:border-slate-200 text-slate-500'}`}
+                >
+                  <Store className="w-6 h-6 mb-2" />
+                  <span className="font-bold text-sm">Toko / Outlet</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPosMode('canvassing');
+                    localStorage.setItem('tradixa_pos_mode', 'canvassing');
+                  }}
+                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${posMode === 'canvassing' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-100 hover:border-slate-200 text-slate-500'}`}
+                >
+                  <Truck className="w-6 h-6 mb-2" />
+                  <span className="font-bold text-sm">Canvassing</span>
+                </button>
+              </div>
+            </div>
+
+            {posMode === 'store' ? (
+              <div className="space-y-2 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <Label className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                  <Store className="w-3.5 h-3.5" /> Pilih Lokasi Toko
+                </Label>
+                <Select 
+                  value={saleLocation} 
+                  onValueChange={(val) => {
+                    setSaleLocation(val);
+                    localStorage.setItem('tradixa_pos_location', val);
+                  }}
+                >
+                  <SelectTrigger className="bg-white border-slate-200">
+                    <SelectValue placeholder="Pilih Lokasi..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Tanpa Lokasi</SelectItem>
+                    {salesLocations.map(loc => (
+                      <SelectItem key={loc.id} value={loc.name}>{loc.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                  Stok otomatis ditarik dari Gudang Default yang diset oleh Admin di menu <b>Location Settings</b>.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2 p-4 bg-orange-50/50 rounded-xl border border-orange-100">
+                <Label className="text-xs font-bold text-orange-700 flex items-center gap-1.5">
+                  <Truck className="w-3.5 h-3.5" /> Gudang Sumber (Bawaan)
+                </Label>
+                <Select 
+                  value={canvassingWarehouse} 
+                  onValueChange={(val) => {
+                    setCanvassingWarehouse(val);
+                    localStorage.setItem('tradixa_pos_canvassing_warehouse', val);
+                  }}
+                >
+                  <SelectTrigger className="bg-white border-orange-200">
+                    <SelectValue placeholder="Pilih Sumber Stok..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Semua Gudang</SelectItem>
+                    {uniqueWarehouses.map((wh, idx) => (
+                      <SelectItem key={idx} value={wh}>{wh}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-orange-600/80 mt-1 leading-relaxed">
+                  Pilih gudang/mobil van mana yang sedang Anda bawa keliling. Transaksi otomatis merekam <b>koordinat GPS</b>.
+                </p>
+              </div>
+            )}
+
+            <Button 
+              className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold"
+              onClick={() => setShowPosSettings(false)}
+            >
+              Tutup & Terapkan
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

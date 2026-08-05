@@ -14,10 +14,13 @@ import {
   Workflow, ChevronDown, Menu, X, MessageCircle, Award, Layers, Mail, Zap, Megaphone, Banknote, PieChart, Contact, Landmark, Coins,
   BookOpen, ReceiptText, LineChart, BarChart, Activity, Warehouse, ClipboardCheck, MapPin, Palette, Boxes, BarChart3, HandCoins, History,
   Lock, CreditCard as CreditCardIcon, Calculator, FileSignature, PackageCheck, RotateCcw, Bot,
-  PanelLeftClose, PanelLeftOpen, Star
+  PanelLeftClose, PanelLeftOpen, Star, Settings2
 } from 'lucide-react';
 import WarehouseTransferIcon from '@/components/icons/WarehouseTransferIcon';
 import { useQuickAccess } from '@/contexts/QuickAccessContext';
+import { useTranslation } from 'react-i18next';
+import { useUserPreferences } from '@/contexts/UserPreferencesContext';
+import CustomizeMenuModal from './CustomizeMenuModal';
 
 const getFilteredMenuGroups = (isOwner) => {
   const allGroups = [
@@ -48,7 +51,7 @@ const getFilteredMenuGroups = (isOwner) => {
         { name: 'Warehouse Dashboard', icon: LayoutDashboard, page: 'WarehouseDashboard' },
         { name: 'Pick List', icon: ClipboardList, page: 'PickList' },
         { name: 'Outbound Delivery', icon: Truck, page: 'OutboundDelivery' },
-        { name: 'Transfer Gudang', icon: WarehouseTransferIcon, page: 'WarehouseTransfer' },
+        { name: 'Warehouse Transfer', icon: WarehouseTransferIcon, page: 'WarehouseTransfer' },
         { name: 'Stock Opname', icon: PackageCheck, page: 'StockOpname' }
       ]
     },
@@ -129,13 +132,13 @@ const getFilteredMenuGroups = (isOwner) => {
       title: 'Financial Agent',
       items: [
         { name: 'Agent Workflow', icon: Workflow, page: 'FinancialAgentWorkflow' },
-        { name: 'Dashboard Agent', icon: LayoutDashboard, page: 'DashboardAgent' },
-        { name: 'Transaksi Agen', icon: ArrowRightLeft, page: 'TransaksiAgen' },
-        { name: 'Daftar Layanan', icon: List, page: 'DaftarLayanan' },
-        { name: 'Saldo & Kas Agen', icon: Wallet, page: 'SaldoKasAgen' },
-        { name: 'Laporan Fee', icon: DollarSign, page: 'LaporanFee' },
+        { name: 'Agent Dashboard', icon: LayoutDashboard, page: 'DashboardAgent' },
+        { name: 'Agent Transactions', icon: ArrowRightLeft, page: 'TransaksiAgen' },
+        { name: 'Service Catalog', icon: List, page: 'DaftarLayanan' },
+        { name: 'Agent Balance & Cash', icon: Wallet, page: 'SaldoKasAgen' },
+        { name: 'Commission Reports', icon: DollarSign, page: 'LaporanFee' },
         { name: 'Agent Performance', icon: Users, page: 'AgentPerformance' },
-        { name: 'Pengaturan Agen', icon: Settings, page: 'PengaturanAgen' }
+        { name: 'Agent Settings', icon: Settings, page: 'PengaturanAgen' }
       ]
     },
 
@@ -176,6 +179,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
   const [userModules, setUserModules] = React.useState(null);
   const currentStorePlan = storePlan || 'free';
   const [showProductMasterGuide, setShowProductMasterGuide] = useState(false);
+  const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
 
   React.useEffect(() => {
     if (!store?.id) return;
@@ -236,10 +240,15 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
 
   // Quick Access: inject dynamic group at top of sidebar
   const { quickAccessItems } = useQuickAccess();
+  const { t } = useTranslation();
+  const { preferences } = useUserPreferences();
+  const hiddenModules = preferences?.hiddenModules || [];
 
   const finalMenuGroups = useMemo(() => {
     // Collect all items from all groups to find matching favorites
     const allItems = menuGroups.flatMap(g => g.items);
+    
+    // Quick Access items
     const quickItems = (quickAccessItems || [])
       .map(key => allItems.find(item => item.page === key || item.name === key))
       .filter(Boolean);
@@ -251,8 +260,25 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
       items: quickItems
     };
 
-    return [quickAccessGroup, ...menuGroups];
-  }, [menuGroups, quickAccessItems]);
+    // Filter out hidden modules from normal groups
+    let visibleGroups = menuGroups.map(group => ({
+      ...group,
+      items: group.items.filter(item => !hiddenModules.includes(item.name))
+    })).filter(group => group.items.length > 0);
+
+    // Create a special group for hidden modules
+    const hiddenItems = allItems.filter(item => hiddenModules.includes(item.name));
+    if (hiddenItems.length > 0) {
+      visibleGroups.push({
+        title: 'Hidden Modules',
+        icon: PanelLeftClose,
+        isHiddenGroup: true,
+        items: hiddenItems
+      });
+    }
+
+    return [quickAccessGroup, ...visibleGroups];
+  }, [menuGroups, quickAccessItems, hiddenModules]);
 
   const [expandedGroups, setExpandedGroups] = useState({});
   const scrollContainerRef = React.useRef(null);
@@ -363,7 +389,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
               onClick={(e) => toggleGroup(e, group.title)}
               className="w-full flex items-center justify-between px-4 py-3 text-base font-bold text-slate-900 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors tracking-wide text-left"
             >
-              <span>{group.title}</span>
+              <span>{t(`sidebar.${group.title}`)}</span>
               <ChevronDown
                 strokeWidth={3}
                 className={cn(
@@ -426,7 +452,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
                           "w-5 h-5 transition-all duration-200",
                           showProductMasterGuide && item.name === 'Product Master' ? "text-white" : isActive ? "text-blue-600 dark:text-blue-400" : isLocked ? "text-slate-300 dark:text-slate-600" : "text-slate-800 group-hover:text-slate-950 dark:text-slate-400 dark:group-hover:text-blue-400 group-hover:scale-110 group-hover:-translate-y-0.5"
                         )} />
-                        <span className={isLocked ? 'opacity-60' : ''}>{item.name}</span>
+                        <span className={isLocked ? 'opacity-60' : ''}>{t(`sidebar.${item.name}`)}</span>
                         {isLocked && (
                           <Lock className="w-3.5 h-3.5 text-slate-300 ml-auto flex-shrink-0" />
                         )}
@@ -461,7 +487,22 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
         ))}
       </div>
 
+      <div className="px-4 py-2 mt-auto">
+        <button
+          onClick={() => setIsCustomizeOpen(true)}
+          className="w-full flex items-center gap-2 justify-center py-2.5 px-3 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 rounded-xl text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 transition-colors text-sm font-semibold border border-slate-200 dark:border-slate-700"
+        >
+          <Settings2 className="w-4 h-4" />
+          <span>{t('header.Customize Menu')}</span>
+        </button>
+      </div>
+
       <SidebarTimeDisplay isCollapsed={false} />
+      
+      <CustomizeMenuModal 
+        isOpen={isCustomizeOpen} 
+        onClose={() => setIsCustomizeOpen(false)} 
+      />
     </div>
   );
 

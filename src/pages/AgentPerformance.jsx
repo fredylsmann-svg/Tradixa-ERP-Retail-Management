@@ -103,7 +103,7 @@ export default function AgentPerformance({ store }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Performa Agen"
+        title="Agent Performance"
         subtitle="Analisis kinerja dan pendapatan agen"
         icon={TrendingUp}
         actions={

@@ -9,6 +9,7 @@ import PageNotFound from '@/components/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { DateProvider } from '@/contexts/DateContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
+import { UserPreferencesProvider } from '@/contexts/UserPreferencesContext';
 import Login from '@/pages/Login';
 import StaffRegister from './pages/StaffRegister';
 import SignUp from '@/pages/SignUp';
@@ -171,6 +172,7 @@ function App() {
   return (
     <DateProvider>
     <AuthProvider>
+    <UserPreferencesProvider>
     <SettingsProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
@@ -278,6 +280,7 @@ function App() {
         <Toaster />
       </QueryClientProvider>
     </SettingsProvider>
+    </UserPreferencesProvider>
     </AuthProvider>
     </DateProvider>
   )

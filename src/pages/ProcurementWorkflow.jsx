@@ -9,6 +9,7 @@ import {
   Package, ShieldCheck, FileText, Settings, ExternalLink
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useSettings } from '@/contexts/SettingsContext';
 
 const steps = [
@@ -172,6 +173,7 @@ const statusFlow = [
 
 export default function ProcurementWorkflow() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { settings } = useSettings();
 
   return (
@@ -183,7 +185,7 @@ export default function ProcurementWorkflow() {
             <Workflow className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-wide">Procurement Workflow</h1>
+            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-wide">{t('sidebar.Procurement Workflow', { defaultValue: 'Procurement Workflow' })}</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">Alur pengadaan barang terintegrasi dari supplier hingga pembayaran</p>
           </div>
         </div>

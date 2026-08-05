@@ -8,6 +8,7 @@ import {
   CheckCircle2, ArrowRight, ShieldCheck, Settings, Banknote, QrCode, Smartphone
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useSettings } from '@/contexts/SettingsContext';
 
 const steps = [
@@ -147,6 +148,7 @@ const statusFlow = [
 
 export default function SalesWorkflow() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { settings } = useSettings();
 
   return (
@@ -158,7 +160,7 @@ export default function SalesWorkflow() {
             <Workflow className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-wide">Sales Workflow</h1>
+            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-wide">{t('sidebar.Sales Workflow', { defaultValue: 'Sales Workflow' })}</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">Alur transaksi kasir (Didukung Real-Time Sales Tracking), otomasi integrasi EDC lokal, hingga pelaporan laba rugi</p>
           </div>
         </div>

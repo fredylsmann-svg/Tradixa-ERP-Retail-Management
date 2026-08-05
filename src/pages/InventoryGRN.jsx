@@ -229,8 +229,8 @@ export default function InventoryGRN({ store }) {
 
       setItems((grn.items || []).map(item => {
         // Find product with fallback: match by product_id OR by SKU OR by Name
-        const prod = productDetails.find(p => 
-          p.id === item.product_id || 
+        const prod = productDetails.find(p =>
+          p.id === item.product_id ||
           (item.sku && p.sku === item.sku) ||
           (p.name && item.product_name && p.name.toLowerCase() === item.product_name.toLowerCase())
         ) || {};
@@ -593,16 +593,52 @@ export default function InventoryGRN({ store }) {
           const prods = await api.entities.Product.filter({ id: productId });
           if (prods.length > 0) {
             const product = prods[0];
-            const newStock = (product.stock || 0) + Number(item.warehouse_qty);
-            const status = newStock <= 0 ? 'Out of Stock' : newStock <= (product.reorder_level || 0) ? 'Low Stock' : 'In Stock';
-            await api.entities.Product.update(productId, {
-              stock: newStock,
-              status,
-              sku: item.sku || product.sku,
-              location_name: form.storage_location,
-              warehouse_name: form.warehouse_name,
-              expired_date: item.expired_date || product.expired_date
-            });
+            const targetWarehouse = form.warehouse_name || product.warehouse_name;
+            const targetLocation = form.storage_location || product.location_name;
+
+            if (product.warehouse_name !== targetWarehouse || product.location_name !== targetLocation) {
+              // Location is different! Do not overwrite the original location.
+              // Instead, find or create a variant for the new location.
+              const existingVariants = await api.entities.Product.filter({ store_id: store.id, sku: product.sku });
+              const exactMatch = existingVariants.find(p => p.warehouse_name === targetWarehouse && p.location_name === targetLocation);
+
+              if (exactMatch) {
+                // Update existing location variant
+                productId = exactMatch.id;
+                const newStock = (exactMatch.stock || 0) + Number(item.warehouse_qty);
+                const status = newStock <= 0 ? 'Out of Stock' : newStock <= (exactMatch.reorder_level || 0) ? 'Low Stock' : 'In Stock';
+                await api.entities.Product.update(productId, {
+                  stock: newStock,
+                  status,
+                  expired_date: item.expired_date || exactMatch.expired_date
+                });
+              } else {
+                // Clone product for new location
+                const newVariant = { ...product };
+                delete newVariant.id; // DB auto-generates
+                delete newVariant.created_at;
+                newVariant.stock = Number(item.warehouse_qty);
+                newVariant.status = newVariant.stock <= 0 ? 'Out of Stock' : newVariant.stock <= (newVariant.reorder_level || 0) ? 'Low Stock' : 'In Stock';
+                newVariant.warehouse_name = targetWarehouse;
+                newVariant.location_name = targetLocation;
+                newVariant.expired_date = item.expired_date || product.expired_date;
+
+                const newProd = await api.entities.Product.create(newVariant);
+                productId = newProd.id;
+              }
+            } else {
+              // Location is the same, just update normally
+              const newStock = (product.stock || 0) + Number(item.warehouse_qty);
+              const status = newStock <= 0 ? 'Out of Stock' : newStock <= (product.reorder_level || 0) ? 'Low Stock' : 'In Stock';
+              await api.entities.Product.update(productId, {
+                stock: newStock,
+                status,
+                sku: item.sku || product.sku,
+                expired_date: item.expired_date || product.expired_date
+              });
+            }
+            // Ensure subsequent batch/serial logic uses the correct variant ID
+            item.product_id = productId;
           }
 
           // --- BATCH MANAGEMENT INTEGRATION ---
@@ -644,7 +680,7 @@ export default function InventoryGRN({ store }) {
             }
           } else if (item.tracking_type === 'Serial' && item.serials?.length > 0) {
             // --- SERIAL MANAGEMENT INTEGRATION ---
-            
+
             // 1. Check for duplicates within the current input
             const serialNumbers = item.serials.map(s => s.serial_number?.trim()).filter(Boolean);
             const uniqueSerials = new Set(serialNumbers);
@@ -657,28 +693,28 @@ export default function InventoryGRN({ store }) {
 
               try {
                 await api.entities.InventorySerial.create({
-                store_id: store.id,
-                product_id: productId,
-                serial_number: s.serial_number,
-                status: 'Available',
-                supplier_id: selectedGrn.supplier_id || null,
-                po_id: selectedGrn.po_id || null,
-                inventory_grn_id: igrnRecord?.id || null,
-                unit_cost: Number(item.unit_price || item.price || 0)
-              });
+                  store_id: store.id,
+                  product_id: productId,
+                  serial_number: s.serial_number,
+                  status: 'Available',
+                  supplier_id: selectedGrn.supplier_id || null,
+                  po_id: selectedGrn.po_id || null,
+                  inventory_grn_id: igrnRecord?.id || null,
+                  unit_cost: Number(item.unit_price || item.price || 0)
+                });
 
-              // Each serial gets its own StockMovement row
-              await api.entities.StockMovement.create({
-                store_id: store.id,
-                reference: igrnNumber,
-                product_id: productId,
-                product_name: item.product_name || item.description,
-                movement_type: 'in',
-                stock_type: 'IGRN',
-                quantity: 1,
-                notes: `SN: ${s.serial_number}`,
-                timestamp_wib: getWIBTimestamp()
-              });
+                // Each serial gets its own StockMovement row
+                await api.entities.StockMovement.create({
+                  store_id: store.id,
+                  reference: igrnNumber,
+                  product_id: productId,
+                  product_name: item.product_name || item.description,
+                  movement_type: 'in',
+                  stock_type: 'IGRN',
+                  quantity: 1,
+                  notes: `SN: ${s.serial_number}`,
+                  timestamp_wib: getWIBTimestamp()
+                });
               } catch (err) {
                 if (err.message?.includes('duplicate key')) {
                   throw new Error(`Serial Number "${s.serial_number}" untuk produk ${item.product_name || item.description} sudah terdaftar di sistem Tradixa.`);
@@ -788,9 +824,9 @@ export default function InventoryGRN({ store }) {
                 date={moment().format('DD/MM/YYYY')}
                 storeName={store?.store_name}
                 contentId="print-igrn-history"
-              
-              store={store}
-            />
+
+                store={store}
+              />
               <Button
                 onClick={() => setView('create')}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 flex items-center justify-center gap-2 transition-all active:scale-95 rounded-xl w-full sm:w-auto"
@@ -874,7 +910,7 @@ export default function InventoryGRN({ store }) {
               )}
             </TableBody>
           </Table>
-          
+
           {!isLoading && (
             <DataTablePagination
               currentPage={currentPage}
@@ -955,108 +991,110 @@ export default function InventoryGRN({ store }) {
                           {items.map((item) => (
                             <TableRow key={item.product_id} className="hover:bg-slate-50/50">
                               <TableCell className="pl-6 py-4">
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-bold text-slate-900">{item.product_name}</p>
-                                    {item.tracking_type === 'Batch' && (
-                                      <Badge className="bg-blue-50 text-blue-600 border-blue-200 text-[8px] font-black uppercase tracking-wider h-4 px-1 rounded-sm whitespace-nowrap">Batch Tracked</Badge>
-                                    )}
-                                    {item.tracking_type === 'Serial' && (
-                                      <Badge className="bg-purple-50 text-purple-600 border-purple-200 text-[8px] font-black uppercase tracking-wider h-4 px-1 rounded-sm whitespace-nowrap">Serial Tracked</Badge>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-medium">
-                                    <span className="text-blue-600 font-black bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+                                <div className="min-w-0 flex flex-col gap-1.5">
+                                  <p className="font-black text-[13px] text-slate-800 uppercase tracking-tight truncate leading-tight">{item.product_name}</p>
+                                  <div className="flex items-center mt-0.5">
+                                    <span className="text-blue-600 font-black bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 text-[10px]">
                                       {item.sku?.toLowerCase().startsWith('sku') ? item.sku.toUpperCase() : `SKU: ${item.sku || '-'}`}
                                     </span>
-                                    <div className="flex items-center gap-1.5 text-slate-400 uppercase tracking-tight">
-                                      <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                      <span>Draft GRN: {item.received_qty} {item.unit}</span>
+                                  </div>
+                                  {(item.tracking_type === 'Batch' || item.tracking_type === 'Serial') && (
+                                    <div className="flex items-center gap-2">
+                                      {item.tracking_type === 'Batch' && (
+                                        <Badge className="bg-blue-50 text-blue-600 border-blue-200 text-[8px] font-black uppercase tracking-wider h-4 px-1.5 rounded-sm w-fit whitespace-nowrap">BATCH TRACKED</Badge>
+                                      )}
+                                      {item.tracking_type === 'Serial' && (
+                                        <Badge className="bg-purple-50 text-purple-600 border-purple-200 text-[8px] font-black uppercase tracking-wider h-4 px-1.5 rounded-sm w-fit whitespace-nowrap">SERIAL TRACKED</Badge>
+                                      )}
                                     </div>
+                                  )}
+                                  <div className="flex items-center gap-1.5 text-slate-400 uppercase tracking-tight text-[10px] font-medium mt-0.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                                    <span>Draft GRN: {item.received_qty} {item.unit}</span>
                                   </div>
                                 </div>
                               </TableCell>
-                            <TableCell className="text-center">
-                              {item.tracking_type === 'Batch' ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => { setCurrentBatchItemIdx(items.findIndex(i => i.product_id === item.product_id)); setShowBatchDialog(true); }}
-                                  className={`h-8 w-full text-[10px] font-black uppercase tracking-tighter shadow-sm transition-all ${item.batches?.length > 0 ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700' : 'text-blue-700 bg-blue-50/50 hover:bg-blue-100 border-blue-200'}`}
-                                >
-                                  <Boxes className="w-3 h-3 mr-1" />
-                                  {item.batches?.length > 0 ? `${item.batches.reduce((s, b) => s + Number(b.quantity), 0)} PCS` : 'Manage'}
-                                </Button>
-                              ) : item.tracking_type === 'Serial' ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => { setCurrentSerialItemIdx(items.findIndex(i => i.product_id === item.product_id)); setShowSerialDialog(true); }}
-                                  className={`h-8 w-full text-[10px] font-black uppercase tracking-tighter shadow-sm transition-all ${item.serials?.filter(s => s.serial_number).length === item.warehouse_qty && item.warehouse_qty > 0 ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700' : 'text-purple-700 bg-purple-50/50 hover:bg-purple-100 border-purple-200'}`}
-                                >
-                                  <Barcode className="w-3 h-3 mr-1" />
-                                  {item.serials?.filter(s => s.serial_number).length === item.warehouse_qty && item.warehouse_qty > 0 ? `${item.warehouse_qty} OK` : 'Scan SN'}
-                                </Button>
-                              ) : (
-                                <span className="text-[10px] text-slate-400 font-bold uppercase">Standard</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {item.tracking_type === 'Batch' ? (
-                                <div className="space-y-1 py-1">
-                                  {item.batches?.length > 0 ? (
-                                    item.batches.map((b, bi) => (
-                                      <div key={bi} className="text-[9px] font-black text-slate-600 bg-slate-100/50 border border-slate-200 rounded px-1.5 py-0.5 w-fit mx-auto">
-                                        {b.expiry_date ? moment(b.expiry_date).format('DD/MM/YY') : 'No Exp'}
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase italic">Via Batch</span>
-                                  )}
-                                </div>
-                              ) : item.tracking_type === 'Serial' ? (
-                                <span className="text-[10px] text-slate-400 font-bold uppercase italic">No Expiry (Serial)</span>
-                              ) : (
-                                <Input
-                                  type="date"
-                                  className="h-10 text-[10px] font-bold bg-slate-50 border-slate-200 uppercase tracking-widest"
-                                  value={item.expired_date || ''}
-                                  onChange={(e) => updateItem(item.product_id, 'expired_date', e.target.value)}
+                              <TableCell className="text-center">
+                                {item.tracking_type === 'Batch' ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => { setCurrentBatchItemIdx(items.findIndex(i => i.product_id === item.product_id)); setShowBatchDialog(true); }}
+                                    className={`h-8 w-full text-[10px] font-black uppercase tracking-tighter shadow-sm transition-all ${item.batches?.length > 0 ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700' : 'text-blue-700 bg-blue-50/50 hover:bg-blue-100 border-blue-200'}`}
+                                  >
+                                    <Boxes className="w-3 h-3 mr-1" />
+                                    {item.batches?.length > 0 ? `${item.batches.reduce((s, b) => s + Number(b.quantity), 0)} PCS` : 'Manage'}
+                                  </Button>
+                                ) : item.tracking_type === 'Serial' ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => { setCurrentSerialItemIdx(items.findIndex(i => i.product_id === item.product_id)); setShowSerialDialog(true); }}
+                                    className={`h-8 w-full text-[10px] font-black uppercase tracking-tighter shadow-sm transition-all ${item.serials?.filter(s => s.serial_number).length === item.warehouse_qty && item.warehouse_qty > 0 ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700' : 'text-purple-700 bg-purple-50/50 hover:bg-purple-100 border-purple-200'}`}
+                                  >
+                                    <Barcode className="w-3 h-3 mr-1" />
+                                    {item.serials?.filter(s => s.serial_number).length === item.warehouse_qty && item.warehouse_qty > 0 ? `${item.warehouse_qty} OK` : 'Scan SN'}
+                                  </Button>
+                                ) : (
+                                  <span className="text-[10px] text-slate-400 font-bold uppercase">Standard</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {item.tracking_type === 'Batch' ? (
+                                  <div className="space-y-1 py-1">
+                                    {item.batches?.length > 0 ? (
+                                      item.batches.map((b, bi) => (
+                                        <div key={bi} className="text-[9px] font-black text-slate-600 bg-slate-100/50 border border-slate-200 rounded px-1.5 py-0.5 w-fit mx-auto">
+                                          {b.expiry_date ? moment(b.expiry_date).format('DD/MM/YY') : 'No Exp'}
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <span className="text-[10px] text-slate-400 font-bold uppercase italic">Via Batch</span>
+                                    )}
+                                  </div>
+                                ) : item.tracking_type === 'Serial' ? (
+                                  <span className="text-[10px] text-slate-400 font-bold uppercase italic">No Expiry (Serial)</span>
+                                ) : (
+                                  <Input
+                                    type="date"
+                                    className="h-10 text-[10px] font-bold bg-slate-50 border-slate-200 uppercase tracking-widest"
+                                    value={item.expired_date || ''}
+                                    onChange={(e) => updateItem(item.product_id, 'expired_date', e.target.value)}
+                                  />
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <NumberInput
+                                  className="h-10 text-center font-black text-emerald-700 bg-emerald-50 border-emerald-100"
+                                  value={item.warehouse_qty}
+                                  onChange={(e) => updateItem(item.product_id, 'warehouse_qty', e.target.value)}
                                 />
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <NumberInput
-                                className="h-10 text-center font-black text-emerald-700 bg-emerald-50 border-emerald-100"
-                                value={item.warehouse_qty}
-                                onChange={(e) => updateItem(item.product_id, 'warehouse_qty', e.target.value)}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <NumberInput
-                                className="h-10 text-center font-bold text-red-700 bg-red-50 border-red-100"
-                                value={item.reject_qty}
-                                onChange={(e) => updateItem(item.product_id, 'reject_qty', e.target.value)}
-                              />
-                            </TableCell>
-                            <TableCell className="pr-6">
-                              <Select value={item.condition} onValueChange={(v) => updateItem(item.product_id, 'condition', v)}>
-                                <SelectTrigger className="h-10">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Baik">Baik</SelectItem>
-                                  <SelectItem value="Rusak">Rusak</SelectItem>
-                                  <SelectItem value="Cacat">Cacat (Diterima)</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
+                              </TableCell>
+                              <TableCell>
+                                <NumberInput
+                                  className="h-10 text-center font-bold text-red-700 bg-red-50 border-red-100"
+                                  value={item.reject_qty}
+                                  onChange={(e) => updateItem(item.product_id, 'reject_qty', e.target.value)}
+                                />
+                              </TableCell>
+                              <TableCell className="pr-6">
+                                <Select value={item.condition} onValueChange={(v) => updateItem(item.product_id, 'condition', v)}>
+                                  <SelectTrigger className="h-10">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Baik">Baik</SelectItem>
+                                    <SelectItem value="Rusak">Rusak</SelectItem>
+                                    <SelectItem value="Cacat">Cacat (Diterima)</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
                 </Card>
 
                 {/* Triple Signature Section */}
@@ -1171,7 +1209,7 @@ export default function InventoryGRN({ store }) {
                         {/* Putaway Suggestion */}
                         {(() => {
                           if (!selectedGrn || !items.length) return null;
-                          const racks = locations.filter(l => l.type === 'rack' || !l.type);
+                          const racks = locations.filter(l => l.type === 'rack');
                           if (racks.length === 0) return null;
                           // Find category of first item
                           const firstItemCategory = items[0]?.category || '';
@@ -1217,7 +1255,7 @@ export default function InventoryGRN({ store }) {
                                 <SelectValue placeholder="Rak penyimpanan" />
                               </SelectTrigger>
                               <SelectContent>
-                                {locations.filter(l => l.type === 'rack' || !l.type).map(loc => (
+                                {locations.filter(l => l.type === 'rack').map(loc => (
                                   <SelectItem key={loc.id} value={loc.name}>{loc.name}</SelectItem>
                                 ))}
                                 <SelectItem value="MANUAL" className="font-bold text-blue-600 border-t mt-2">+ Input Manual</SelectItem>
@@ -1368,7 +1406,7 @@ export default function InventoryGRN({ store }) {
                         onClick={addBatchRow}
                         className="h-12 px-6 rounded-xl border-blue-200 text-blue-700 font-bold hover:bg-blue-50 flex items-center gap-2"
                       >
-                        <Plus className="w-4 h-4" /> 
+                        <Plus className="w-4 h-4" />
                         <span>Tambah Baris Batch</span>
                         <InfoTip text="Gunakan fitur ini jika satu barang yang datang memiliki nomor batch atau tanggal kadaluarsa yang berbeda-beda." />
                       </Button>

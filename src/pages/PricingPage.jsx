@@ -122,13 +122,13 @@ const featureGroups = [
     icon: Landmark,
     features: [
       { name: 'Agent Workflow', free: false, pro: true, premium: true, enterprise: true },
-      { name: 'Dashboard Agent', free: false, pro: true, premium: true, enterprise: true },
-      { name: 'Transaksi Agen', free: false, pro: true, premium: true, enterprise: true },
-      { name: 'Daftar Layanan', free: false, pro: true, premium: true, enterprise: true },
-      { name: 'Saldo & Kas Agen', free: false, pro: true, premium: true, enterprise: true },
-      { name: 'Laporan Fee', free: false, pro: true, premium: true, enterprise: true },
+      { name: 'Agent Dashboard', free: false, pro: true, premium: true, enterprise: true },
+      { name: 'Agent Transactions', free: false, pro: true, premium: true, enterprise: true },
+      { name: 'Service Catalog', free: false, pro: true, premium: true, enterprise: true },
+      { name: 'Agent Balance & Cash', free: false, pro: true, premium: true, enterprise: true },
+      { name: 'Commission Reports', free: false, pro: true, premium: true, enterprise: true },
       { name: 'Agent Performance', free: false, pro: true, premium: true, enterprise: true },
-      { name: 'Pengaturan Agen', free: false, pro: true, premium: true, enterprise: true },
+      { name: 'Agent Settings', free: false, pro: true, premium: true, enterprise: true },
     ]
   },
   {

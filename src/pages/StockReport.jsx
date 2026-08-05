@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Package, TrendingDown, DollarSign, AlertTriangle, Search, Download, FileDown, Loader2, Boxes, Info, ShieldCheck, Cpu, Eye, Receipt } from 'lucide-react';
+import { Package, TrendingDown, DollarSign, AlertTriangle, Search, Download, FileDown, Loader2, Boxes, Info, ShieldCheck, Cpu, Eye, Receipt, ChevronRight } from 'lucide-react';
 import moment from 'moment';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -83,7 +83,9 @@ export default function StockReport({ store }) {
         setSalesTransactions(stData || []);
         setInventoryGrns(igrnData || []);
       } else if (rpcRes) {
-        setProducts(rpcRes.products || []);
+        // Fetch products directly to ensure we get all fields including warehouse_name
+        const productsData = await api.entities.Product.filter({ store_id: store.id });
+        setProducts(productsData || []);
         setBatches(rpcRes.batches || []);
         setSerials(rpcRes.serials || []);
         setSalesTransactions(rpcRes.sales_transactions || []);
@@ -110,6 +112,35 @@ export default function StockReport({ store }) {
       p.sku?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchStatus = filterStatus === 'All' || p.status === filterStatus;
     return matchSearch && matchStatus;
+  });
+
+  const [expandedRows, setExpandedRows] = useState({});
+  const toggleExpand = (key) => {
+    setExpandedRows(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const groupedProducts = [];
+  const skuMap = {};
+  filteredProducts.forEach(p => {
+    const key = p.sku || p.name || p.id;
+    if (!skuMap[key]) {
+      skuMap[key] = {
+        masterId: p.id,
+        key: key,
+        name: p.name,
+        sku: p.sku,
+        category: p.category,
+        buy_price: p.buy_price,
+        sell_price: p.sell_price,
+        status: p.status,
+        tracking_type: p.tracking_type,
+        totalStock: 0,
+        locations: []
+      };
+      groupedProducts.push(skuMap[key]);
+    }
+    skuMap[key].totalStock += Number(p.stock) || 0;
+    skuMap[key].locations.push(p);
   });
 
   const exportToCSV = () => {
@@ -370,36 +401,78 @@ export default function StockReport({ store }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredProducts.length === 0 ? (
+                  {groupedProducts.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-20 text-slate-400 italic">
                         Tidak ada produk ditemukan
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredProducts.map((p, idx) => (
-                      <TableRow key={p.id} className="hover:bg-slate-50/50 group">
-                        <TableCell className="text-center text-slate-400 font-bold pl-8">{idx + 1}</TableCell>
-                        <TableCell className="font-bold text-slate-800">{p.sku}</TableCell>
-                        <TableCell>
-                          <p className="font-bold text-slate-900 leading-tight">{p.name}</p>
-                          {p.tracking_type === 'Batch' && <Badge className="mt-1 bg-blue-50 text-blue-600 border-none text-[9px] h-4">BATCH TRACKED</Badge>}
-                          {p.tracking_type === 'Serial' && <Badge className="mt-1 bg-purple-50 text-purple-600 border-none text-[9px] h-4">SERIAL TRACKED</Badge>}
-                        </TableCell>
-                        <TableCell className="font-medium text-slate-500">{p.category}</TableCell>
-                        <TableCell className="text-center font-black text-slate-900">{p.stock}</TableCell>
-                        <TableCell className="text-right font-medium text-slate-500">Rp {formatCurrency(p.buy_price)}</TableCell>
-                        <TableCell className="text-right font-black text-blue-700">Rp {formatCurrency(p.sell_price)}</TableCell>
-                        <TableCell className="pr-8">
-                          <Badge className={
-                            p.status === 'In Stock' ? 'bg-emerald-50 text-emerald-600' :
-                              p.status === 'Low Stock' ? 'bg-amber-50 text-amber-600' :
-                                'bg-red-50 text-red-600'
-                          }>
-                            {p.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
+                    groupedProducts.map((group, idx) => (
+                      <React.Fragment key={group.key}>
+                        <TableRow className="hover:bg-slate-50/50 group">
+                          <TableCell className="text-center text-slate-400 font-bold pl-8">{idx + 1}</TableCell>
+                          <TableCell className="font-bold text-slate-800">{group.sku}</TableCell>
+                          <TableCell className="relative pl-8">
+                            <div className="flex items-center relative">
+                              {group.locations.length > 1 && (
+                                <Button variant="ghost" size="icon" className="absolute -left-7 h-6 w-6 shrink-0" onClick={() => toggleExpand(group.key)}>
+                                  <ChevronRight className={`w-4 h-4 transition-transform ${expandedRows[group.key] ? 'rotate-90' : ''}`} />
+                                </Button>
+                              )}
+                              <p className="font-bold text-slate-900 leading-tight">{group.name}</p>
+                            </div>
+                            <div className="mt-1">
+                              {group.tracking_type === 'Batch' && <Badge className="bg-blue-50 text-blue-600 border-none text-[9px] h-4">BATCH TRACKED</Badge>}
+                              {group.tracking_type === 'Serial' && <Badge className="bg-purple-50 text-purple-600 border-none text-[9px] h-4">SERIAL TRACKED</Badge>}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium text-slate-500">{group.category}</TableCell>
+                          <TableCell className="text-center font-black text-slate-900">{group.totalStock}</TableCell>
+                          <TableCell className="text-right font-medium text-slate-500">Rp {formatCurrency(group.buy_price)}</TableCell>
+                          <TableCell className="text-right font-black text-blue-700">Rp {formatCurrency(group.sell_price)}</TableCell>
+                          <TableCell className="pr-8">
+                            {group.locations.length > 1 ? (
+                              <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 text-[10px]">Multi-Lokasi</Badge>
+                            ) : (
+                              <Badge className={
+                                group.status === 'In Stock' ? 'bg-emerald-50 text-emerald-600' :
+                                  group.status === 'Low Stock' ? 'bg-amber-50 text-amber-600' :
+                                    'bg-red-50 text-red-600'
+                              }>
+                                {group.status}
+                              </Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+
+                        {expandedRows[group.key] && group.locations.length > 1 && group.locations.map((loc, childIdx) => (
+                          <TableRow key={loc.id} className="bg-slate-50/80 border-l-[3px] border-l-slate-400 shadow-inner">
+                            <TableCell></TableCell>
+                            <TableCell></TableCell>
+                            <TableCell colSpan={2} className="pl-6 text-sm text-slate-600">
+                              <div className="flex items-center gap-2">
+                                <span className="text-slate-400 font-serif">↳</span>
+                                <span>Stok di <strong className="text-slate-800">
+                                  {loc.warehouse_name ? (loc.location_name ? `${loc.warehouse_name} (Rak: ${loc.location_name})` : loc.warehouse_name) : (loc.location_name || 'Tanpa Lokasi')}
+                                </strong></span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center font-medium text-slate-700">{loc.stock}</TableCell>
+                            <TableCell className="text-right text-sm text-slate-500">Rp {formatCurrency(loc.buy_price)}</TableCell>
+                            <TableCell className="text-right text-sm text-blue-600">Rp {formatCurrency(loc.sell_price)}</TableCell>
+                            <TableCell className="pr-8">
+                              <Badge className={
+                                loc.status === 'In Stock' ? 'bg-emerald-50 text-emerald-600' :
+                                  loc.status === 'Low Stock' ? 'bg-amber-50 text-amber-600' :
+                                    'bg-red-50 text-red-600'
+                              }>
+                                {loc.status}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </React.Fragment>
                     ))
                   )}
                 </TableBody>

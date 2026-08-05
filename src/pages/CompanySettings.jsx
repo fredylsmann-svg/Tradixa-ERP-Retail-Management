@@ -225,7 +225,7 @@ export default function CompanySettings({ store }) {
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       <PageHeader
-        title="Account Settings"
+        title="Company Settings"
         subtitle="Kelola informasi toko dan profil pemilik"
         icon={Settings}
       />

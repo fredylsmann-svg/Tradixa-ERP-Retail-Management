@@ -35,6 +35,7 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
     sku: product?.sku || '',
     name: product?.name || '',
     category: product?.category || 'Sembako',
+    warehouse_name: product?.warehouse_name || '',
     location_name: product?.location_name || '',
     buy_unit: product?.buy_unit || 'Dus',
     sell_unit: product?.sell_unit || 'Pcs',
@@ -57,6 +58,7 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
         sku: product?.sku || '',
         name: product?.name || '',
         category: product?.category || 'Sembako',
+        warehouse_name: product?.warehouse_name || '',
         location_name: product?.location_name || '',
         buy_unit: product?.buy_unit || 'Dus',
         sell_unit: product?.sell_unit || 'Pcs',
@@ -207,7 +209,7 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
     const now = new Date();
     const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
     const wibTime = new Date(utc + (7 * 60 * 60000));
-    const timestamp_wib = `${String(wibTime.getDate()).padStart(2, '0')}/${String(wibTime.getMonth() + 1).padStart(2, '0')}/${wibTime.getFullYear()}, ${String(wibTime.getHours()).padStart(2, '0')}:${String(wibTime.getMinutes()).padStart(2, '0')} WIB`;
+    const timestamp_wib = `${String(wibTime.getDate()).padStart(2, '0')}/${String(wibTime.getMonth() + 1).padStart(2, '0')}/${wibTime.getFullYear()} ${String(wibTime.getHours()).padStart(2, '0')}:${String(wibTime.getMinutes()).padStart(2, '0')} WIB`;
 
     // Clean uom_prices: ensure numbers and filter out invalid entries
     const cleanUomPrices = uomPrices
@@ -229,6 +231,8 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
       cogs_per_unit: cogsPerUnit,
       stock: Number(formData.stock),
       reorder_level: Number(formData.reorder_level),
+      warehouse_name: formData.warehouse_name === 'none' ? '' : formData.warehouse_name,
+      location_name: formData.location_name === 'none' ? '' : formData.location_name,
       uom_prices: cleanUomPrices,
       timestamp_wib
     };
@@ -236,7 +240,21 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
     if (product?.id) {
       await api.entities.Product.update(product.id, productData);
     } else {
-      await api.entities.Product.create(productData);
+      const newProduct = await api.entities.Product.create(productData);
+      
+      if (Number(formData.stock) > 0) {
+        await api.entities.StockMovement.create({
+          store_id: storeId,
+          reference: `INIT-${newProduct.sku || newProduct.id.slice(-6).toUpperCase()}`,
+          product_id: newProduct.id,
+          product_name: newProduct.name,
+          movement_type: 'in',
+          stock_type: 'INITIAL_STOCK',
+          quantity: Number(formData.stock),
+          notes: 'Stok Awal (Input dari Product Master)',
+          timestamp_wib: timestamp_wib
+        });
+      }
     }
     setIsLoading(false);
     onSuccess();
@@ -246,6 +264,15 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
   const [dynamicCategories, setDynamicCategories] = useState(CATEGORIES);
   const [showCustomCategory, setShowCustomCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+
+  const [dynamicRacks, setDynamicRacks] = useState([]);
+
+  useEffect(() => {
+    if (locations.length > 0) {
+      const rackNames = locations.filter(l => l.type === 'rack').map(l => l.name);
+      setDynamicRacks(rackNames);
+    }
+  }, [locations]);
 
   const handleAddCategory = () => {
     if (newCategoryName && newCategoryName.trim()) {
@@ -346,19 +373,35 @@ export default function ProductForm({ open, onClose, product, store, storeId, on
                   )}
                 </div>
               </div>
-              <div>
-                <Label>Lokasi / Rak Penyimpanan</Label>
-                <Select value={formData.location_name} onValueChange={(v) => setFormData({ ...formData, location_name: v })}>
-                  <SelectTrigger className="mt-1.5">
-                    <SelectValue placeholder="Pilih Lokasi Utama..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Tanpa Lokasi</SelectItem>
-                    {locations.map(loc => (
-                      <SelectItem key={loc.id} value={loc.name}>{loc.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Gudang Utama *</Label>
+                  <Select value={formData.warehouse_name || 'none'} onValueChange={(v) => setFormData({ ...formData, warehouse_name: v === 'none' ? '' : v })}>
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue placeholder="Pilih Gudang Utama..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="italic text-slate-400">Tanpa Gudang</SelectItem>
+                      {locations.filter(l => l.type === 'store').map(loc => (
+                        <SelectItem key={loc.id} value={loc.name}>{loc.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Rak Penyimpanan (Opsional)</Label>
+                  <Select value={formData.location_name || 'none'} onValueChange={(v) => setFormData({ ...formData, location_name: v === 'none' ? '' : v })}>
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue placeholder="Pilih Rak..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="italic text-slate-400">Tanpa Rak</SelectItem>
+                      {dynamicRacks.map(rackName => (
+                        <SelectItem key={rackName} value={rackName}>{rackName}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div>
                 <Label className="flex items-center gap-1.5">

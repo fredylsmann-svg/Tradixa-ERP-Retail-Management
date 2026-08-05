@@ -10,6 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Plus, Search, Eye, Pencil, Trash2, Package, Boxes, Printer, X, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Filter } from 'lucide-react';
 import ProductForm from '@/components/products/ProductForm';
 import BarcodePrintModal from '@/components/products/BarcodePrintModal';
 import { formatNumber } from '@/components/utils/currencyFormatter';
@@ -30,11 +32,15 @@ export default function ProductMaster({ store }) {
   const [viewingProduct, setViewingProduct] = useState(null);
   const [deleteProduct, setDeleteProduct] = useState(null);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [expandedRows, setExpandedRows] = useState({});
   const [printProducts, setPrintProducts] = useState([]); // Products to pass to modal
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalData, setTotalData] = useState(0);
   const [totalProductCount, setTotalProductCount] = useState(0);
+  const [sortBy, setSortBy] = useState('name');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const { selectedDate, formattedDate } = useGlobalDate();
   const { toast } = useToast();
 
@@ -64,7 +70,7 @@ export default function ProductMaster({ store }) {
     return () => {
       window.removeEventListener('refresh_data', handleRefreshEvent);
     };
-  }, [store, currentPage, pageSize, debouncedSearch]);
+  }, [store, currentPage, pageSize, debouncedSearch, sortBy, filterCategory, filterStatus]);
 
   useEffect(() => {
     if (isLoading || !store?.id) return;
@@ -84,10 +90,7 @@ export default function ProductMaster({ store }) {
 
   const dismissAddProductGuide = () => {
     setShowAddProductGuide(false);
-    if (store?.id) {
-      localStorage.setItem(`erp_tour_step_${store.id}`, '3');
-      // Step 3 will be triggered by useEffect when conditions are met (e.g. form is closed)
-    }
+    localStorage.setItem(`erp_tour_step_${store.id}`, 'completed');
   };
 
   const dismissActionGuide = () => {
@@ -114,9 +117,14 @@ export default function ProductMaster({ store }) {
 
   const loadProducts = async () => {
     setIsLoading(true);
+
+    const queryFilters = { store_id: store.id };
+    if (filterCategory !== 'all') queryFilters.category = filterCategory;
+    if (filterStatus !== 'all') queryFilters.status = filterStatus;
+
     const { data, totalCount } = await api.entities.Product.filter(
-      { store_id: store.id },
-      '-created_at',
+      queryFilters,
+      sortBy,
       {
         page: currentPage,
         pageSize,
@@ -149,7 +157,39 @@ export default function ProductMaster({ store }) {
 
   const formatCurrency = (value) => formatNumber(value || 0);
 
-  const filteredProducts = currentProducts;
+  const groupedProducts = [];
+  const skuMap = {};
+  
+  currentProducts.forEach(p => {
+    const key = p.sku || p.name || p.id;
+    if (!skuMap[key]) {
+      skuMap[key] = {
+        masterId: p.id, // ID representatif untuk aksi master
+        key: key,
+        name: p.name,
+        sku: p.sku,
+        barcode: p.barcode,
+        category: p.category,
+        sell_price: p.sell_price,
+        status: p.status,
+        image_url: p.image_url,
+        tracking_type: p.tracking_type,
+        timestamp_wib: p.timestamp_wib,
+        created_at: p.created_at,
+        totalStock: 0,
+        locations: []
+      };
+      groupedProducts.push(skuMap[key]);
+    }
+    skuMap[key].totalStock += Number(p.stock) || 0;
+    skuMap[key].locations.push(p);
+  });
+
+  const toggleExpand = (key) => {
+    setExpandedRows(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const filteredProducts = groupedProducts;
 
   const getStatusBadge = (status) => {
     const styles = {
@@ -259,15 +299,91 @@ export default function ProductMaster({ store }) {
 
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Cari produk..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-9 h-11 bg-slate-50 border-slate-200"
               />
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[160px] h-11 bg-slate-50 border-slate-200 text-slate-600">
+                  <SelectValue placeholder="Urutkan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">A-Z (Nama)</SelectItem>
+                  <SelectItem value="-created_at">Terbaru</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="h-11 px-4 bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 relative">
+                    <Filter className="w-4 h-4 mr-2" />
+                    Filter
+                    {(filterCategory !== 'all' || filterStatus !== 'all') && (
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-4" align="end">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-slate-900 leading-none">Filter Data</h4>
+                    <p className="text-sm text-slate-500">Saring tabel master produk.</p>
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 uppercase">Kategori</label>
+                        <Select value={filterCategory} onValueChange={setFilterCategory}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Pilih Kategori" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Semua Kategori</SelectItem>
+                            <SelectItem value="Sembako">Sembako</SelectItem>
+                            <SelectItem value="Minuman">Minuman</SelectItem>
+                            <SelectItem value="Makanan">Makanan</SelectItem>
+                            <SelectItem value="Kebutuhan Rumah">Kebutuhan Rumah</SelectItem>
+                            <SelectItem value="Produk Beku">Produk Beku</SelectItem>
+                            <SelectItem value="Kosmetik">Kosmetik</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-600 uppercase">Status Stok</label>
+                        <Select value={filterStatus} onValueChange={setFilterStatus}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Pilih Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Semua Status</SelectItem>
+                            <SelectItem value="In Stock">In Stock</SelectItem>
+                            <SelectItem value="Low Stock">Low Stock</SelectItem>
+                            <SelectItem value="Out of Stock">Out of Stock</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        className="w-full mt-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          setFilterCategory('all');
+                          setFilterStatus('all');
+                        }}
+                      >
+                        Reset Filter
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </CardHeader>
@@ -288,7 +404,8 @@ export default function ProductMaster({ store }) {
                   <TableHead>Barcode</TableHead>
                   <TableHead>Nama Produk</TableHead>
                   <TableHead>Kategori</TableHead>
-                  <TableHead>Lokasi/Rak</TableHead>
+                  <TableHead>Gudang Utama</TableHead>
+                  <TableHead>Rak Penyimpanan</TableHead>
                   <TableHead className="text-right">Harga Jual</TableHead>
                   <TableHead className="text-center">Stok</TableHead>
                   <TableHead>Status</TableHead>
@@ -300,117 +417,173 @@ export default function ProductMaster({ store }) {
                 {isLoading ? (
                   Array(5).fill(0).map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell colSpan={11}><Skeleton className="h-12 w-full" /></TableCell>
+                      <TableCell colSpan={12}><Skeleton className="h-12 w-full" /></TableCell>
                     </TableRow>
                   ))
                 ) : filteredProducts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-12 text-slate-500 dark:text-slate-400">
+                    <TableCell colSpan={12} className="text-center py-12 text-slate-500 dark:text-slate-400">
                       <Boxes className="w-12 h-12 mx-auto mb-3 text-slate-300" />
                       Tidak ada produk ditemukan
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredProducts.map((product, idx) => (
-                    <TableRow key={product.id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 ${showActionColumnGuide && idx === 0 ? "relative z-[60] bg-white dark:bg-slate-900 shadow-[0_0_20px_rgba(0,0,0,0.15)] ring-2 ring-blue-500/20" : ""}`}>
-                      <TableCell>
-                        {showActionColumnGuide && idx === 0 && (
-                          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] animate-in fade-in duration-300" onClick={dismissActionGuide} style={{margin: 0}} />
-                        )}
-                        <Checkbox 
-                          checked={selectedProductIds.includes(product.id)}
-                          onCheckedChange={() => toggleSelectProduct(product.id)}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">{idx + 1}</TableCell>
-                      <TableCell>
-                        {product.image_url ? (
-                          <img src={product.image_url} alt={product.name} className="w-10 h-10 rounded object-cover" />
-                        ) : (
-                          <div className="w-10 h-10 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs text-slate-400">
-                            No Img
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>{product.sku || '-'}</TableCell>
-                      <TableCell>{product.barcode || '-'}</TableCell>
-                      <TableCell className="font-medium text-slate-900 dark:text-white">
-                        {product.name}
-                        <div className="mt-1">
-                          {product.tracking_type === 'Batch' ? (
-                            <Badge className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] font-black uppercase tracking-widest py-0.5 px-1.5 rounded-sm whitespace-nowrap">
-                              Batch Tracking
-                            </Badge>
-                          ) : product.tracking_type === 'Serial' ? (
-                            <Badge className="bg-purple-50 text-purple-600 border-purple-100 text-[9px] font-black uppercase tracking-widest py-0.5 px-1.5 rounded-sm whitespace-nowrap">
-                              Serial Tracking
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-slate-50 text-slate-400 border-slate-100 text-[9px] font-black uppercase tracking-widest py-0.5 px-1.5 rounded-sm whitespace-nowrap">
-                              Standard
-                            </Badge>
+                  filteredProducts.map((group, idx) => (
+                    <React.Fragment key={group.key}>
+                      <TableRow className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 ${showActionColumnGuide && idx === 0 ? "relative z-[60] bg-white dark:bg-slate-900 shadow-[0_0_20px_rgba(0,0,0,0.15)] ring-2 ring-blue-500/20" : ""}`}>
+                        <TableCell>
+                          {showActionColumnGuide && idx === 0 && (
+                            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] animate-in fade-in duration-300" onClick={dismissActionGuide} style={{margin: 0}} />
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{product.category}</TableCell>
-                      <TableCell>{product.location_name || '-'}</TableCell>
-                      <TableCell className="text-right">Rp {formatCurrency(product.sell_price)}</TableCell>
-                      <TableCell className={`text-center ${product.stock === 0 ? 'text-red-600' : ''}`}>
-                        {product.stock}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(product.status)}</TableCell>
-                      <TableCell className="text-xs text-slate-500 dark:text-slate-400">{product.timestamp_wib || product.created_at?.split('T')[0] || '-'}</TableCell>
-                      <TableCell>
-                        <Popover open={showActionColumnGuide && idx === 0}>
-                          <PopoverTrigger asChild>
+                          <Checkbox 
+                            checked={selectedProductIds.includes(group.masterId)}
+                            onCheckedChange={() => toggleSelectProduct(group.masterId)}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">{idx + 1}</TableCell>
+                        <TableCell>
+                          {group.image_url ? (
+                            <img src={group.image_url} alt={group.name} className="w-10 h-10 rounded object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs text-slate-400">
+                              No Img
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>{group.sku || '-'}</TableCell>
+                        <TableCell>{group.barcode || '-'}</TableCell>
+                        <TableCell className="font-medium text-slate-900 dark:text-white relative">
+                          <div className="flex items-center relative">
+                            {group.locations.length > 1 && (
+                              <Button variant="ghost" size="icon" className="absolute -left-7 h-6 w-6 shrink-0" onClick={() => toggleExpand(group.key)}>
+                                <ChevronRight className={`w-4 h-4 transition-transform ${expandedRows[group.key] ? 'rotate-90' : ''}`} />
+                              </Button>
+                            )}
+                            <span>{group.name}</span>
+                          </div>
+                          <div className="mt-1">
+                            {group.tracking_type === 'Batch' ? (
+                              <Badge className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] font-black uppercase tracking-widest py-0.5 px-1.5 rounded-sm whitespace-nowrap">
+                                Batch Tracking
+                              </Badge>
+                            ) : group.tracking_type === 'Serial' ? (
+                              <Badge className="bg-purple-50 text-purple-600 border-purple-100 text-[9px] font-black uppercase tracking-widest py-0.5 px-1.5 rounded-sm whitespace-nowrap">
+                                Serial Tracking
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-slate-50 text-slate-400 border-slate-100 text-[9px] font-black uppercase tracking-widest py-0.5 px-1.5 rounded-sm whitespace-nowrap">
+                                Standard
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-slate-600 dark:text-slate-300">{group.category}</TableCell>
+                        <TableCell>
+                          {(() => {
+                            const uniqueWhs = [...new Set(group.locations.map(l => l.warehouse_name).filter(Boolean))];
+                            if (uniqueWhs.length > 1) return <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 shadow-sm text-[10px]">Multi-Gudang</Badge>;
+                            if (uniqueWhs.length === 1) return uniqueWhs[0];
+                            return '-';
+                          })()}
+                        </TableCell>
+                        <TableCell className="text-slate-500 text-sm">
+                          {(() => {
+                            const uniqueRacks = [...new Set(group.locations.map(l => l.location_name).filter(Boolean))];
+                            if (uniqueRacks.length > 1) return <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 shadow-sm text-[10px]">Multi-Rak</Badge>;
+                            if (uniqueRacks.length === 1) return uniqueRacks[0];
+                            return '-';
+                          })()}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">Rp {formatCurrency(group.sell_price)}</TableCell>
+                        <TableCell className={`text-center font-bold ${group.totalStock === 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                          {group.totalStock}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(group.status)}</TableCell>
+                        <TableCell className="text-xs text-slate-500 dark:text-slate-400">{group.timestamp_wib || group.created_at?.split('T')[0] || '-'}</TableCell>
+                        <TableCell>
+                          <Popover open={showActionColumnGuide && idx === 0}>
+                            <PopoverTrigger asChild>
+                              <div className="flex items-center justify-center gap-1">
+                                <Button variant="ghost" size="icon" onClick={() => setPrintProducts([group.locations[0]])} title="Cetak Barcode">
+                                  <Printer className="w-4 h-4 text-blue-500" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => setViewingProduct(group.locations[0])}>
+                                  <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => { setEditingProduct(group.locations[0]); setShowForm(true); }}>
+                                  <Pencil className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => setDeleteProduct(group.locations[0])}>
+                                  <Trash2 className="w-4 h-4 text-red-500" />
+                                </Button>
+                              </div>
+                            </PopoverTrigger>
+                            <PopoverContent 
+                              side="left" 
+                              align="center" 
+                              sideOffset={16}
+                              className="z-[70] w-[calc(100vw-2rem)] sm:w-[320px] max-w-[320px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl border-slate-700/50 animate-in fade-in zoom-in-95 duration-300 pointer-events-auto"
+                              collisionPadding={16}
+                              onPointerDownOutside={(e) => e.preventDefault()}
+                            >
+                              <div className="flex flex-col gap-3">
+                                <div className="relative z-10 space-y-2">
+                                  <h4 className="text-xs font-black text-white tracking-wider uppercase">Tindakan Lanjutan (Aksi)</h4>
+                                  <p className="text-[12px] text-slate-300 leading-relaxed font-medium">
+                                    Setelah data tersimpan, Anda dapat mengelolanya langsung di tabel ini.
+                                    <span className="block mt-2.5 space-y-2 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                                      <span className="flex items-center gap-2.5 text-[11px]"><Eye className="w-3.5 h-3.5 text-blue-400"/> Melihat detail / pengisian data lanjutan</span>
+                                      <span className="flex items-center gap-2.5 text-[11px]"><Pencil className="w-3.5 h-3.5 text-emerald-400"/> Merubah data langsung (Edit)</span>
+                                      <span className="flex items-center gap-2.5 text-[11px]"><Trash2 className="w-3.5 h-3.5 text-red-400"/> Menghapus data (Hanya modul tertentu)</span>
+                                    </span>
+                                  </p>
+                                </div>
+                                <div className="flex justify-end mt-2 relative z-10 pt-2 border-t border-slate-800">
+                                  <button 
+                                    onClick={dismissActionGuide} 
+                                    className="text-[11px] font-bold bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg active:scale-95"
+                                  >
+                                    Mengerti & Selesai
+                                  </button>
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </TableCell>
+                      </TableRow>
+
+                      {expandedRows[group.key] && group.locations.length > 1 && group.locations.map((loc, childIdx) => (
+                        <TableRow key={loc.id} className="bg-slate-50/80 dark:bg-slate-800/30 border-l-[3px] border-l-slate-400 shadow-inner">
+                          <TableCell></TableCell>
+                          <TableCell></TableCell>
+                          <TableCell></TableCell>
+                          <TableCell></TableCell>
+                          <TableCell></TableCell>
+                          <TableCell colSpan={2} className="pl-6 text-sm text-slate-600 dark:text-slate-300">
+                            <div className="flex items-center gap-2">
+                              <span className="text-slate-400 font-serif">↳</span>
+                              <span className="italic">Varian Lokasi</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium text-slate-800 dark:text-slate-200">{loc.warehouse_name || '-'}</TableCell>
+                          <TableCell className="text-slate-500 text-sm">{loc.location_name || '-'}</TableCell>
+                          <TableCell className="text-right text-sm">Rp {formatCurrency(loc.sell_price)}</TableCell>
+                          <TableCell className="text-center font-medium text-slate-700 dark:text-slate-300">{loc.stock}</TableCell>
+                          <TableCell>{getStatusBadge(loc.status)}</TableCell>
+                          <TableCell className="text-xs text-slate-500">{loc.timestamp_wib || loc.created_at?.split('T')[0] || '-'}</TableCell>
+                          <TableCell>
                             <div className="flex items-center justify-center gap-1">
-                              <Button variant="ghost" size="icon" onClick={() => setPrintProducts([product])} title="Cetak Barcode">
-                                <Printer className="w-4 h-4 text-blue-500" />
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => setViewingProduct(product)}>
-                                <Eye className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => { setEditingProduct(product); setShowForm(true); }}>
-                                <Pencil className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => setDeleteProduct(product)}>
-                                <Trash2 className="w-4 h-4 text-red-500" />
-                              </Button>
+                               <Button variant="ghost" size="icon" onClick={() => { setEditingProduct(loc); setShowForm(true); }} className="h-8 w-8 hover:bg-white">
+                                 <Pencil className="w-3.5 h-3.5 text-slate-500" />
+                               </Button>
+                               <Button variant="ghost" size="icon" onClick={() => setDeleteProduct(loc)} className="h-8 w-8 hover:bg-red-50">
+                                 <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                               </Button>
                             </div>
-                          </PopoverTrigger>
-                          <PopoverContent 
-                            side="left" 
-                            align="center" 
-                            sideOffset={16}
-                            className="z-[70] w-[calc(100vw-2rem)] sm:w-[320px] max-w-[320px] bg-slate-900 text-white p-4 rounded-xl shadow-2xl border-slate-700/50 animate-in fade-in zoom-in-95 duration-300 pointer-events-auto"
-                            collisionPadding={16}
-                            onPointerDownOutside={(e) => e.preventDefault()}
-                          >
-                            <div className="flex flex-col gap-3">
-                              <div className="relative z-10 space-y-2">
-                                <h4 className="text-xs font-black text-white tracking-wider uppercase">Tindakan Lanjutan (Aksi)</h4>
-                                <p className="text-[12px] text-slate-300 leading-relaxed font-medium">
-                                  Setelah data tersimpan, Anda dapat mengelolanya langsung di tabel ini.
-                                  <span className="block mt-2.5 space-y-2 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                                    <span className="flex items-center gap-2.5 text-[11px]"><Eye className="w-3.5 h-3.5 text-blue-400"/> Melihat detail / pengisian data lanjutan</span>
-                                    <span className="flex items-center gap-2.5 text-[11px]"><Pencil className="w-3.5 h-3.5 text-emerald-400"/> Merubah data langsung (Edit)</span>
-                                    <span className="flex items-center gap-2.5 text-[11px]"><Trash2 className="w-3.5 h-3.5 text-red-400"/> Menghapus data (Hanya modul tertentu)</span>
-                                  </span>
-                                </p>
-                              </div>
-                              <div className="flex justify-end mt-2 relative z-10 pt-2 border-t border-slate-800">
-                                <button 
-                                  onClick={dismissActionGuide} 
-                                  className="text-[11px] font-bold bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg active:scale-95"
-                                >
-                                  Mengerti & Selesai
-                                </button>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </TableCell>
-                    </TableRow>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </React.Fragment>
                   ))
                 )}
               </TableBody>
@@ -466,7 +639,8 @@ export default function ProductMaster({ store }) {
                 <div><p className="text-sm text-slate-500 dark:text-slate-400">Nama</p><p className="font-medium">{viewingProduct.name}</p></div>
                 <div><p className="text-sm text-slate-500 dark:text-slate-400">SKU / Barcode</p><p className="font-medium">{viewingProduct.sku || '-'} / {viewingProduct.barcode || '-'}</p></div>
                 <div><p className="text-sm text-slate-500 dark:text-slate-400">Kategori</p><p className="font-medium">{viewingProduct.category}</p></div>
-                <div><p className="text-sm text-slate-500 dark:text-slate-400">Lokasi / Rak</p><p className="font-medium">{viewingProduct.location_name || '-'}</p></div>
+                <div><p className="text-sm text-slate-500 dark:text-slate-400">Gudang Utama</p><p className="font-medium">{viewingProduct.warehouse_name || '-'}</p></div>
+                <div><p className="text-sm text-slate-500 dark:text-slate-400">Rak Penyimpanan</p><p className="font-medium">{viewingProduct.location_name || '-'}</p></div>
                 <div><p className="text-sm text-slate-500 dark:text-slate-400">Stok</p><p className="font-medium">{viewingProduct.stock} {viewingProduct.sell_unit || viewingProduct.unit}</p></div>
                 <div><p className="text-sm text-slate-500 dark:text-slate-400">Metode Pelacakan</p>
                   <p className="font-medium">
@@ -593,7 +767,7 @@ export default function ProductMaster({ store }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredProducts.map((p) => (
+            {currentProducts.map((p) => (
               <TableRow key={p.id}>
                 <TableCell>{p.sku || '-'}</TableCell>
                 <TableCell>{p.barcode || '-'}</TableCell>

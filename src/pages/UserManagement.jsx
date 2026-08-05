@@ -29,7 +29,7 @@ const MODULE_GROUPS = [
   },
   {
     category: 'WAREHOUSE (WMS)',
-    modules: ['WMS Workflow', 'Warehouse Dashboard', 'Transfer Gudang', 'Pick List', 'Stock Opname', 'Outbound Delivery']
+    modules: ['WMS Workflow', 'Warehouse Dashboard', 'Warehouse Transfer', 'Pick List', 'Stock Opname', 'Outbound Delivery']
   },
   {
     category: 'PROCUREMENT',
@@ -61,7 +61,7 @@ const MODULE_GROUPS = [
   },
   {
     category: 'FINANCIAL AGENT',
-    modules: ['Agent Workflow', 'Dashboard Agent', 'Transaksi Agen', 'Daftar Layanan', 'Saldo & Kas Agen', 'Laporan Fee', 'Agent Performance', 'Pengaturan Agen']
+    modules: ['Agent Workflow', 'Agent Dashboard', 'Agent Transactions', 'Service Catalog', 'Agent Balance & Cash', 'Commission Reports', 'Agent Performance', 'Agent Settings']
   },
   {
     category: 'SETTINGS & TOOLS',

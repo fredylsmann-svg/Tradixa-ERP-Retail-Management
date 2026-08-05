@@ -321,9 +321,9 @@ export default function Suppliers({ store }) {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           {supplier.image_url ? (
-                            <img src={supplier.image_url} className="w-9 h-9 rounded-full object-cover border-2 border-slate-100" alt="" />
+                            <img src={supplier.image_url} className="w-9 h-9 shrink-0 rounded-full object-cover border-2 border-slate-100" alt="" />
                           ) : (
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-xs">
+                            <div className="w-9 h-9 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-xs">
                               {supplier.name?.charAt(0)?.toUpperCase()}
                             </div>
                           )}

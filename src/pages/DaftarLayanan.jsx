@@ -76,7 +76,7 @@ export default function DaftarLayanan({ store }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Daftar Layanan"
+        title="Service Catalog"
         subtitle="Kelola layanan agen keuangan"
         icon={List}
         actions={

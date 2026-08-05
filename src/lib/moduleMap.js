@@ -30,6 +30,7 @@ export const PAGE_TO_MODULE = {
   'InventoryReports': 'Inventory Reports',
   'LowStockAlert': 'Low Stock Alert',
   'StockOpname': 'Stock Opname',
+  'WarehouseTransfer': 'Warehouse Transfer',
 
   // Procurement
   'ProcurementWorkflow': 'Procurement Workflow',
@@ -87,13 +88,13 @@ export const PAGE_TO_MODULE = {
 
   // Financial Agent
   'FinancialAgentWorkflow': 'Agent Workflow',
-  'DashboardAgent': 'Dashboard Agent',
-  'TransaksiAgen': 'Transaksi Agen',
-  'DaftarLayanan': 'Daftar Layanan',
-  'SaldoKasAgen': 'Saldo & Kas Agen',
-  'LaporanFee': 'Laporan Fee',
+  'DashboardAgent': 'Agent Dashboard',
+  'TransaksiAgen': 'Agent Transactions',
+  'DaftarLayanan': 'Service Catalog',
+  'SaldoKasAgen': 'Agent Balance & Cash',
+  'LaporanFee': 'Commission Reports',
   'AgentPerformance': 'Agent Performance',
-  'PengaturanAgen': 'Pengaturan Agen',
+  'PengaturanAgen': 'Agent Settings',
 };
 
 /**

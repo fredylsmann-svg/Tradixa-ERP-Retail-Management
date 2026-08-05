@@ -200,8 +200,8 @@ export default function DiscountManagement({ store }) {
   return (
     <div className="space-y-6" id="print-discount-management">
       <PageHeader
-        title="Discounts & Promotions"
-        subtitle="Kelola diskon dan promosi untuk transaksi"
+        title="Discount Management"
+        subtitle="Discounts & Promotions - Kelola diskon dan promosi untuk transaksi"
         icon={DollarSign}
         actions={
           <div className="flex flex-wrap lg:flex-nowrap gap-2 items-center">

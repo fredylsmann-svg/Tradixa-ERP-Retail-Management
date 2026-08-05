@@ -94,62 +94,9 @@ export default function LoyaltyProgram({ store }) {
   return (
     <div className="space-y-6" id="print-loyalty-program">
       <PageHeader
-        title={
-          <div className="flex items-center gap-2">
-            Loyalty Program
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full bg-blue-50 hover:bg-blue-100 border border-blue-100 shadow-sm transition-all duration-300 group">
-                  <Info className="w-4 h-4 text-blue-600 group-hover:scale-110" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[340px] p-0 overflow-hidden shadow-2xl border-blue-100 rounded-2xl animate-in fade-in zoom-in duration-200">
-                <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-4 text-white">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Award className="w-5 h-5 text-blue-200" />
-                    <h3 className="font-bold text-base">Panduan Loyalty Program</h3>
-                  </div>
-                  <p className="text-xs text-blue-100 opacity-90">Bangun kesetiaan pelanggan dengan sistem reward otomatis.</p>
-                </div>
-                <div className="p-4 space-y-4 bg-white">
-                  <div className="space-y-3">
-                    <div className="flex gap-3">
-                      <div className="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
-                        <Trophy className="w-3.5 h-3.5 text-amber-600" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-slate-800">Sistem Tiering</p>
-                        <p className="text-[11px] text-slate-500 leading-relaxed">Level member (Bronze/Gold dll) ditentukan berdasarkan akumulasi poin belanja pelanggan.</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                        <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-slate-800">Pengali Poin</p>
-                        <p className="text-[11px] text-slate-500 leading-relaxed">Makin tinggi tier, makin besar pengali poinnya. Contoh: Tier Gold dapat 2 poin untuk setiap Rp 1.000.</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="w-6 h-6 rounded-lg bg-rose-50 flex items-center justify-center flex-shrink-0">
-                        <Gift className="w-3.5 h-3.5 text-rose-600" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-slate-800">Katalog Reward</p>
-                        <p className="text-[11px] text-slate-500 leading-relaxed">Poin yang dikumpulkan dapat ditukarkan dengan hadiah, voucher, atau produk di katalog.</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
-                    <Info className="w-3.5 h-3.5 text-blue-500" />
-                    <p className="text-[10px] text-slate-400 italic">Poin dihitung otomatis setiap transaksi penjualan selesai.</p>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-        }
+        title="Loyalty Program"
+        subtitle="Kelola tier, reward, dan member loyalitas"
+        icon={Award}
         actions={
           <div className="flex flex-wrap lg:flex-nowrap gap-2 items-center">
             <div className="flex items-center gap-1.5 mr-2">
@@ -171,9 +118,59 @@ export default function LoyaltyProgram({ store }) {
             </div>
           </div>
         }
-        subtitle="Kelola tier, reward, dan member loyalitas"
-        icon={Award}
-      />
+      >
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full bg-blue-50 hover:bg-blue-100 border border-blue-100 shadow-sm transition-all duration-300 group">
+              <Info className="w-4 h-4 text-blue-600 group-hover:scale-110" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[340px] p-0 overflow-hidden shadow-2xl border-blue-100 rounded-2xl animate-in fade-in zoom-in duration-200">
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-4 text-white">
+              <div className="flex items-center gap-2 mb-1">
+                <Award className="w-5 h-5 text-blue-200" />
+                <h3 className="font-bold text-base">Panduan Loyalty Program</h3>
+              </div>
+              <p className="text-xs text-blue-100 opacity-90">Bangun kesetiaan pelanggan dengan sistem reward otomatis.</p>
+            </div>
+            <div className="p-4 space-y-4 bg-white">
+              <div className="space-y-3">
+                <div className="flex gap-3">
+                  <div className="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                    <Trophy className="w-3.5 h-3.5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-800">Sistem Tiering</p>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">Level member (Bronze/Gold dll) ditentukan berdasarkan akumulasi poin belanja pelanggan.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-800">Pengali Poin</p>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">Makin tinggi tier, makin besar pengali poinnya. Contoh: Tier Gold dapat 2 poin untuk setiap Rp 1.000.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-6 h-6 rounded-lg bg-rose-50 flex items-center justify-center flex-shrink-0">
+                    <Gift className="w-3.5 h-3.5 text-rose-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-800">Katalog Reward</p>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">Poin yang dikumpulkan dapat ditukarkan dengan hadiah, voucher, atau produk di katalog.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
+                <Info className="w-3.5 h-3.5 text-blue-500" />
+                <p className="text-[10px] text-slate-400 italic">Poin dihitung otomatis setiap transaksi penjualan selesai.</p>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </PageHeader>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="border-none shadow-sm bg-white/50 backdrop-blur-sm">
@@ -392,30 +389,30 @@ export default function LoyaltyProgram({ store }) {
           <form onSubmit={handleTierSubmit} className="space-y-4 mt-4">
             <div>
               <LabelWithInfo label="Nama Tier" info="Berikan nama level member (Contoh: Silver, Gold, VIP)." />
-              <Input className="rounded-xl border-slate-200 focus:ring-blue-500" value={tierForm.tier_name} onChange={(e) => setTierForm({...tierForm, tier_name: e.target.value})} required placeholder="Masukkan nama tier..." />
+              <Input className="rounded-xl border-slate-200 focus:ring-blue-500" value={tierForm.tier_name} onChange={(e) => setTierForm({ ...tierForm, tier_name: e.target.value })} required placeholder="Masukkan nama tier..." />
             </div>
             <div>
               <LabelWithInfo label="Minimum Poin" info="Jumlah poin minimal yang harus dimiliki pelanggan untuk masuk ke tier ini." />
-              <Input className="rounded-xl border-slate-200" type="number" value={tierForm.min_points} onChange={(e) => setTierForm({...tierForm, min_points: e.target.value})} required placeholder="Contoh: 1000" />
+              <Input className="rounded-xl border-slate-200" type="number" value={tierForm.min_points} onChange={(e) => setTierForm({ ...tierForm, min_points: e.target.value })} required placeholder="Contoh: 1000" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <LabelWithInfo label="Diskon (%)" info="Potongan harga otomatis bagi member tier ini setiap kali belanja." />
-                <Input className="rounded-xl border-slate-200" type="number" value={tierForm.discount_percentage} onChange={(e) => setTierForm({...tierForm, discount_percentage: e.target.value})} />
+                <Input className="rounded-xl border-slate-200" type="number" value={tierForm.discount_percentage} onChange={(e) => setTierForm({ ...tierForm, discount_percentage: e.target.value })} />
               </div>
               <div>
                 <LabelWithInfo label="Pengali Poin" info="Bonus pengali poin. Contoh: Isi 2 agar member tier ini dapat 2 poin untuk setiap Rp 1.000 belanja." />
-                <Input className="rounded-xl border-slate-200" type="number" step="0.1" value={tierForm.points_multiplier} onChange={(e) => setTierForm({...tierForm, points_multiplier: e.target.value})} />
+                <Input className="rounded-xl border-slate-200" type="number" step="0.1" value={tierForm.points_multiplier} onChange={(e) => setTierForm({ ...tierForm, points_multiplier: e.target.value })} />
               </div>
             </div>
             <div>
               <LabelWithInfo label="Benefits" info="Tuliskan keuntungan lain secara singkat (Contoh: Gratis Ongkir, Akses VIP)." />
-              <Input className="rounded-xl border-slate-200" value={tierForm.benefits} onChange={(e) => setTierForm({...tierForm, benefits: e.target.value})} placeholder="Keuntungan tambahan..." />
+              <Input className="rounded-xl border-slate-200" value={tierForm.benefits} onChange={(e) => setTierForm({ ...tierForm, benefits: e.target.value })} placeholder="Keuntungan tambahan..." />
             </div>
             <div>
               <LabelWithInfo label="Warna Tier" info="Pilih warna identitas untuk tier ini agar mudah dibedakan di dashboard." />
               <div className="flex gap-3 items-center">
-                <Input type="color" className="h-10 w-20 p-1 rounded-lg" value={tierForm.tier_color} onChange={(e) => setTierForm({...tierForm, tier_color: e.target.value})} />
+                <Input type="color" className="h-10 w-20 p-1 rounded-lg" value={tierForm.tier_color} onChange={(e) => setTierForm({ ...tierForm, tier_color: e.target.value })} />
                 <span className="text-xs text-slate-500 italic">Klik kotak untuk memilih warna</span>
               </div>
             </div>
@@ -436,15 +433,15 @@ export default function LoyaltyProgram({ store }) {
           <form onSubmit={handleRewardSubmit} className="space-y-4">
             <div>
               <LabelWithInfo label="Nama Reward *" info="Berikan nama reward yang menarik (Contoh: Voucher Diskon 10rb)." />
-              <Input className="rounded-xl border-slate-200" value={rewardForm.reward_name} onChange={(e) => setRewardForm({...rewardForm, reward_name: e.target.value})} required placeholder="Nama reward..." />
+              <Input className="rounded-xl border-slate-200" value={rewardForm.reward_name} onChange={(e) => setRewardForm({ ...rewardForm, reward_name: e.target.value })} required placeholder="Nama reward..." />
             </div>
             <div>
               <LabelWithInfo label="Deskripsi" info="Jelaskan detail reward atau syarat penggunaannya secara singkat." />
-              <Input className="rounded-xl border-slate-200" value={rewardForm.description} onChange={(e) => setRewardForm({...rewardForm, description: e.target.value})} placeholder="Penjelasan reward..." />
+              <Input className="rounded-xl border-slate-200" value={rewardForm.description} onChange={(e) => setRewardForm({ ...rewardForm, description: e.target.value })} placeholder="Penjelasan reward..." />
             </div>
             <div>
               <LabelWithInfo label="Tipe Reward" info="Pilih kategori reward. Diskon memotong harga, Produk Gratis memberikan item fisik." />
-              <Select value={rewardForm.reward_type} onValueChange={(v) => setRewardForm({...rewardForm, reward_type: v})}>
+              <Select value={rewardForm.reward_type} onValueChange={(v) => setRewardForm({ ...rewardForm, reward_type: v })}>
                 <SelectTrigger className="rounded-xl border-slate-200"><SelectValue /></SelectTrigger>
                 <SelectContent className="rounded-xl">
                   <SelectItem value="Discount">Diskon</SelectItem>
@@ -456,19 +453,19 @@ export default function LoyaltyProgram({ store }) {
             </div>
             <div>
               <LabelWithInfo label="Poin Dibutuhkan *" info="Jumlah poin yang harus ditukarkan pelanggan untuk mendapatkan reward ini." />
-              <Input className="rounded-xl border-slate-200" type="number" value={rewardForm.points_required} onChange={(e) => setRewardForm({...rewardForm, points_required: e.target.value})} required placeholder="Contoh: 500" />
+              <Input className="rounded-xl border-slate-200" type="number" value={rewardForm.points_required} onChange={(e) => setRewardForm({ ...rewardForm, points_required: e.target.value })} required placeholder="Contoh: 500" />
             </div>
             <div>
               <LabelWithInfo label="Nilai Reward" info="Nilai nominal. Contoh: 10000 untuk voucher 10rb, atau 10 untuk diskon 10%." />
-              <Input className="rounded-xl border-slate-200" type="number" value={rewardForm.reward_value} onChange={(e) => setRewardForm({...rewardForm, reward_value: e.target.value})} placeholder="Besaran nilai..." />
+              <Input className="rounded-xl border-slate-200" type="number" value={rewardForm.reward_value} onChange={(e) => setRewardForm({ ...rewardForm, reward_value: e.target.value })} placeholder="Besaran nilai..." />
             </div>
             <div>
               <LabelWithInfo label="Stok (0 = Unlimited)" info="Batasi jumlah reward yang tersedia. Isi 0 jika reward selalu tersedia." />
-              <Input className="rounded-xl border-slate-200" type="number" value={rewardForm.stock_quantity} onChange={(e) => setRewardForm({...rewardForm, stock_quantity: e.target.value})} />
+              <Input className="rounded-xl border-slate-200" type="number" value={rewardForm.stock_quantity} onChange={(e) => setRewardForm({ ...rewardForm, stock_quantity: e.target.value })} />
             </div>
             <div>
               <LabelWithInfo label="Berlaku (hari)" info="Masa aktif reward setelah ditukarkan oleh pelanggan (Contoh: 30 hari)." />
-              <Input className="rounded-xl border-slate-200" type="number" value={rewardForm.expiry_days} onChange={(e) => setRewardForm({...rewardForm, expiry_days: e.target.value})} />
+              <Input className="rounded-xl border-slate-200" type="number" value={rewardForm.expiry_days} onChange={(e) => setRewardForm({ ...rewardForm, expiry_days: e.target.value })} />
             </div>
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => setShowRewardForm(false)} className="rounded-xl">Batal</Button>

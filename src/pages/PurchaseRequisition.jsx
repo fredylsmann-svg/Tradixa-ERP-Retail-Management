@@ -1125,9 +1125,10 @@ export default function PurchaseRequisition({ store }) {
               <Table>
                 <TableHeader className="bg-slate-50 sticky top-0 z-10">
                   <TableRow>
-                    <TableHead className="w-64 pl-6">PR Number</TableHead>
+                    <TableHead className="w-16 pl-6"></TableHead>
                     <TableHead>Kode</TableHead>
                     <TableHead>Nama Item</TableHead>
+                    <TableHead>Lokasi Gudang</TableHead>
                     <TableHead>Kategori</TableHead>
                     <TableHead>UOM</TableHead>
                   </TableRow>
@@ -1135,10 +1136,11 @@ export default function PurchaseRequisition({ store }) {
                 <TableBody>
                   {itemProducts.filter(p => !itemSearch || p.name?.toLowerCase().includes(itemSearch.toLowerCase()) || p.sku?.toLowerCase().includes(itemSearch.toLowerCase())).map((prod) => (
                     <TableRow key={prod.id} className={selectedItems.find(i => i.id === prod.id) ? 'bg-slate-50' : ''}>
-                      <TableCell><input type="checkbox" checked={!!selectedItems.find(i => i.id === prod.id)} onChange={() => toggleItemSelection(prod)} className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500" /></TableCell>
+                      <TableCell className="pl-6"><input type="checkbox" checked={!!selectedItems.find(i => i.id === prod.id)} onChange={() => toggleItemSelection(prod)} className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500" /></TableCell>
                       <TableCell className="font-mono text-xs">{prod.sku || prod.id.slice(0, 8)}</TableCell>
                       <TableCell className="font-semibold text-slate-800">{prod.name}</TableCell>
-                      <TableCell><Badge variant="outline">{prod.category || 'General'}</Badge></TableCell>
+                      <TableCell className="text-sm text-slate-600 font-medium">{prod.warehouse_name ? (prod.location_name ? `${prod.warehouse_name} (${prod.location_name})` : prod.warehouse_name) : 'Semua Gudang'}</TableCell>
+                      <TableCell><Badge variant="outline" className="bg-slate-50">{prod.category || 'General'}</Badge></TableCell>
                       <TableCell className="text-slate-500 text-sm">{prod.uom || 'pcs'}</TableCell>
                     </TableRow>
                   ))}

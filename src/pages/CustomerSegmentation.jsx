@@ -166,8 +166,8 @@ export default function CustomerSegmentation({ store }) {
   return (
     <div className="space-y-6 pb-20" id="print-customer-segmentation">
       <PageHeader
-        title="Marketing Intelligence"
-        subtitle="Analisis RFM & Segmentasi Pelanggan Otomatis"
+        title="Customer Segmentation"
+        subtitle="Marketing Intelligence - Analisis RFM & Segmentasi Pelanggan Otomatis"
         icon={Target}
         actions={
           <div className="flex flex-wrap lg:flex-nowrap gap-2 items-center">

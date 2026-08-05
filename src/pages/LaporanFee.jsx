@@ -82,7 +82,7 @@ export default function LaporanFee({ store }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Laporan Fee"
+        title="Commission Reports"
         subtitle="Analisis fee dan komisi agen"
         icon={FileText}
         actions={

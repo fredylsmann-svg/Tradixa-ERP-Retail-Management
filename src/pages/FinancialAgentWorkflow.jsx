@@ -7,6 +7,7 @@ import {
   Info, ArrowRight, Workflow, Banknote, RefreshCcw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const steps = [
   {
@@ -83,6 +84,7 @@ const steps = [
 
 export default function FinancialAgentWorkflow() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="space-y-6">
@@ -93,7 +95,7 @@ export default function FinancialAgentWorkflow() {
             <Workflow className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-900 tracking-wide">Financial Agent Workflow</h1>
+            <h1 className="text-xl font-black text-slate-900 tracking-wide">{t('sidebar.Agent Workflow', { defaultValue: 'Financial Agent Workflow' })}</h1>
             <p className="text-sm text-slate-500">Alur kerja agen pembayaran BRILINK & payment point</p>
           </div>
         </div>

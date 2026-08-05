@@ -9,6 +9,7 @@ import {
   Layers, Target, Boxes, Smartphone
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import WarehouseTransferIcon from '@/components/icons/WarehouseTransferIcon';
 
 const wmsSteps = [
@@ -30,20 +31,37 @@ const wmsSteps = [
     ]
   },
   {
+    id: 'product-master',
+    title: 'Master Produk',
+    subtitle: 'Registrasi & Mapping Lokasi',
+    description: 'Daftarkan SKU baru dan ikat ke lokasi defaultnya. Master produk ini akan terintegrasi langsung dengan data lokasi yang sudah Anda buat di Location Settings.',
+    icon: Boxes,
+    gradient: 'from-cyan-500 to-cyan-600',
+    path: '/ProductMaster',
+    tip: 'Satu SKU bisa berada di banyak lokasi sekaligus. Tampilan Master Produk akan menggabungkan total stok dari semua lokasi.',
+    output: 'Database SKU terintegrasi dengan lokasi',
+    journal: 'N/A (Master Data)',
+    subSteps: [
+      'Input data SKU, Nama, Kategori',
+      'Pilih lokasi (Gudang/Toko) & Rak penyimpanan utama',
+      'Sistem otomatis membuat profil stok per lokasi'
+    ]
+  },
+  {
     id: 'putaway',
-    title: 'Putaway (IGRN)',
-    subtitle: 'Penempatan Barang ke Rak',
-    description: 'Saat barang diterima via Inventory GRN, sistem memberikan saran rak penempatan (Putaway Suggestion) berdasarkan histori kategori produk sejenis. Staf gudang tinggal klik untuk apply.',
+    title: 'Inbound (IGRN)',
+    subtitle: 'Penerimaan Barang ke Rak',
+    description: 'Saat barang datang, terima via IGRN. Anda wajib menentukan Gudang dan Rak spesifik tempat barang ini disimpan. Setiap IGRN dicatat sebagai "Batch" unik berdasarkan harga dan kadaluarsa.',
     icon: Warehouse,
     gradient: 'from-teal-500 to-teal-600',
     path: '/InventoryGRN',
-    tip: 'Putaway Suggestion akan muncul otomatis sebagai badge kuning "💡 Disarankan: [nama rak]". Klik untuk langsung apply.',
+    tip: 'Setiap IGRN akan terekam otomatis di Inventory Ledger sebagai pergerakan stok (Stock In).',
     output: 'Barang tersimpan di rak optimal + terekam di Ledger',
     journal: 'DR Persediaan | CR Hutang Dagang (A/P)',
     subSteps: [
-      'Pilih Procurement GRN yang akan diproses',
-      'Pilih gudang tujuan penyimpanan',
-      'Lihat Putaway Suggestion dan klik untuk apply',
+      'Pilih produk dari Master Produk',
+      'Pilih gudang dan rak tujuan penyimpanan',
+      'Input Kuantitas, Harga Beli & Tanggal Kadaluarsa',
       'Post ke Inventory Ledger'
     ]
   },
@@ -67,20 +85,20 @@ const wmsSteps = [
   },
   {
     id: 'pick-list',
-    title: 'Pick List',
-    subtitle: 'Batch Picking Multi-Order',
-    description: 'Gabungkan beberapa order Outbound Delivery menjadi satu daftar pengambilan barang. Sistem akan mengonsolidasikan produk yang sama dari order berbeda, lengkap dengan lokasi rak.',
+    title: 'Sales & Pick List',
+    subtitle: 'Pengeluaran Barang (Outbound)',
+    description: 'Saat terjadi transaksi penjualan di Toko, sistem otomatis memotong stok. Gunakan Pick List untuk petugas gudang mengambil barang fisik dari rak yang tepat sesuai data sistem.',
     icon: ClipboardList,
     gradient: 'from-amber-500 to-amber-600',
     path: '/PickList',
-    tip: 'Buat pick list di awal shift agar picker bisa mengambil barang sekaligus untuk semua order, bukan satu per satu.',
+    tip: 'Pick List mencetak nama rak secara spesifik sehingga petugas tidak perlu bingung mencari barang.',
     output: 'Daftar picking terkonsolidasi dengan lokasi rak',
-    journal: 'N/A (Dokumen Operasional)',
+    journal: 'DR HPP | CR Persediaan',
     subSteps: [
-      'Pilih beberapa Outbound Order berstatus "Pending"',
-      'Sistem otomatis konsolidasi produk yang sama',
-      'Tugaskan picker (staff gudang) untuk menjalankan',
-      'Tandai selesai setelah semua barang diambil'
+      'Transaksi Penjualan / Sales Order',
+      'Sistem otomatis generate Pick List',
+      'Tugaskan picker (staff gudang) untuk mengambil di rak terkait',
+      'Tandai selesai setelah barang disiapkan'
     ]
   },
   {
@@ -103,7 +121,7 @@ const wmsSteps = [
   },
   {
     id: 'transfer',
-    title: 'Transfer Gudang',
+    title: 'Warehouse Transfer',
     subtitle: 'Pemindahan Antar Lokasi',
     description: 'Pindahkan stok dari satu gudang/cabang ke yang lain dengan workflow 3-tahap: Draft → In Transit → Received. Setiap transfer terekam dengan audit trail lengkap.',
     icon: WarehouseTransferIcon,
@@ -136,11 +154,29 @@ const wmsSteps = [
       'Input kuantitas fisik real-time — sistem otomatis membandingkan dengan data sistem',
       'Posting adjustment instan jika disetujui supervisor'
     ]
+  },
+  {
+    id: 'reporting',
+    title: 'Report & Ledger',
+    subtitle: 'Analisa & Kartu Stok',
+    description: 'Tahap akhir: Pantau kesehatan bisnis melalui 3 laporan utama: Stock Report, Inventory Report (Grouping Summary), dan Inventory Ledger (Detail Riwayat Pergerakan/Stock Movement).',
+    icon: LayoutDashboard,
+    gradient: 'from-pink-500 to-pink-600',
+    path: '/InventoryReports',
+    tip: 'Gunakan Inventory Report untuk melihat total nilai uang aset (Balance Sheet), dan Ledger untuk audit pergerakan harian.',
+    output: 'Laporan keuangan dan logistik akurat 100%',
+    journal: 'N/A (Laporan Analitik)',
+    subSteps: [
+      'Cek Inventory Report (Rangkuman Aset per Gudang/Batch)',
+      'Cek Stock Report (Ketersediaan SKU Real-time)',
+      'Audit via Inventory Ledger (Riwayat In/Out/Transfer)'
+    ]
   }
 ];
 
 export default function WMSWorkflow() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="space-y-6">
@@ -151,7 +187,7 @@ export default function WMSWorkflow() {
             <Workflow className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-wide">WMS Workflow</h1>
+            <h1 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-wide">{t('sidebar.WMS Workflow', { defaultValue: 'WMS Workflow' })}</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">Standard Operating Procedure — Warehouse Management System</p>
           </div>
         </div>

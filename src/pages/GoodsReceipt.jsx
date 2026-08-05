@@ -627,8 +627,8 @@ export default function GoodsReceipt({ store }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Goods Receipt Notes"
-        subtitle="Penerimaan barang dari PO"
+        title="Goods Receipt"
+        subtitle="Goods Receipt Notes - Penerimaan barang dari PO"
         icon={ClipboardCheck}
         actions={
           <div className="flex items-center gap-2 flex-wrap">

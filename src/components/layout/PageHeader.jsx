@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
 import { useQuickAccess } from '@/contexts/QuickAccessContext';
 import { toast as sonnerToast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function PageHeader({
   title,
@@ -12,7 +13,21 @@ export default function PageHeader({
   actions
 }) {
   const { toggleQuickAccess, isQuickAccess } = useQuickAccess();
+  const { t, i18n } = useTranslation();
   const isCurrentPageFavorited = title ? isQuickAccess(title) : false;
+
+  const safeKey = title ? title.replace(/[^a-zA-Z0-9]/g, '') : '';
+  
+  // Try to find translation in 'pages' section first, if not found, fallback to 'sidebar' section, then fallback to original title
+  let displayTitle = t(`pages.${safeKey}.title`, { defaultValue: '' });
+  if (!displayTitle) {
+    displayTitle = t(`sidebar.${title}`, { defaultValue: title });
+  }
+
+  let displaySubtitle = t(`pages.${safeKey}.subtitle`, { defaultValue: '' });
+  if (!displaySubtitle) {
+    displaySubtitle = subtitle;
+  }
 
   return (
     <motion.div
@@ -29,7 +44,7 @@ export default function PageHeader({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-wide flex items-center gap-2">
-              {title}
+              {displayTitle}
               {title && (
                 <button
                   onClick={() => {
@@ -39,8 +54,8 @@ export default function PageHeader({
                       wasAdded ? 'Berhasil!' : 'Dihapus',
                       {
                         description: wasAdded
-                          ? `Menu ${title} berhasil ditambahkan ke Quick Access`
-                          : `Menu ${title} dihapus dari Quick Access`,
+                          ? `Menu ${displayTitle} berhasil ditambahkan ke Quick Access`
+                          : `Menu ${displayTitle} dihapus dari Quick Access`,
                         duration: 2500,
                       }
                     );
@@ -61,7 +76,11 @@ export default function PageHeader({
             </h1>
             {children}
           </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{subtitle}</p>
+          {displaySubtitle && (
+            <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm font-medium">
+              {displaySubtitle}
+            </p>
+          )}
         </div>
       </div>
       {actions && (

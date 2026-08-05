@@ -138,12 +138,75 @@ export default function WarehouseTransfer({ store }) {
         received_date: new Date().toISOString().split('T')[0]
       });
 
-      // Update product locations
+      // Update product locations (Proper Stock Splitting)
       for (const item of (transfer.items || [])) {
-        if (item.product_id) {
-          await api.entities.Product.update(item.product_id, {
-            warehouse_name: transfer.to_location
+        if (!item.product_id || !item.qty) continue;
+        
+        try {
+          // 1. Ambil data produk sumber (Source)
+          const sourceProducts = await api.entities.Product.filter({ id: item.product_id });
+          if (!sourceProducts || sourceProducts.length === 0) continue;
+          const sourceProduct = sourceProducts[0];
+          
+          const transferQty = Number(item.qty) || 0;
+          
+          // 2. Kurangi stok di gudang asal
+          const newSourceStock = Math.max(0, Number(sourceProduct.stock || 0) - transferQty);
+          await api.entities.Product.update(sourceProduct.id, { stock: newSourceStock });
+
+          // REKAM LEDGER (KELUAR)
+          await api.entities.StockMovement.create({
+            store_id: store.id,
+            product_id: sourceProduct.id,
+            product_name: sourceProduct.name,
+            movement_type: 'Out',
+            quantity: transferQty,
+            stock_type: 'Warehouse Transfer Out',
+            reference: transfer.transfer_number || transfer.id,
+            timestamp_wib: getWIBTimestamp()
           });
+          
+          // 3. Cek apakah produk dengan SKU ini sudah ada di gudang tujuan
+          const destProducts = await api.entities.Product.filter({ 
+            store_id: store.id, 
+            sku: sourceProduct.sku, 
+            warehouse_name: transfer.to_location 
+          });
+          
+          let finalDestProductId = null;
+
+          if (destProducts && destProducts.length > 0) {
+            // Jika ada, tambahkan stoknya
+            const destProduct = destProducts[0];
+            finalDestProductId = destProduct.id;
+            const newDestStock = Number(destProduct.stock || 0) + transferQty;
+            await api.entities.Product.update(destProduct.id, { stock: newDestStock });
+          } else {
+            // Jika tidak ada, buat baris produk baru (kloning) khusus untuk gudang tujuan
+            const { id, created_at, updated_at, ...productDataToClone } = sourceProduct;
+            const newProduct = await api.entities.Product.create({
+              ...productDataToClone,
+              stock: transferQty,
+              warehouse_name: transfer.to_location
+            });
+            finalDestProductId = newProduct.id;
+          }
+
+          // REKAM LEDGER (MASUK)
+          if (finalDestProductId) {
+            await api.entities.StockMovement.create({
+              store_id: store.id,
+              product_id: finalDestProductId,
+              product_name: sourceProduct.name,
+              movement_type: 'In',
+              quantity: transferQty,
+              stock_type: 'Warehouse Transfer In',
+              reference: transfer.transfer_number || transfer.id,
+              timestamp_wib: getWIBTimestamp()
+            });
+          }
+        } catch (itemErr) {
+          console.error('Error updating item stock:', itemErr);
         }
       }
 
@@ -182,8 +245,8 @@ export default function WarehouseTransfer({ store }) {
   return (
     <div className="space-y-6 pb-20" id="print-warehouse-transfer">
       <PageHeader
-        title="Inter-Warehouse Transfer"
-        subtitle="Perpindahan stok antar gudang/lokasi"
+        title="Warehouse Transfer"
+        subtitle="Transfer Gudang - Perpindahan stok antar gudang/lokasi"
         icon={WarehouseTransferIcon}
         actions={
           <div className="flex flex-col sm:flex-row sm:flex-nowrap gap-2 items-stretch sm:items-center">

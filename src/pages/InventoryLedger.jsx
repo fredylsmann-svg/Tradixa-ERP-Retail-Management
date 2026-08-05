@@ -13,7 +13,8 @@ import {
   Download,
   FileText,
   Package,
-  Activity
+  Activity,
+  MapPin
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
@@ -76,15 +77,15 @@ export default function InventoryLedger({ store }) {
       Object.keys(groupedByProduct).forEach(pid => {
         const productMovements = groupedByProduct[pid];
         productMovements.sort((a, b) => {
-          const timeA = moment(a.timestamp_wib, 'DD/MM/YYYY HH:mm WIB').valueOf();
-          const timeB = moment(b.timestamp_wib, 'DD/MM/YYYY HH:mm WIB').valueOf();
+          const timeA = moment(a.timestamp_wib ? a.timestamp_wib.replace(',', '') : '', 'DD/MM/YYYY HH:mm WIB').valueOf();
+          const timeB = moment(b.timestamp_wib ? b.timestamp_wib.replace(',', '') : '', 'DD/MM/YYYY HH:mm WIB').valueOf();
           return timeA - timeB;
         });
 
         let balance = 0;
         productMovements.forEach((m, mIdx) => {
           const qty = Number(m.quantity) || 0;
-          if (m.movement_type === 'in') {
+          if ((m.movement_type || '').toLowerCase() === 'in') {
             balance += qty;
           } else {
             balance -= qty;
@@ -94,7 +95,8 @@ export default function InventoryLedger({ store }) {
           const unitPrice = product.buy_price || product.sell_price || 0;
 
           // Generate Unique Ledger ID: IL-YYYYMMDD-ID (last 4 chars)
-          const datePart = m.timestamp_wib.split(' ')[0].split('/').reverse().join('');
+          const cleanTimestamp = m.timestamp_wib ? m.timestamp_wib.replace(',', '') : '';
+          const datePart = cleanTimestamp.split(' ')[0].split('/').reverse().join('');
           const ledger_id = `IL-${datePart}-${m.id.slice(-4).toUpperCase()}`;
 
           processed.push({
@@ -102,6 +104,7 @@ export default function InventoryLedger({ store }) {
             ledger_id,
             sku: product.sku || '-',
             unit: product.unit || 'pcs',
+            warehouse_name: product.warehouse_name || product.location_name || 'Tanpa Lokasi',
             running_balance: balance,
             nilai: qty * unitPrice,
             source_label: formatSource(m.stock_type, m.reference),
@@ -154,10 +157,10 @@ export default function InventoryLedger({ store }) {
   const paginatedMovements = filteredMovements.slice(startIndex, startIndex + pageSize);
 
   const stats = {
-    totalIn: filteredMovements.reduce((sum, m) => m.movement_type === 'in' ? sum + Number(m.quantity) : sum, 0),
-    totalOut: filteredMovements.reduce((sum, m) => m.movement_type === 'out' ? sum + Number(m.quantity) : sum, 0),
+    totalIn: filteredMovements.reduce((sum, m) => (m.movement_type || '').toLowerCase() === 'in' ? sum + Number(m.quantity) : sum, 0),
+    totalOut: filteredMovements.reduce((sum, m) => (m.movement_type || '').toLowerCase() === 'out' ? sum + Number(m.quantity) : sum, 0),
     totalTransactions: filteredMovements.length,
-    netMovement: filteredMovements.reduce((sum, m) => m.movement_type === 'in' ? sum + Number(m.quantity) : sum - Number(m.quantity), 0)
+    netMovement: filteredMovements.reduce((sum, m) => (m.movement_type || '').toLowerCase() === 'in' ? sum + Number(m.quantity) : sum - Number(m.quantity), 0)
   };
 
   return (
@@ -260,7 +263,7 @@ export default function InventoryLedger({ store }) {
                   <TableHead className="text-center">Masuk</TableHead>
                   <TableHead className="text-center">Keluar</TableHead>
                   <TableHead className="text-right">Saldo</TableHead>
-                  <TableHead className="text-right">Nilai</TableHead>
+                  <TableHead className="text-right">NILAI MUTASI</TableHead>
                   <TableHead>Sumber</TableHead>
                 </TableRow>
               </TableHeader>
@@ -288,6 +291,10 @@ export default function InventoryLedger({ store }) {
                         <div className="flex flex-col">
                           <span className="font-medium text-slate-900 dark:text-slate-100">{m.product_name}</span>
                           <span className="text-xs text-slate-500 dark:text-slate-400">SKU-{m.sku}</span>
+                          <span className="text-[10px] text-slate-500 mt-1 flex items-center gap-1 font-medium bg-slate-100 dark:bg-slate-800 w-max px-1.5 py-0.5 rounded">
+                            <MapPin className="w-3 h-3 text-emerald-600" />
+                            {m.warehouse_name}
+                          </span>
                           {m.batch_number && (
                             <div className="flex gap-2 mt-1">
                               <Badge variant="outline" className="text-[9px] bg-slate-50 text-slate-600 border-slate-200 uppercase tracking-tighter">Batch: {m.batch_number}</Badge>
@@ -307,17 +314,17 @@ export default function InventoryLedger({ store }) {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        {m.movement_type === 'in' ? (
+                        {(m.movement_type || '').toLowerCase() === 'in' ? (
                           <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none">Masuk</Badge>
                         ) : (
                           <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-none">Keluar</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        <span className="text-blue-600 font-medium">{m.movement_type === 'in' ? `+${m.quantity}` : '-'}</span>
+                        <span className="text-blue-600 font-medium">{(m.movement_type || '').toLowerCase() === 'in' ? `+${m.quantity}` : '-'}</span>
                       </TableCell>
                       <TableCell className="text-center">
-                        <span className="text-red-600 font-medium">{m.movement_type === 'out' ? `-${m.quantity}` : '-'}</span>
+                        <span className="text-red-600 font-medium">{(m.movement_type || '').toLowerCase() === 'out' ? `-${m.quantity}` : '-'}</span>
                       </TableCell>
                       <TableCell className="text-right font-bold text-slate-800 dark:text-slate-100">
                         {m.running_balance}
