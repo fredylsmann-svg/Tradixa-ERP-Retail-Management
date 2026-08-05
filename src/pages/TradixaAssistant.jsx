@@ -471,7 +471,7 @@ export default function TradixaAssistant({ store }) {
       {/* Main Chat Area */}
       <Card className="flex-1 flex flex-col overflow-hidden relative">
         {isAiLocked && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-8 text-center bg-white/80 backdrop-blur-sm rounded-3xl">
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center p-8 text-center bg-white/80 backdrop-blur-sm rounded-3xl">
             <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-6 shadow-inner">
               <Lock className="w-10 h-10 text-slate-400" />
             </div>

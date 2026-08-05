@@ -18,7 +18,7 @@ const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-[70] bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props} />
@@ -34,14 +34,14 @@ const DialogContent = React.forwardRef(({ className, children, hideClose = false
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed left-[50%] top-[50%] z-[70] grid w-[95vw] sm:w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] overflow-y-auto overflow-x-hidden",
+          "fixed left-[50%] top-[50%] z-50 grid w-[95vw] sm:w-full translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] overflow-y-auto overflow-x-hidden",
           !isFullscreen && "max-w-lg rounded-2xl sm:rounded-lg max-h-[90vh]",
           className,
           isFullscreen && "!max-w-[95vw] !w-[95vw] !h-[95vh] !max-h-[95vh] !rounded-2xl md:!p-10 text-lg [&_input]:text-lg [&_input]:h-14 [&_label]:text-base [&_h2]:text-3xl [&_td]:text-base [&_th]:text-base"
         )}
         {...props}>
         {(!hideFullscreen || !hideClose) && (
-          <div className="flex justify-end -mb-4 sm:absolute sm:right-3 sm:top-3 sm:mb-0 z-[70]">
+          <div className="flex justify-end -mb-4 sm:absolute sm:right-3 sm:top-3 sm:mb-0 z-50">
             <div className="flex items-center gap-1 bg-white/90 dark:bg-slate-800 backdrop-blur-md p-1 rounded-full shadow-sm border border-slate-200 dark:border-slate-700">
               {!hideFullscreen && (
                 <button

@@ -518,7 +518,7 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
       )}
 
       <aside className={cn(
-        "lg:hidden fixed inset-y-0 left-0 z-[60] w-72 bg-white dark:bg-slate-900 transform transition-transform duration-300 flex flex-col",
+        "lg:hidden fixed inset-y-0 left-0 z-[45] w-72 bg-white dark:bg-slate-900 transform transition-transform duration-300 flex flex-col",
         isMobileOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         {/* X Close button removed as per user request */}

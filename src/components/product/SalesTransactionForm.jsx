@@ -81,7 +81,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
   // Multi-UoM POS Selection States
   const [showUomModal, setShowUomModal] = useState(false);
   const [selectedProductForUom, setSelectedProductForUom] = useState(null);
-  
+
   // EDC Integration States
   const [edcIntegrationType, setEdcIntegrationType] = useState(settings?.defaultEdcIntegration || 'Manual'); // Manual | Local
   const [traceNumber, setTraceNumber] = useState('');
@@ -370,10 +370,10 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
 
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          p.barcode?.toLowerCase().includes(searchQuery.toLowerCase());
-                          
+      p.barcode?.toLowerCase().includes(searchQuery.toLowerCase());
+
     let matchesLocation = false;
-    
+
     if (posMode === 'store') {
       if (!saleLocation || saleLocation === 'none') {
         matchesLocation = false; // Wajib pilih toko, jika tidak kosongkan etalase
@@ -387,10 +387,10 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
       }
     } else {
       // Canvassing Mode
-      matchesLocation = (!canvassingWarehouse || canvassingWarehouse === 'none') || 
-                        (p.warehouse_name === canvassingWarehouse);
+      matchesLocation = (!canvassingWarehouse || canvassingWarehouse === 'none') ||
+        (p.warehouse_name === canvassingWarehouse);
     }
-    
+
     return matchesSearch && matchesLocation;
   });
 
@@ -454,7 +454,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
     const totalBaseQtyInCartOfOtherUnits = cart
       .filter(item => item.product_id === product.id && item.cart_item_id !== cartItemId)
       .reduce((sum, item) => sum + (item.quantity * (item.qty_per_base || 1)), 0);
-    
+
     const availablePhysicalPcs = product.stock - totalBaseQtyInCartOfOtherUnits;
     const maxQtyAllowed = Math.floor(availablePhysicalPcs / chosenUom.qty_per_base);
 
@@ -506,15 +506,15 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
       if (item.cart_item_id === cartItemId) {
         const product = products.find(p => p.id === item.product_id);
         if (!product) return item;
-        
+
         // Calculate total physical base pcs in cart excluding this specific item
         const otherBaseQty = prevCart
           .filter(x => x.product_id === item.product_id && x.cart_item_id !== cartItemId)
           .reduce((sum, x) => sum + (x.quantity * (x.qty_per_base || 1)), 0);
-          
+
         const availableBase = product.stock - otherBaseQty;
         const maxUomQty = Math.floor(availableBase / (item.qty_per_base || 1));
-        
+
         const newQty = Math.max(1, Math.min(maxUomQty, item.quantity + delta));
         return { ...item, quantity: newQty, subtotal: newQty * item.unit_price, max_stock: maxUomQty };
       }
@@ -528,17 +528,17 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
         if (value === '') {
           return { ...item, quantity: '', subtotal: 0 };
         }
-        
+
         const product = products.find(p => p.id === item.product_id);
         if (!product) return item;
-        
+
         const otherBaseQty = prevCart
           .filter(x => x.product_id === item.product_id && x.cart_item_id !== cartItemId)
           .reduce((sum, x) => sum + (x.quantity * (x.qty_per_base || 1)), 0);
-          
+
         const availableBase = product.stock - otherBaseQty;
         const maxUomQty = Math.floor(availableBase / (item.qty_per_base || 1));
-        
+
         let newQty = parseInt(value, 10);
         if (isNaN(newQty) || newQty < 0) newQty = 0;
         newQty = Math.min(maxUomQty, newQty);
@@ -782,7 +782,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
           const effectiveName = (customerName && customerName !== 'Walk-in Customer') ? customerName : (activeStore?.store_name || 'Pelanggan');
           const effectiveEmail = customerEmail || activeStore?.email || 'pos@tradixa.com';
           const effectivePhone = customerPhone || activeStore?.phone || '6281000000000';
-          
+
           const { data, error } = await api.client.functions.invoke('mayar-create-link', {
             body: {
               store_id: storeId,
@@ -823,10 +823,10 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
           return; // Abort transaction creation if QRIS fails
         }
       } else {
-        toast({ 
-          title: 'Konfigurasi Belum Lengkap', 
-          description: 'Anda belum memasukkan Mayar API Key atau mengunggah QRIS Statis di menu Settings. Silakan atur terlebih dahulu untuk menggunakan QRIS.', 
-          variant: 'destructive' 
+        toast({
+          title: 'Konfigurasi Belum Lengkap',
+          description: 'Anda belum memasukkan Mayar API Key atau mengunggah QRIS Statis di menu Settings. Silakan atur terlebih dahulu untuk menggunakan QRIS.',
+          variant: 'destructive'
         });
         setIsLoading(false);
         return;
@@ -1037,7 +1037,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
         if (product.tracking_type === 'Batch') {
           // FEFO Logic
           const allocationResult = await allocateBatches(storeId, item.product_id, baseQtyToDeduct);
-          
+
           // Collect near-expiry warnings
           if (allocationResult.warnings?.length > 0) {
             allFefoWarnings.push(...allocationResult.warnings);
@@ -1079,7 +1079,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
         } else if (product.tracking_type === 'Serial') {
           // Serial Logic
           const assignedSerials = serialAssignments[item.product_id] || [];
-          
+
           for (const sNumber of assignedSerials) {
             // Find the specific serial record
             const serialRecords = await api.entities.InventorySerial.filter({ store_id: storeId, serial_number: sNumber, status: 'Available' });
@@ -1244,7 +1244,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
 
     try {
       setIsLoading(true);
-      
+
       // Update Sales Transaction
       const updatedTx = await api.entities.SalesTransaction.update(completedTransaction.id, {
         payment_status: 'Paid',
@@ -1394,8 +1394,8 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        const exactMatch = filteredProducts.find(p => 
-                          (p.barcode && p.barcode.toLowerCase() === searchQuery.toLowerCase()) || 
+                        const exactMatch = filteredProducts.find(p =>
+                          (p.barcode && p.barcode.toLowerCase() === searchQuery.toLowerCase()) ||
                           (p.sku && p.sku.toLowerCase() === searchQuery.toLowerCase())
                         );
                         if (exactMatch && exactMatch.stock > 0) {
@@ -1417,6 +1417,23 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
               <div className="flex-1 overflow-hidden">
                 <ScrollArea className="h-full w-full">
                   <div className="p-6">
+                    {filteredProducts.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center text-center py-32 px-6">
+                        <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 shadow-inner border border-slate-100">
+                          <Package className="w-12 h-12 text-slate-300" />
+                        </div>
+                        <h3 className="text-xl font-black text-slate-800 mb-3 tracking-wide">
+                          {(posMode === 'store' && (!saleLocation || saleLocation === 'none')) 
+                            ? "Etalase Kasir Kosong" 
+                            : "Produk Tidak Ditemukan"}
+                        </h3>
+                        <p className="text-sm text-slate-500 font-medium max-w-md leading-relaxed">
+                          {(posMode === 'store' && (!saleLocation || saleLocation === 'none'))
+                            ? "Anda sedang berada di mode 'Tanpa Lokasi'. Untuk menampilkan barang, silakan pilih lokasi penjualan Anda di Pengaturan Mesin Kasir. Jika toko/gudang belum ada, buat terlebih dahulu di modul Location Settings."
+                            : "Tidak ada produk yang cocok dengan pencarian atau filter lokasi Anda saat ini."}
+                        </p>
+                      </div>
+                    ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 gap-6 pb-10">
                       {filteredProducts.map(product => {
                         const totalBaseQtyInCart = cart
@@ -1460,23 +1477,24 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                               </div>
                             </div>
 
-                          <div className="p-4 space-y-1">
-                            <p className="font-bold text-slate-800 text-sm leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
-                              {product.name}
-                            </p>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                              {product.sku || 'N/A'}
-                            </p>
-                          </div>
+                            <div className="p-4 space-y-1">
+                              <p className="font-bold text-slate-800 text-sm leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors">
+                                {product.name}
+                              </p>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                {product.sku || 'N/A'}
+                              </p>
+                            </div>
 
-                          {/* Quick Add Overlay */}
-                          {!isOutOfStock && (
-                            <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/5 transition-colors pointer-events-none" />
-                          )}
-                        </div>
+                            {/* Quick Add Overlay */}
+                            {!isOutOfStock && (
+                              <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/5 transition-colors pointer-events-none" />
+                            )}
+                          </div>
                         );
                       })}
                     </div>
+                    )}
                   </div>
                 </ScrollArea>
               </div>
@@ -1507,7 +1525,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                         <span className="text-xs font-bold text-violet-700 dark:text-violet-400 uppercase tracking-wider">Menunggu Pembayaran GPN</span>
                       </div>
                       <p className="text-sm text-slate-500 max-w-xs">Minta pelanggan scan QRIS Statis di bawah untuk membayar.</p>
-                      
+
                       {/* Static GPN QRIS Standee */}
                       <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 w-full max-w-xs mx-auto">
                         <img
@@ -1562,7 +1580,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                         <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">Menunggu Pembayaran</span>
                       </div>
                       <p className="text-sm text-slate-500 max-w-xs">Minta pelanggan scan QRIS di bawah untuk membayar.</p>
-                      
+
                       {/* QRIS - Real dari Mayar atau fallback ke URL QR */}
                       <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                         <img
@@ -1668,8 +1686,8 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                     </div>
                     <div className="space-y-1.5 flex flex-col justify-end">
                       <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pengaturan Mesin Kasir</Label>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => setShowPosSettings(true)}
                         className={`h-10 w-full justify-between px-3 ${!saleLocation && posMode === 'store' ? 'border-red-400 bg-red-50 text-red-600 animate-pulse' : 'border-slate-200 bg-slate-50'}`}
                       >
@@ -2192,7 +2210,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                   setIsLoading(true);
                   let allValid = true;
                   let errMsg = '';
-                  
+
                   for (const item of serialTrackedItemsInCart) {
                     const assigned = serialAssignments[item.product_id] || [];
                     const validAssigned = assigned.filter(s => s && s.trim() !== '');
@@ -2201,7 +2219,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                       errMsg = `Produk ${item.product_name} masih kurang nomor seri!`;
                       break;
                     }
-                    
+
                     // Verify if each serial is Available
                     for (const s of validAssigned) {
                       const records = await api.entities.InventorySerial.filter({ store_id: storeId, serial_number: s, status: 'Available' });
@@ -2212,14 +2230,14 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                       }
                     }
                   }
-                  
+
                   setIsLoading(false);
-                  
+
                   if (!allValid) {
                     toast({ title: 'Gagal Verifikasi Seri', description: errMsg, variant: 'destructive' });
                     return;
                   }
-                  
+
                   setShowSerialModal(false);
                   handleSubmit(); // Process actual checkout
                 }}
@@ -2371,11 +2389,11 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                       .filter(x => x.product_id === selectedProductForUom.id)
                       .reduce((sum, x) => sum + (x.quantity * (x.qty_per_base || 1)), 0);
                     const remainingBaseStock = selectedProductForUom.stock - totalBaseQtyInCart;
-                    
+
                     const convertedStock = Math.floor(remainingBaseStock / uom.qty_per_base);
                     const remainderPcs = remainingBaseStock % uom.qty_per_base;
                     const isAvailable = convertedStock > 0;
-                    
+
                     return (
                       <button
                         key={idx}
@@ -2385,11 +2403,10 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                           setShowUomModal(false);
                           setSelectedProductForUom(null);
                         }}
-                        className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
-                          isAvailable
+                        className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${isAvailable
                             ? 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-lg active:scale-[0.99] cursor-pointer'
                             : 'bg-slate-50/50 dark:bg-slate-800/10 border-slate-50 dark:border-slate-800/20 opacity-50 cursor-not-allowed'
-                        }`}
+                          }`}
                       >
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
@@ -2475,7 +2492,7 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
               Konfigurasi mode operasional dan sumber stok
             </p>
           </div>
-          
+
           <div className="p-6 space-y-6">
             <div className="space-y-3">
               <Label className="text-xs font-black uppercase text-slate-400 tracking-widest">Mode Operasional</Label>
@@ -2510,8 +2527,8 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                 <Label className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
                   <Store className="w-3.5 h-3.5" /> Pilih Lokasi Toko
                 </Label>
-                <Select 
-                  value={saleLocation} 
+                <Select
+                  value={saleLocation}
                   onValueChange={(val) => {
                     setSaleLocation(val);
                     localStorage.setItem('tradixa_pos_location', val);
@@ -2536,8 +2553,8 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
                 <Label className="text-xs font-bold text-orange-700 flex items-center gap-1.5">
                   <Truck className="w-3.5 h-3.5" /> Gudang Sumber (Bawaan)
                 </Label>
-                <Select 
-                  value={canvassingWarehouse} 
+                <Select
+                  value={canvassingWarehouse}
                   onValueChange={(val) => {
                     setCanvassingWarehouse(val);
                     localStorage.setItem('tradixa_pos_canvassing_warehouse', val);
@@ -2559,9 +2576,18 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
               </div>
             )}
 
-            <Button 
+            <Button
               className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold"
-              onClick={() => setShowPosSettings(false)}
+              onClick={() => {
+                setShowPosSettings(false);
+                if (posMode === 'store' && (!saleLocation || saleLocation === 'none')) {
+                  toast({
+                    title: "Lokasi Kasir Kosong",
+                    description: "Anda memilih 'Tanpa Lokasi'. Etalase produk akan kosong. Silakan tambahkan Lokasi Penyimpanan di modul Location Settings jika Anda ingin berjualan barang fisik.",
+                    duration: 6000,
+                  });
+                }
+              }}
             >
               Tutup & Terapkan
             </Button>
