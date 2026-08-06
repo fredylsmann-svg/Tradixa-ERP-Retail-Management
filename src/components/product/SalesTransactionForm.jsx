@@ -260,10 +260,9 @@ export default function SalesTransactionForm({ open, onClose, store, onSuccess }
     }
 
     // Check if discount is active
-    const now = new Date();
-    const start = new Date(disc.start_date);
-    const end = new Date(disc.end_date);
-    if (now < start || now > end) {
+    // FIX: Gunakan perbandingan String (YYYY-MM-DD) lokal, bukan new Date() yang dipengaruhi zona waktu (UTC).
+    const nowStr = new Date().toLocaleDateString('en-CA'); // en-CA menghasilkan format YYYY-MM-DD
+    if (nowStr < disc.start_date || nowStr > disc.end_date) {
       toast({
         variant: "destructive",
         title: "Diskon Tidak Berlaku",

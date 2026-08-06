@@ -187,10 +187,9 @@ export default function DiscountManagement({ store }) {
   };
 
   const isDiscountActive = (discount) => {
-    const now = new Date();
-    const start = new Date(discount.start_date);
-    const end = new Date(discount.end_date);
-    return discount.is_active && now >= start && now <= end;
+    // FIX: Gunakan perbandingan String (YYYY-MM-DD) lokal, bukan new Date() yang dipengaruhi zona waktu (UTC).
+    const nowStr = new Date().toLocaleDateString('en-CA'); // en-CA menghasilkan format YYYY-MM-DD
+    return discount.is_active && nowStr >= discount.start_date && nowStr <= discount.end_date;
   };
 
   if (isLoading) {
