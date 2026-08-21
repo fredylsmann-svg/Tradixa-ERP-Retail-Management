@@ -251,7 +251,8 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
     // Quick Access items
     const quickItems = (quickAccessItems || [])
       .map(key => allItems.find(item => item.page === key || item.name === key))
-      .filter(Boolean);
+      .filter(Boolean)
+      .filter(item => !hiddenModules.includes(item.name));
 
     const quickAccessGroup = {
       title: 'Quick Access',
@@ -266,40 +267,67 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
       items: group.items.filter(item => !hiddenModules.includes(item.name))
     })).filter(group => group.items.length > 0);
 
-    // Create a special group for hidden modules
-    const hiddenItems = allItems.filter(item => hiddenModules.includes(item.name));
-    if (hiddenItems.length > 0) {
-      visibleGroups.push({
-        title: 'Hidden Modules',
-        icon: PanelLeftClose,
-        isHiddenGroup: true,
-        items: hiddenItems
-      });
-    }
-
     return [quickAccessGroup, ...visibleGroups];
   }, [menuGroups, quickAccessItems, hiddenModules]);
 
-  const [expandedGroups, setExpandedGroups] = useState({});
+  const [expandedGroups, setExpandedGroups] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const saved = localStorage.getItem('sidebar_expanded_groups');
+        return saved ? JSON.parse(saved) : {};
+      }
+      return {};
+    } catch (e) {
+      return {};
+    }
+  });
+  
   const scrollContainerRef = React.useRef(null);
   const scrollPositionRef = React.useRef(0);
 
   useEffect(() => {
-    const initialExpanded = {};
-    finalMenuGroups.forEach(group => {
-      initialExpanded[group.title] = true;
+    // Only initialize groups that haven't been saved in localStorage yet
+    setExpandedGroups(prev => {
+      const newExpanded = { ...prev };
+      let hasChanges = false;
+      finalMenuGroups.forEach(group => {
+        if (newExpanded[group.title] === undefined) {
+          newExpanded[group.title] = true; // Default is open
+          hasChanges = true;
+        }
+      });
+      if (hasChanges) {
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem('sidebar_expanded_groups', JSON.stringify(newExpanded));
+          }
+        } catch (e) {
+          console.warn('Failed to save sidebar state', e);
+        }
+        return newExpanded;
+      }
+      return prev;
     });
-    setExpandedGroups(initialExpanded);
   }, [finalMenuGroups]);
 
   const toggleGroup = (e, title) => {
     e.preventDefault();
     e.stopPropagation();
 
-    setExpandedGroups(prev => ({
-      ...prev,
-      [title]: !prev[title]
-    }));
+    setExpandedGroups(prev => {
+      const newState = {
+        ...prev,
+        [title]: !prev[title]
+      };
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.setItem('sidebar_expanded_groups', JSON.stringify(newState));
+        }
+      } catch (e) {
+        console.warn('Failed to save sidebar state', e);
+      }
+      return newState;
+    });
   };
 
   // Collapsed icon-only content for desktop
