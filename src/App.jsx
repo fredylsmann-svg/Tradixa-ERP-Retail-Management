@@ -77,34 +77,34 @@ const RecoveryFallback = () => (
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoadingAuth, authTimedOut } = useAuth();
-  
+
   if (authTimedOut) {
     return <RecoveryFallback />;
   }
-  
+
   if (isLoadingAuth) {
     return <LoadingFallback />;
   }
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  
+
   return children;
 };
 
 // Login Route Guard Component
 const LoginRoute = () => {
   const { isAuthenticated, isLoadingAuth } = useAuth();
-  
+
   if (isLoadingAuth) {
     return <LoadingFallback />;
   }
-  
+
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
-  
+
   return <Login />;
 };
 
@@ -131,7 +131,7 @@ const AppVisibilityCover = () => {
     window.addEventListener("focus", hideCover);
     window.addEventListener("pagehide", showCover);
     window.addEventListener("pageshow", hideCover);
-    
+
     // Check initial state
     handleVisibilityChange();
 
@@ -156,12 +156,12 @@ const AppVisibilityCover = () => {
 function App() {
   useEffect(() => {
     let unsubscribe = null;
-    
+
     // Tunggu sampai Firebase selesai inisialisasi
     onForegroundMessage().then((unsub) => {
       if (unsub) unsubscribe = unsub;
     });
-    
+
     return () => {
       if (typeof unsubscribe === 'function') {
         unsubscribe();
@@ -171,117 +171,117 @@ function App() {
 
   return (
     <DateProvider>
-    <AuthProvider>
-    <UserPreferencesProvider>
-    <SettingsProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AppVisibilityCover />
-          <NavigationTracker />
-          <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            {/* Public Login Route */}
-            <Route path="/login" element={<LoginRoute />} />
-            
-            {/* Public Staff Registration Route */}
-            <Route path="/register" element={<StaffRegister />} />
-            
-            {/* Public Business Sign Up Route */}
-            <Route path="/signup" element={<SignUp />} />
+      <AuthProvider>
+        <UserPreferencesProvider>
+          <SettingsProvider>
+            <QueryClientProvider client={queryClientInstance}>
+              <Router>
+                <AppVisibilityCover />
+                <NavigationTracker />
+                <Suspense fallback={<LoadingFallback />}>
+                  <Routes>
+                    {/* Public Login Route */}
+                    <Route path="/login" element={<LoginRoute />} />
 
-            {/* Public Reset Password Route */}
-            <Route path="/reset-password" element={<ResetPassword />} />
-            
-            {/* Public PO Signature Route */}
-            <Route path="/public/po/:id/sign" element={<PublicPOSign />} />
-            
-            {/* Public GRN Signature Route */}
-            <Route path="/public/grn/:id/sign" element={<PublicGRNSign />} />
-            
-            {/* Public GRN Manager Signature Route */}
-            <Route path="/public/grn-manager/:id/sign" element={<PublicGRNManagerSign />} />
-            
-            {/* Public Return Review Route */}
-            <Route path="/public/return/:id/review" element={<PublicReturnReview />} />
-            
-            {/* Public Invoice Route */}
-            <Route path="/public/invoice/:type/:id" element={<PublicInvoice />} />
+                    {/* Public Staff Registration Route */}
+                    <Route path="/register" element={<StaffRegister />} />
 
-            {/* Public Courier Portal Route */}
-            <Route path="/public/delivery/:id/courier" element={<PublicCourierPortal />} />
+                    {/* Public Business Sign Up Route */}
+                    <Route path="/signup" element={<SignUp />} />
 
-            {/* Email Tracking Route */}
-            <Route path="/track/:type/:id" element={<PublicTracker />} />
+                    {/* Public Reset Password Route */}
+                    <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Chart of Accounts Route */}
-            <Route path="/ChartOfAccounts" element={
-              <ProtectedRoute>
-                <LayoutWrapper currentPageName="ChartOfAccounts">
-                  <Pages.ChartOfAccounts />
-                </LayoutWrapper>
-              </ProtectedRoute>
-            } />
+                    {/* Public PO Signature Route */}
+                    <Route path="/public/po/:id/sign" element={<PublicPOSign />} />
 
-            {/* Explicit Journal Detail Route */}
-            <Route path="/JournalEntries/:id" element={
-              <ProtectedRoute>
-                <LayoutWrapper currentPageName="JournalDetail">
-                  <Pages.JournalDetail />
-                </LayoutWrapper>
-              </ProtectedRoute>
-            } />
+                    {/* Public GRN Signature Route */}
+                    <Route path="/public/grn/:id/sign" element={<PublicGRNSign />} />
 
-            {/* Explicit Procurement Workflow Route */}
-            <Route path="/ProcurementWorkflow" element={
-              <ProtectedRoute>
-                <LayoutWrapper currentPageName="ProcurementWorkflow">
-                  <ProcurementWorkflow />
-                </LayoutWrapper>
-              </ProtectedRoute>
-            } />
+                    {/* Public GRN Manager Signature Route */}
+                    <Route path="/public/grn-manager/:id/sign" element={<PublicGRNManagerSign />} />
 
-            {/* Explicit Sales Workflow Route */}
-            <Route path="/SalesWorkflow" element={
-              <ProtectedRoute>
-                <LayoutWrapper currentPageName="SalesWorkflow">
-                  <SalesWorkflow />
-                </LayoutWrapper>
-              </ProtectedRoute>
-            } />
+                    {/* Public Return Review Route */}
+                    <Route path="/public/return/:id/review" element={<PublicReturnReview />} />
 
-            
-            {/* Protected Main Routings */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <LayoutWrapper currentPageName={mainPageKey}>
-                  <MainPage />
-                </LayoutWrapper>
-              </ProtectedRoute>
-            } />
-            
-            {Object.entries(Pages).map(([path, Page]) => (
-              <Route
-                key={path}
-                path={`/${path}`}
-                element={
-                  <ProtectedRoute>
-                    <LayoutWrapper currentPageName={path}>
-                      <Page />
-                    </LayoutWrapper>
-                  </ProtectedRoute>
-                }
-              />
-            ))}
-            
-            <Route path="*" element={<PageNotFound />} />
-          </Routes>
-          </Suspense>
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
-    </SettingsProvider>
-    </UserPreferencesProvider>
-    </AuthProvider>
+                    {/* Public Invoice Route */}
+                    <Route path="/public/invoice/:type/:id" element={<PublicInvoice />} />
+
+                    {/* Public Courier Portal Route */}
+                    <Route path="/public/delivery/:id/courier" element={<PublicCourierPortal />} />
+
+                    {/* Email Tracking Route */}
+                    <Route path="/track/:type/:id" element={<PublicTracker />} />
+
+                    {/* Chart of Accounts Route */}
+                    <Route path="/ChartOfAccounts" element={
+                      <ProtectedRoute>
+                        <LayoutWrapper currentPageName="ChartOfAccounts">
+                          <Pages.ChartOfAccounts />
+                        </LayoutWrapper>
+                      </ProtectedRoute>
+                    } />
+
+                    {/* Explicit Journal Detail Route */}
+                    <Route path="/JournalEntries/:id" element={
+                      <ProtectedRoute>
+                        <LayoutWrapper currentPageName="JournalDetail">
+                          <Pages.JournalDetail />
+                        </LayoutWrapper>
+                      </ProtectedRoute>
+                    } />
+
+                    {/* Explicit Procurement Workflow Route */}
+                    <Route path="/ProcurementWorkflow" element={
+                      <ProtectedRoute>
+                        <LayoutWrapper currentPageName="ProcurementWorkflow">
+                          <ProcurementWorkflow />
+                        </LayoutWrapper>
+                      </ProtectedRoute>
+                    } />
+
+                    {/* Explicit Sales Workflow Route */}
+                    <Route path="/SalesWorkflow" element={
+                      <ProtectedRoute>
+                        <LayoutWrapper currentPageName="SalesWorkflow">
+                          <SalesWorkflow />
+                        </LayoutWrapper>
+                      </ProtectedRoute>
+                    } />
+
+
+                    {/* Protected Main Routings */}
+                    <Route path="/" element={
+                      <ProtectedRoute>
+                        <LayoutWrapper currentPageName={mainPageKey}>
+                          <MainPage />
+                        </LayoutWrapper>
+                      </ProtectedRoute>
+                    } />
+
+                    {Object.entries(Pages).map(([path, Page]) => (
+                      <Route
+                        key={path}
+                        path={`/${path}`}
+                        element={
+                          <ProtectedRoute>
+                            <LayoutWrapper currentPageName={path}>
+                              <Page />
+                            </LayoutWrapper>
+                          </ProtectedRoute>
+                        }
+                      />
+                    ))}
+
+                    <Route path="*" element={<PageNotFound />} />
+                  </Routes>
+                </Suspense>
+              </Router>
+              <Toaster />
+            </QueryClientProvider>
+          </SettingsProvider>
+        </UserPreferencesProvider>
+      </AuthProvider>
     </DateProvider>
   )
 }

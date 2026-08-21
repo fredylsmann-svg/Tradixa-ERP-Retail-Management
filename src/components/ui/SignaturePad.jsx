@@ -78,7 +78,7 @@ export default function SignaturePad({ onSave, onClear, title = "Tanda Tangan", 
   };
 
   const startDrawing = (e) => {
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     const { x, y } = getPointerPos(e);
     const ctx = canvasRef.current.getContext('2d');
     ctx.beginPath();
@@ -89,7 +89,7 @@ export default function SignaturePad({ onSave, onClear, title = "Tanda Tangan", 
 
   const draw = (e) => {
     if (!isDrawing) return;
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     const { x, y } = getPointerPos(e);
     const ctx = canvasRef.current.getContext('2d');
     ctx.lineTo(x, y);

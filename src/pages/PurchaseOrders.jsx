@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Plus, Eye, ClipboardList, Trash2, Loader2, Send, X, FileText, ChevronRight, Check, Printer, Smartphone, History, Signature, XCircle, CheckCircle2, MessageSquare, ExternalLink, Calendar, UserCircle, Building2, Mail, Phone, Calculator, Clock, Search, ShoppingCart, FileSearch, Info, Save, HelpCircle, Truck, ChevronDown } from 'lucide-react';
+import { Plus, Eye, ClipboardList, Trash2, Loader2, Send, X, FileText, ChevronRight, Check, Printer, Smartphone, History, Signature, XCircle, CheckCircle2, MessageSquare, ExternalLink, Calendar, UserCircle, Building2, Mail, Phone, Calculator, Clock, Search, ShoppingCart, FileSearch, Info, Save, HelpCircle, Truck, ChevronDown, ArrowLeftRight } from 'lucide-react';
 import { getDocumentTemplate } from '@/utils/documentTemplates';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -92,6 +92,7 @@ export default function PurchaseOrders({ store }) {
   const [negotiationItems, setNegotiationItems] = useState([]);
   const [signatureHistory, setSignatureHistory] = useState([]);
   const [showPORefreshGuide, setShowPORefreshGuide] = useState(false);
+  const [showComparisonHistory, setShowComparisonHistory] = useState(false);
 
   useEffect(() => {
     if (viewingOrder) {
@@ -471,10 +472,19 @@ export default function PurchaseOrders({ store }) {
           detail: `PO dikirim ke WhatsApp supplier (${supplier.name})`
         };
 
-        await api.entities.PurchaseOrder.update(order.id, {
+        const updatePayload = {
           status: 'Sent',
           approval_history: [...(order.approval_history || []), historyEntry]
-        });
+        };
+
+        // Jika re-send dari Negotiation, hapus tanda tangan lama supplier
+        // agar portal tidak salah menampilkan "Pesanan Telah Disetujui"
+        if (order.status === 'Negotiation') {
+          updatePayload.supplier_signature = null;
+          updatePayload.supplier_signed_at = null;
+        }
+
+        await api.entities.PurchaseOrder.update(order.id, updatePayload);
 
         // Refresh local data if we are viewing this order
         if (viewingOrder?.id === order.id) {
@@ -603,33 +613,74 @@ export default function PurchaseOrders({ store }) {
     if (!viewingOrder) return;
     setIsSaving(true);
 
-    const newSubtotal = negotiationItems.reduce((acc, curr) => acc + ((curr.proposed_qty || curr.quantity) * curr.unit_price), 0);
+    const itemsToSave = negotiationItems.map(item => ({
+      ...item,
+      quantity: item.proposed_qty || item.quantity
+    }));
+
+    const newSubtotal = itemsToSave.reduce((acc, curr) => acc + (curr.quantity * curr.unit_price), 0);
     const newTax = viewingOrder.tax_amount > 0 ? newSubtotal * ppnDecimal : 0;
     const newTotal = newSubtotal + newTax;
 
     const historyEntry = {
       time_wib: getWIBTimestamp(),
       activity: 'Admin Revision',
-      detail: `Admin menyimpan revisi harga hasil negosiasi.`,
+      detail: `Admin menyimpan revisi harga hasil negosiasi. Total negosiasi: Rp ${formatCurrency(newTotal)}`,
       type: 'negotiation'
     };
     const updatedHistory = [...(viewingOrder.approval_history || []), historyEntry];
 
+    // Simpan harga awal PO hanya sekali (pertama kali revisi)
+    // Agar harga asli tidak pernah hilang untuk referensi
+    const preserveOriginal = {};
+    if (!viewingOrder.original_items) {
+      preserveOriginal.original_items = JSON.parse(JSON.stringify(viewingOrder.items));
+      preserveOriginal.original_subtotal = viewingOrder.subtotal;
+      preserveOriginal.original_tax = viewingOrder.tax_amount;
+      preserveOriginal.original_total = viewingOrder.total;
+    }
+
+    // Cek apakah admin benar-benar merubah harga/qty dari yang diajukan supplier
+    let isChangedFromSupplier = false;
+    if (itemsToSave.length !== viewingOrder.items.length) {
+      isChangedFromSupplier = true;
+    } else {
+      for (let i = 0; i < itemsToSave.length; i++) {
+        const supplierQty = viewingOrder.items[i].proposed_qty || viewingOrder.items[i].quantity;
+        const supplierPrice = viewingOrder.items[i].unit_price;
+        
+        if (itemsToSave[i].quantity !== supplierQty || itemsToSave[i].unit_price !== supplierPrice) {
+          isChangedFromSupplier = true;
+          break;
+        }
+      }
+    }
+
+    const signatureUpdates = isChangedFromSupplier ? {
+      supplier_signature: null,
+      supplier_signed_at: null
+    } : {};
+
     await api.entities.PurchaseOrder.update(viewingOrder.id, {
-      items: negotiationItems,
+      ...preserveOriginal,
+      // Update items & total utama juga agar portal supplier melihat harga terbaru
+      items: itemsToSave,
       subtotal: newSubtotal,
       tax_amount: newTax,
       total: newTotal,
-      approval_history: updatedHistory
+      approval_history: updatedHistory,
+      ...signatureUpdates
     });
 
     setViewingOrder({
       ...viewingOrder,
-      items: negotiationItems,
+      ...preserveOriginal,
+      items: itemsToSave,
       subtotal: newSubtotal,
       tax_amount: newTax,
       total: newTotal,
-      approval_history: updatedHistory
+      approval_history: updatedHistory,
+      ...signatureUpdates
     });
 
     setIsSaving(false);
@@ -1500,7 +1551,7 @@ export default function PurchaseOrders({ store }) {
                     <CardHeader className="bg-white border-b py-4 px-6 flex flex-row items-center justify-between">
                       <CardTitle className="text-sm font-bold text-slate-800 flex items-center gap-2">
                         <ShoppingCart className="w-4 h-4 text-blue-500" />
-                        {viewingOrder?.status === 'Negotiation' ? 'Item Pesanan (Harga Awal)' : 'Item Pesanan'}
+                        Item Pesanan
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0 bg-white">
@@ -1516,7 +1567,7 @@ export default function PurchaseOrders({ store }) {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {(viewingOrder?.status === 'Negotiation' ? (viewingOrder?.original_items || viewingOrder?.items || []) : (viewingOrder?.items || [])).map((item, idx) => (
+                            {(viewingOrder?.items || []).map((item, idx) => (
                               <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors">
                                 <TableCell className="pl-6">
                                   <div className="font-bold text-slate-700">{item.product_name || 'Tanpa Nama'}</div>
@@ -1537,25 +1588,25 @@ export default function PurchaseOrders({ store }) {
                       </div>
                       <div className="p-6 bg-slate-50/30">
                         {(() => {
-                          const origItems = viewingOrder?.status === 'Negotiation' ? (viewingOrder?.original_items || viewingOrder?.items || []) : (viewingOrder?.items || []);
-                          const origSubtotal = origItems.reduce((sum, i) => sum + ((i.proposed_qty || i.quantity) * i.unit_price), 0);
-                          const origTax = viewingOrder?.tax_amount > 0 ? origSubtotal * ppnDecimal : 0;
-                          const origTotal = origSubtotal + origTax;
+                          const currentItems = viewingOrder?.items || [];
+                          const currentSubtotal = currentItems.reduce((sum, i) => sum + ((i.proposed_qty || i.quantity) * i.unit_price), 0);
+                          const currentTax = viewingOrder?.tax_amount > 0 ? currentSubtotal * ppnDecimal : 0;
+                          const currentTotal = currentSubtotal + currentTax;
                           return (
                             <div className="flex flex-col items-end gap-2">
                               <div className="flex gap-12 text-sm text-slate-500">
                                 <span>Subtotal</span>
-                                <span className="font-semibold text-slate-800 w-32 text-right">Rp {formatCurrency(origSubtotal)}</span>
+                                <span className="font-semibold text-slate-800 w-32 text-right">Rp {formatCurrency(currentSubtotal)}</span>
                               </div>
-                              {viewingOrder?.tax_amount > 0 && (
+                              {currentTax > 0 && (
                                 <div className="flex gap-12 text-sm text-slate-500">
                                   <span>{ppnLabel}</span>
-                                  <span className="font-semibold text-slate-800 w-32 text-right">Rp {formatCurrency(origTax)}</span>
+                                  <span className="font-semibold text-slate-800 w-32 text-right">Rp {formatCurrency(currentTax)}</span>
                                 </div>
                               )}
                               <div className="flex gap-12 text-lg pt-2 border-t mt-2">
-                                <span className="font-black text-slate-800 uppercase tracking-tighter">Total Awal</span>
-                                <span className="font-black text-slate-900 w-32 text-right">Rp {formatCurrency(origTotal)}</span>
+                                <span className="font-black text-slate-800 uppercase tracking-tighter">Total</span>
+                                <span className="font-black text-slate-900 w-32 text-right">Rp {formatCurrency(currentTotal)}</span>
                               </div>
                             </div>
                           );
@@ -1563,6 +1614,117 @@ export default function PurchaseOrders({ store }) {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Perbandingan Harga Negosiasi */}
+                  {(() => {
+                    if (!viewingOrder?.original_items) return null;
+                    
+                    const hasChanges = viewingOrder.original_items.some((orig, idx) => {
+                      const current = viewingOrder.items[idx];
+                      if (!current) return false;
+                      const origQty = orig.quantity || 0;
+                      const newQty = current.proposed_qty || current.quantity || 0;
+                      return origQty !== newQty || orig.unit_price !== current.unit_price;
+                    });
+
+                    // Hide if not negotiating and no changes were actually made
+                    if (!hasChanges && viewingOrder.status !== 'Negotiation') return null;
+                    
+                    // Don't show "Final Disetujui" if it's still just a Draft
+                    const titleSuffix = viewingOrder.status === 'Negotiation' 
+                      ? 'Negosiasi Terkini' 
+                      : (['Draft', 'Pending Approval'].includes(viewingOrder.status) ? 'Harga Revisi' : 'Harga Final Disetujui');
+
+                    return (
+                      <Card className="border border-blue-200 shadow-sm overflow-hidden bg-blue-50/10 mt-6">
+                        <CardHeader 
+                          className="bg-white border-b py-4 px-6 cursor-pointer hover:bg-slate-50/50 transition-colors select-none"
+                          onClick={() => setShowComparisonHistory(!showComparisonHistory)}
+                        >
+                          <CardTitle className="text-sm font-bold text-blue-600 flex items-center justify-between">
+                            <span className="flex items-center gap-2">
+                              <ArrowLeftRight className="w-4 h-4" />
+                              Perbandingan Harga (Awal vs {titleSuffix})
+                            </span>
+                            <ChevronDown className={`w-4 h-4 text-blue-400 transition-transform duration-200 ${showComparisonHistory ? 'rotate-180' : ''}`} />
+                          </CardTitle>
+                        </CardHeader>
+                        <div className={`overflow-hidden transition-all duration-300 ${showComparisonHistory ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                        <CardContent className="p-0 bg-white">
+                        <div className="overflow-x-auto w-full -mx-4 px-4 sm:mx-0 sm:px-0">
+                          <Table>
+                            <TableHeader className="bg-slate-50/50">
+                              <TableRow>
+                                <TableHead className="pl-6">Deskripsi</TableHead>
+                                <TableHead className="text-center">Qty Awal</TableHead>
+                                <TableHead className="text-center">Qty Terkini</TableHead>
+                                <TableHead className="text-right">Harga Awal</TableHead>
+                                <TableHead className="text-right">Harga Terkini</TableHead>
+                                <TableHead className="text-right pr-6">Selisih</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {(viewingOrder?.items || []).map((item, idx) => {
+                                const orig = viewingOrder.original_items[idx];
+                                if (!orig) return null;
+                                const origQty = orig.quantity || 0;
+                                const newQty = item.proposed_qty || item.quantity || 0;
+                                const origPrice = orig.unit_price || 0;
+                                const newPrice = item.unit_price || 0;
+                                const origLineTotal = origQty * origPrice;
+                                const newLineTotal = newQty * newPrice;
+                                const diff = newLineTotal - origLineTotal;
+                                const qtyChanged = newQty !== origQty;
+                                const priceChanged = newPrice !== origPrice;
+                                return (
+                                  <TableRow key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                    <TableCell className="pl-6">
+                                      <div className="font-bold text-slate-700">{item.product_name}</div>
+                                    </TableCell>
+                                    <TableCell className="text-center text-slate-500">{origQty} {item.unit}</TableCell>
+                                    <TableCell className="text-center">
+                                      <span className={`font-bold ${qtyChanged ? 'text-amber-600' : 'text-slate-700'}`}>{newQty} {item.unit}</span>
+                                      {qtyChanged && <span className="text-[10px] ml-1 text-amber-500">({newQty > origQty ? '+' : ''}{newQty - origQty})</span>}
+                                    </TableCell>
+                                    <TableCell className="text-right text-slate-500">Rp {formatCurrency(origPrice)}</TableCell>
+                                    <TableCell className="text-right">
+                                      <span className={`font-bold ${priceChanged ? 'text-amber-600' : 'text-slate-700'}`}>Rp {formatCurrency(newPrice)}</span>
+                                    </TableCell>
+                                    <TableCell className={`text-right pr-6 font-bold ${diff > 0 ? 'text-red-500' : diff < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                      {diff === 0 ? '-' : `${diff > 0 ? '+' : ''}Rp ${formatCurrency(Math.abs(diff))}`}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                        <div className="p-4 bg-blue-50/30 border-t">
+                          {(() => {
+                            const origSubtotal = (viewingOrder.original_items || []).reduce((sum, i) => sum + (i.quantity * i.unit_price), 0);
+                            const origTax = (viewingOrder.original_tax != null ? viewingOrder.original_tax : viewingOrder.tax_amount) > 0 ? origSubtotal * ppnDecimal : 0;
+                            const origTotal = viewingOrder.original_total || (origSubtotal + origTax) || 0;
+                            const newTotal = viewingOrder.total || 0;
+                            const totalDiff = newTotal - origTotal;
+                            return (
+                              <div className="flex items-center justify-between">
+                                <div className="text-xs text-slate-500">
+                                  Total Awal: <span className="font-bold text-slate-700">Rp {formatCurrency(origTotal)}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <div className="text-sm font-black text-blue-700">
+                                    Total Terkini: Rp {formatCurrency(newTotal)}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </CardContent>
+                        </div>
+                    </Card>
+                    );
+                  })()}
 
                   {/* Negotiation Table — only visible after supplier submits negotiation */}
                   {viewingOrder?.status === 'Negotiation' && (
@@ -1598,7 +1760,7 @@ export default function PurchaseOrders({ store }) {
                                     </li>
                                     <li className="flex gap-3">
                                       <div className="w-5 h-5 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 text-[10px] font-bold">2</div>
-                                      <p className="text-xs text-slate-600">Jika <b>TIDAK SETUJU</b>, ubah harga di tabel, klik <b>"Simpan Revisi Harga"</b>, lalu gunakan tombol WA untuk ajukan penawaran baru.</p>
+                                      <p className="text-xs text-slate-600">Jika <b>TIDAK SETUJU</b>, ubah harga dan/atau kuantitas di tabel, klik <b>"Simpan Revisi Harga"</b>, lalu gunakan tombol WA untuk ajukan penawaran baru.</p>
                                     </li>
                                   </ul>
                                 </PopoverContent>
@@ -1613,7 +1775,7 @@ export default function PurchaseOrders({ store }) {
                             <TableHeader className="bg-slate-50/50">
                               <TableRow>
                                 <TableHead className="pl-6">Deskripsi</TableHead>
-                                <TableHead className="text-center">Qty</TableHead>
+                                <TableHead className="text-center">Qty Baru</TableHead>
                                 <TableHead className="text-right">Harga Baru</TableHead>
                                 <TableHead className="text-right pr-6">Total Baru</TableHead>
                               </TableRow>
@@ -1622,7 +1784,20 @@ export default function PurchaseOrders({ store }) {
                               {negotiationItems.map((item, idx) => (
                                 <TableRow key={idx}>
                                   <TableCell className="pl-6 font-medium text-slate-700">{item.product_name}</TableCell>
-                                  <TableCell className="text-center">{item.proposed_qty || item.quantity} {item.unit}</TableCell>
+                                  <TableCell className="text-center">
+                                    <NumberInput
+                                      value={item.proposed_qty || item.quantity}
+                                      onChange={e => {
+                                        const newArr = [...negotiationItems];
+                                        newArr[idx].proposed_qty = Number(e.target.value);
+                                        newArr[idx].subtotal = newArr[idx].proposed_qty * newArr[idx].unit_price;
+                                        setNegotiationItems(newArr);
+                                      }}
+                                      className="w-20 text-center h-8 inline-block"
+                                      min={1}
+                                    />
+                                    <span className="text-xs text-slate-400 ml-1">{item.unit}</span>
+                                  </TableCell>
                                   <TableCell className="text-right">
                                     <NumberInput
                                       value={item.unit_price}

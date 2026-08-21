@@ -179,8 +179,7 @@ export default function GoodsReceipt({ store }) {
       const receiptsData = receiptsResponse?.data || receiptsResponse || [];
       const poIdsWithGRN = new Set(receiptsData.map(r => r.po_id).filter(Boolean));
       const activePOs = poData.filter(po =>
-        ['Sent', 'Confirmed', 'Approved', 'Partial Received'].includes(po.status) &&
-        !poIdsWithGRN.has(po.id)
+        ['Sent', 'Confirmed', 'Approved', 'Partial Received'].includes(po.status)
       );
 
       setReceipts(receiptsData);
@@ -237,18 +236,23 @@ export default function GoodsReceipt({ store }) {
         }));
       }
 
-      setReceivedItems(po.items.map(item => ({
-        ...item,
-        sku: item.sku || '',
-        qty_ordered: item.proposed_qty || item.quantity,
-        received_qty: item.proposed_qty || item.quantity,
-        reject_qty: 0,
-        backorder_qty: 0,
-        accepted_qty: item.proposed_qty || item.quantity,
-        qc_status: 'Passed',
-        warehouse_bin: '',
-        condition: 'Baik'
-      })));
+      setReceivedItems(po.items.map(item => {
+        const totalOrdered = item.proposed_qty || item.quantity;
+        const alreadyReceived = item.received_qty || 0;
+        const remaining = Math.max(0, totalOrdered - alreadyReceived);
+        return {
+          ...item,
+          sku: item.sku || '',
+          qty_ordered: remaining,
+          received_qty: remaining,
+          reject_qty: 0,
+          backorder_qty: 0,
+          accepted_qty: remaining,
+          qc_status: 'Passed',
+          warehouse_bin: '',
+          condition: 'Baik'
+        };
+      }));
     }
   };
 
@@ -772,7 +776,9 @@ export default function GoodsReceipt({ store }) {
                           <div className="flex flex-col relative">
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-slate-800">{po.po_number}</span>
-                              {po.timestamp_wib?.includes(moment().format('DD/MM/YYYY')) && (
+                              {po.status === 'Partial Received' ? (
+                                <Badge className="bg-amber-500 text-[9px] h-4 px-1.5 font-black uppercase text-white">PARTIAL</Badge>
+                              ) : po.timestamp_wib?.includes(moment().format('DD/MM/YYYY')) && (
                                 <Badge className="bg-blue-600 text-[9px] h-4 px-1.5 font-black uppercase text-white animate-pulse">NEW</Badge>
                               )}
                             </div>

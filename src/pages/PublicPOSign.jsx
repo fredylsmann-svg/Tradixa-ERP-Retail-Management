@@ -67,6 +67,7 @@ export default function PublicPOSign() {
   const [po, setPo] = useState(null);
   const [store, setStore] = useState(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isNegotiationSubmit, setIsNegotiationSubmit] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -170,13 +171,19 @@ export default function PublicPOSign() {
           // Phase 2: Supplier already approved price, now needs to fill shipping details
           setIsVerified(true);
           setIsSuccess(false); // Show Phase 2 form, not success
+        } else if (poData.status === 'Negotiation') {
+          // Supplier sudah submit negosiasi, tampilkan layar sukses negosiasi
+          setIsVerified(true);
+          setIsSuccess(true);
+          setIsNegotiationSubmit(true);
         } else if (poData.status === 'In Transit' || poData.status === 'Confirmed' ||
           poData.status === 'Fully Received' || poData.status === 'Partial Received') {
           // Complete: Everything done
           setIsVerified(true);
           setIsSuccess(true);
-        } else if (poData.supplier_signature && poData.status !== 'Negotiation') {
+        } else if (poData.supplier_signature && poData.status !== 'Sent' && poData.status !== 'Draft') {
           // Fallback: Has signature but status didn't change properly
+          // EXCLUDE status 'Sent' — admin may have re-sent after revision, old signature is stale
           setIsVerified(true);
           setIsSuccess(true);
         }
@@ -239,7 +246,9 @@ export default function PublicPOSign() {
       }
     })();
 
-    if (isNegotiating && hasActualChanges) {
+    const isActualNegotiation = isNegotiating && hasActualChanges;
+
+    if (isActualNegotiation) {
       if (settings.negotiationMode === 'Total') {
         const historyEntry = {
           time_wib: timestampWib,
@@ -281,6 +290,7 @@ export default function PublicPOSign() {
     try {
       await api.entities.PurchaseOrder.update(id, updateData);
       setPo({ ...po, ...updateData });
+      setIsNegotiationSubmit(isActualNegotiation);
       setIsSuccess(true);
     } catch (err) {
       alert("Gagal mengirim tanda tangan. Silakan coba lagi.");
@@ -396,32 +406,34 @@ export default function PublicPOSign() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-6">
         <Card className="max-w-lg w-full p-12 text-center space-y-6 animate-in zoom-in-95 duration-500">
-          <div className={`w-20 h-20 ${isPhase2Complete ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'} rounded-full flex items-center justify-center mx-auto shadow-inner`}>
-            {isPhase2Complete ? <Truck className="w-10 h-10" /> : <CheckCircle2 className="w-10 h-10" />}
+          <div className={`w-20 h-20 ${isPhase2Complete ? 'bg-amber-100 text-amber-600' : isNegotiationSubmit ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'} rounded-full flex items-center justify-center mx-auto shadow-inner`}>
+            {isPhase2Complete ? <Truck className="w-10 h-10" /> : isNegotiationSubmit ? <MessageSquare className="w-10 h-10" /> : <CheckCircle2 className="w-10 h-10" />}
           </div>
           <div className="space-y-2">
             <h2 className="text-3xl font-black text-slate-800">
-              {isPhase2Complete ? 'Pengiriman Dikonfirmasi!' : 'Pesanan Telah Disetujui!'}
+              {isPhase2Complete ? 'Pengiriman Dikonfirmasi!' : isNegotiationSubmit ? 'Penawaran Negosiasi Terkirim!' : 'Pesanan Telah Disetujui!'}
             </h2>
             <p className="text-slate-500 font-medium">
               {isPhase2Complete
                 ? 'Barang sedang dalam perjalanan. Status PO: In Transit.'
-                : 'Terima kasih! Harga dan item telah Anda setujui. Silakan kembali ke halaman ini saat barang siap dikirim untuk mengisi detail pengiriman.'}
+                : isNegotiationSubmit
+                  ? 'Terima kasih! Perubahan harga/kuantitas yang Anda ajukan telah dikirim ke pihak pembeli untuk ditinjau. Anda akan dihubungi kembali setelah ada keputusan.'
+                  : 'Terima kasih! Harga dan item telah Anda setujui. Silakan kembali ke halaman ini saat barang siap dikirim untuk mengisi detail pengiriman.'}
             </p>
           </div>
           <div className="h-px bg-slate-100"></div>
-          <div className="flex items-center justify-center gap-2 text-emerald-600 font-bold text-xs uppercase tracking-widest">
+          <div className={`flex items-center justify-center gap-2 ${isNegotiationSubmit ? 'text-blue-600' : 'text-emerald-600'} font-bold text-xs uppercase tracking-widest`}>
             <Lock className="w-3.5 h-3.5" />
             Authenticity Verified Digitally
           </div>
           <div className="pt-4 text-center">
-            <div className="bg-slate-50 rounded-2xl p-6 border-2 border-dashed border-slate-200 relative overflow-hidden inline-block w-full max-w-[300px]">
+            <div className={`bg-slate-50 rounded-2xl p-6 border-2 border-dashed ${isNegotiationSubmit ? 'border-blue-200' : 'border-slate-200'} relative overflow-hidden inline-block w-full max-w-[300px]`}>
               <img src={isPhase2Complete ? (po.shipping_signature || po.supplier_signature) : po.supplier_signature} alt="Signature" className="h-24 object-contain mx-auto relative z-10 dark:invert dark:brightness-150" />
-              <div className="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">SIGNED</div>
+              <div className={`absolute top-2 right-2 ${isNegotiationSubmit ? 'bg-blue-500' : 'bg-emerald-500'} text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm`}>{isNegotiationSubmit ? 'NEGOTIATION' : 'SIGNED'}</div>
             </div>
             <p className="mt-4 font-bold text-slate-800 text-lg uppercase tracking-tight">{po.supplier_name}</p>
             <p className="text-xs text-slate-400">
-              {isPhase2Complete ? 'Pengiriman dikonfirmasi' : 'Disetujui'} pada {moment().format('D/M/YYYY, HH.mm [WIB]')}
+              {isPhase2Complete ? 'Pengiriman dikonfirmasi' : isNegotiationSubmit ? 'Negosiasi diajukan' : 'Disetujui'} pada {moment(po.supplier_signed_at || undefined).format('D/M/YYYY, HH.mm [WIB]')}
             </p>
 
             <div className="mt-8 pt-6 border-t border-slate-100 border-dashed space-y-3">
@@ -886,7 +898,7 @@ export default function PublicPOSign() {
                               </TableHeader>
                               <TableBody>
                                 {negotiationItems.map((item, idx) => {
-                                  const originalItem = po.items[idx];
+                                  const trueOriginalItem = po.original_items ? po.original_items[idx] : po.items[idx];
                                   const currentUnitPrice = item.unit_price || 0;
                                   const currentQty = item.proposed_qty || item.quantity;
                                   const lineSubtotal = currentQty * currentUnitPrice;
@@ -896,7 +908,7 @@ export default function PublicPOSign() {
                                     <TableRow key={idx} className="border-amber-50">
                                       <TableCell className="pl-6 py-4">
                                         <p className="font-bold text-slate-700 text-xs">{item.product_name}</p>
-                                        <p className="text-[9px] text-slate-400 font-medium">Original Qty: {item.quantity} {item.unit}</p>
+                                        <p className="text-[9px] text-slate-400 font-medium">Original Qty: {trueOriginalItem?.quantity || item.quantity} {item.unit}</p>
                                       </TableCell>
                                       <TableCell className="text-center text-slate-400 font-bold text-xs">{item.quantity} {item.unit}</TableCell>
                                       <TableCell className="text-center bg-amber-50/30">
@@ -912,7 +924,7 @@ export default function PublicPOSign() {
                                           className="w-20 mx-auto h-8 text-center font-black text-blue-600 border-blue-200 bg-white focus:ring-blue-500 rounded-lg text-xs"
                                         />
                                       </TableCell>
-                                      <TableCell className="text-right text-slate-600 font-bold text-xs">Rp {formatCurrency(originalItem.unit_price)}</TableCell>
+                                      <TableCell className="text-right text-slate-600 font-bold text-xs">Rp {formatCurrency(trueOriginalItem?.unit_price || item.unit_price)}</TableCell>
                                       <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-1">
                                           <span className="text-[9px] font-bold text-amber-400">Rp</span>
