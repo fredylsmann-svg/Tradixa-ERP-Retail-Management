@@ -285,10 +285,15 @@ export default function UsageStats({ store }) {
   }, [store?.id]);
 
   // Determine email display
-  const isPaidPremium = store?.plan === 'premium';
   const emailCurrent = isTrial ? stats.emailSent : stats.monthlyEmail;
-  const emailLimit = isTrial ? 5 : isPaidPremium ? 300 : isPaidPro ? 50 : 0;
-  const emailDesc = isTrial ? 'Total selama trial' : (isPaidPro || isPaidPremium) ? 'Reset setiap bulan' : 'Upgrade untuk menggunakan';
+  const emailLimit = isTrial ? (limits.emailCredits || 0) : (limits.emailCreditsPerMonth || 0);
+  const emailDesc = isTrial && emailLimit !== Infinity 
+    ? 'Total selama trial' 
+    : emailLimit === Infinity 
+      ? 'Kuota tidak terbatas' 
+      : emailLimit > 0 
+        ? 'Reset setiap bulan' 
+        : 'Upgrade untuk menggunakan';
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">

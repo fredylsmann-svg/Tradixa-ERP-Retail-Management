@@ -79,8 +79,11 @@ func handleNotificationWebhook(c *gin.Context) {
 				createdBy = "00000000-0000-0000-0000-000000000000" // dummy if empty
 			}
 			
+			// Extract storeID for filtering FCM tokens and fallback insert
+			storeID, _ := payload.Record["store_id"].(string)
+			
 			log.Printf("Fetching tokens for creator: %s and required auth: %s (notifyCreatorOnly: %v)...", createdBy, requiredAuth, notifyCreatorOnly)
-			tokens, err := fetchTargetFCMTokens(createdBy, requiredAuth, notifyCreatorOnly)
+			tokens, err := fetchTargetFCMTokens(createdBy, requiredAuth, notifyCreatorOnly, storeID)
 			if err != nil {
 				log.Printf("Error fetching tokens: %v", err)
 			}
@@ -98,7 +101,6 @@ func handleNotificationWebhook(c *gin.Context) {
 			}
 
 			// Supabase Fallback Insert
-			storeID, _ := payload.Record["store_id"].(string)
 			if storeID != "" {
 				err := insertSupabaseFallback(storeID, title, body, payload.Table)
 				if err != nil {
@@ -111,7 +113,7 @@ func handleNotificationWebhook(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "processed"})
 }
 
-func fetchTargetFCMTokens(creatorID string, requiredAuth string, notifyCreatorOnly bool) ([]string, error) {
+func fetchTargetFCMTokens(creatorID string, requiredAuth string, notifyCreatorOnly bool, storeID string) ([]string, error) {
 	supabaseURL := os.Getenv("SUPABASE_URL")
 	supabaseKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
 
@@ -136,6 +138,11 @@ func fetchTargetFCMTokens(creatorID string, requiredAuth string, notifyCreatorOn
 		// Fallback
 		roleFilter := fmt.Sprintf("(role.in.(owner,manager,purchasing,admin),id.eq.%s)", creatorID)
 		q.Add("or", roleFilter)
+	}
+
+	// MULTI-TENANT FIX: Pastikan kita hanya query user di store yang benar (Mencegah data leakage push notif ke toko lain)
+	if storeID != "" {
+		q.Add("current_store_id", fmt.Sprintf("eq.%s", storeID))
 	}
 
 	reqURL := fmt.Sprintf("%s/rest/v1/users?%s", supabaseURL, q.Encode())
