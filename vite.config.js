@@ -8,7 +8,11 @@ export default defineConfig(({ mode }) => ({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['logo-tradixa.png'],
+      devOptions: {
+        enabled: true,
+        type: 'module',
+      },
+      includeAssets: ['favicon-squished.png', 'pwa-icon.png'],
       manifest: {
         name: 'Tradixa ERP Retail Management',
         short_name: 'Tradixa',
@@ -18,12 +22,12 @@ export default defineConfig(({ mode }) => ({
         display: 'standalone',
         icons: [
           {
-            src: 'logo-tradixa.png',
+            src: 'pwa-icon.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'logo-tradixa.png',
+            src: 'pwa-icon.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
