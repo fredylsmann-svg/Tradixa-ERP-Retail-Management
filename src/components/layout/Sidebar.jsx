@@ -5,7 +5,8 @@ import { cn } from '@/lib/utils';
 import SidebarTimeDisplay from './SidebarTimeDisplay';
 import { api } from '@/api/client';
 import { isModuleAccessible } from '@/planConfig';
-import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
+import tradixaLogo from '@/assets/tradixa-logo-new.png';
+import tradixaLogoWhite from '@/assets/tradixa-logo-white-transparent.png';
 import {
   LayoutGrid, Package, Download, Upload, FileText, FileCheck, AlertTriangle,
   ShoppingCart, Receipt, FileInput, TrendingUp, Users, ClipboardList, Truck,
@@ -338,7 +339,8 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
         className="border-b border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none z-10 flex-shrink-0 flex justify-center"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: '12px', paddingLeft: '12px', paddingRight: '12px' }}
       >
-        <img src="/logo-tradixa.png" alt="Tradixa" className="w-10 h-10 rounded-xl object-cover shadow-sm mix-blend-multiply dark:bg-white dark:p-0.5 dark:mix-blend-normal" />
+        <img src={tradixaLogo} alt="Tradixa" className="w-10 h-10 rounded-xl object-cover shadow-sm dark:hidden" />
+        <img src={tradixaLogoWhite} alt="Tradixa" className="w-10 h-10 rounded-xl object-cover shadow-sm hidden dark:block" />
       </div>
 
       {/* Menu items - icons only with tooltip */}
@@ -398,12 +400,10 @@ export default function Sidebar({ currentPage, isSidebarOpen = true, isMobileOpe
         className="border-b border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-none z-10 flex-shrink-0"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}
       >
-        <div className="flex items-center gap-4">
-          <img src="/logo-tradixa.png" alt="Tradixa" className="w-14 h-14 rounded-2xl object-cover shadow-sm mix-blend-multiply dark:bg-white dark:p-1 dark:mix-blend-normal" />
-          <div>
-            <h1 className="font-bold text-xl text-slate-900 dark:text-slate-100 leading-none tracking-wide">Tradixa</h1>
-            <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1 tracking-tight">Management Retail System</p>
-          </div>
+        <div className="flex flex-col items-center justify-center text-center">
+          <img src={tradixaLogo} alt="Tradixa" className="h-12 w-auto object-contain dark:hidden" />
+          <img src={tradixaLogoWhite} alt="Tradixa" className="h-12 w-auto object-contain hidden dark:block" />
+          <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-1.5 tracking-tight">Management Retail System</p>
         </div>
       </div>
 

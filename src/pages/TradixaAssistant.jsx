@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { MessageCircle, Send, Bot, User, Loader2, Plus, Menu, Lock, Sparkles, Zap, CheckCircle2, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast as sonnerToast } from 'sonner';
+import { DEV_EMAILS } from '@/planConfig';
 
 export default function TradixaAssistant({ store }) {
   const navigate = useNavigate();
@@ -216,7 +217,9 @@ export default function TradixaAssistant({ store }) {
   // Premium gating logic — only Premium (paid) and Enterprise can access
   const isPremiumPaid = store?.plan === 'premium' && store?.has_used_trial === false;
   const isEnterprise = store?.plan === 'enterprise';
-  const isAiLocked = !(isPremiumPaid || isEnterprise);
+  const userEmail = (() => { try { return JSON.parse(localStorage.getItem('tradixa_last_user'))?.email?.toLowerCase(); } catch { return null; } })();
+  const isDevAccount = userEmail && DEV_EMAILS.includes(userEmail);
+  const isAiLocked = !(isPremiumPaid || isEnterprise || isDevAccount);
 
   const [conversations, setConversations] = useState([]);
   const [currentConversation, setCurrentConversation] = useState(null);

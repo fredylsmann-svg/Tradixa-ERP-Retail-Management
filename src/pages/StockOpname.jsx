@@ -161,7 +161,13 @@ export default function StockOpname({ store }) {
       // Filter products by selected location (match by warehouse_name)
       let filteredProducts = allProducts;
       if (formData.location && formData.location !== 'Semua Lokasi') {
-        filteredProducts = allProducts.filter(p => p.warehouse_name === formData.location || p.location_name === formData.location);
+        // Jika user memilih Toko Penjualan (type: sales), gunakan gudang sumber stoknya (reference)
+        const selectedLoc = locations.find(l => l.name === formData.location);
+        let filterName = formData.location;
+        if (selectedLoc?.type === 'sales' && selectedLoc.reference && selectedLoc.reference !== 'none') {
+          filterName = selectedLoc.reference;
+        }
+        filteredProducts = allProducts.filter(p => p.warehouse_name === filterName || p.location_name === filterName);
       }
       const opname = await api.entities.StockOpname.create({
         store_id: store.id,

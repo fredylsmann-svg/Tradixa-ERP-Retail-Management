@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Loader2, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
-import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
+import tradixaLogo from '@/assets/tradixa-logo-new.png';
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('');
@@ -114,7 +114,7 @@ export default function ResetPassword() {
               <motion.img
                 src={tradixaLogo}
                 alt="Tradixa"
-                className="h-52 mx-auto -mb-8"
+                className="h-16 md:h-20 w-auto mx-auto mb-4 object-contain mix-blend-multiply dark:mix-blend-normal"
               />
               <p className="text-[14px] font-bold text-slate-800 tracking-wide">Buat Password Baru</p>
               <p className="text-[12px] text-slate-500 mt-1">Masukkan kata sandi baru untuk akun Anda</p>

@@ -240,7 +240,7 @@ export default function ProductMaster({ store }) {
     if (selectedProductIds.length === filteredProducts.length) {
       setSelectedProductIds([]);
     } else {
-      setSelectedProductIds(filteredProducts.map(p => p.id));
+      setSelectedProductIds(filteredProducts.map(p => p.masterId));
     }
   };
 

@@ -329,13 +329,13 @@ export default function MarketingAutomation({ store }) {
     const storePlan = store?.plan || 'free';
     const isTrial = storePlan === 'pro' && store?.has_used_trial;
 
-    if (storePlan === 'free') {
+    const limits = getEffectiveLimits(store);
+    const limit = limits.emailCreditsPerMonth || 0;
+
+    if (storePlan === 'free' && limit === 0) {
       toast.error('Fitur Email Marketing hanya tersedia di paket berbayar (Pro / Premium). Upgrade untuk menggunakan fitur ini.', { duration: 5000 });
       return;
     }
-
-    const limits = getEffectiveLimits(store);
-    const limit = limits.emailCreditsPerMonth || 0;
 
     if (limit === 0) {
       toast.error('Plan Anda tidak memiliki akses ke Email Marketing. Silakan upgrade.', { duration: 5000 });

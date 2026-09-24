@@ -5,7 +5,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
-import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
+import tradixaLogo from '@/assets/tradixa-logo-new.png';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -335,7 +335,7 @@ export default function Login() {
                 <motion.img
                   src={tradixaLogo}
                   alt="Tradixa"
-                  className="h-52 mx-auto -mb-8"
+                  className="mt-6 h-16 md:h-20 w-auto mx-auto mb-4 object-contain"
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.15, duration: 0.4 }}

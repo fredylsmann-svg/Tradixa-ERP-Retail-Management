@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Store, Upload, Building2, Phone, Mail, FileText, Loader2, User, ArrowRight, ArrowLeft, Info, MapPin, Camera, CheckCircle2, ShieldCheck, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
-import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
+import tradixaLogo from '@/assets/tradixa-logo-new.png';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/api/client';
 
@@ -282,7 +282,7 @@ export default function StoreSetup({ onComplete }) {
               <motion.div key="step1" custom={1} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
                 <div className="pt-2 px-6 pb-8 sm:px-8">
                   <div className="text-center mb-6">
-                    <img src={tradixaLogo} alt="Tradixa" className="h-52 mx-auto -mb-8" />
+                    <img src={tradixaLogo} alt="Tradixa" className="mt-6 h-16 md:h-20 w-auto mx-auto mb-4 object-contain" />
                   </div>
                   <div className="mb-4">
                     <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: '#1e3a5f' }}>
@@ -366,7 +366,7 @@ export default function StoreSetup({ onComplete }) {
               <motion.div key="step2" custom={2} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
                 <div className="pt-2 px-6 pb-8 sm:px-8">
                   <div className="text-center mb-6">
-                    <img src={tradixaLogo} alt="Tradixa" className="h-52 mx-auto -mb-8" />
+                    <img src={tradixaLogo} alt="Tradixa" className="mt-6 h-16 md:h-20 w-auto mx-auto mb-4 object-contain" />
                   </div>
                   <div className="mb-4">
                     <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: '#1e3a5f' }}>
@@ -444,7 +444,7 @@ export default function StoreSetup({ onComplete }) {
               <motion.div key="step3" custom={3} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
                 <div className="pt-2 px-6 pb-8 sm:px-8">
                   <div className="text-center mb-6">
-                    <img src={tradixaLogo} alt="Tradixa" className="h-52 mx-auto -mb-8" />
+                    <img src={tradixaLogo} alt="Tradixa" className="mt-6 h-16 md:h-20 w-auto mx-auto mb-4 object-contain" />
                   </div>
 
                   <div className="mb-3">
@@ -544,7 +544,7 @@ export default function StoreSetup({ onComplete }) {
               <motion.div key="step4" custom={4} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
                 <div className="pt-2 px-6 pb-8 sm:px-8">
                   <div className="text-center mb-6">
-                    <img src={tradixaLogo} alt="Tradixa" className="h-52 mx-auto -mb-8" />
+                    <img src={tradixaLogo} alt="Tradixa" className="mt-6 h-16 md:h-20 w-auto mx-auto mb-4 object-contain" />
                   </div>
 
                   <div className="mb-3">

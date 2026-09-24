@@ -15,7 +15,8 @@ import StaffRegister from './pages/StaffRegister';
 import SignUp from '@/pages/SignUp';
 import ResetPassword from '@/pages/ResetPassword';
 import PublicTracker from './pages/PublicTracker';
-import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
+import tradixaLogo from '@/assets/tradixa-logo-new.png';
+import tradixaLogoWhite from '@/assets/tradixa-logo-white-transparent.png';
 import { onForegroundMessage } from '@/firebase';
 // Lazy-loaded public pages (heavy components that don't need eager loading)
 const PublicPOSign = lazy(() => import('./pages/PublicPOSign'));
@@ -40,8 +41,9 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 const LoadingFallback = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
     <div className="text-center animate-in fade-in zoom-in duration-500 flex flex-col items-center max-md:gap-4 md:-mt-32">
-      <img src={tradixaLogo} alt="Tradixa" className="w-48 md:w-60 h-auto mx-auto animate-pulse object-contain" />
-      <div className="flex items-center gap-1.5 -mt-6 md:-mt-16">
+      <img src={tradixaLogo} alt="Tradixa" className="w-48 md:w-60 h-auto mx-auto animate-pulse object-contain dark:hidden" />
+      <img src={tradixaLogoWhite} alt="Tradixa" className="w-48 md:w-60 h-auto mx-auto animate-pulse object-contain hidden dark:block" />
+      <div className="flex items-center gap-1.5 mt-4 md:mt-6">
         <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.3s]"></div>
         <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.15s]"></div>
         <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-bounce"></div>
@@ -54,7 +56,8 @@ const LoadingFallback = () => (
 const RecoveryFallback = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
     <div className="text-center px-6 max-w-sm">
-      <img src={tradixaLogo} alt="Tradixa" className="w-40 h-auto mx-auto mb-2 object-contain" />
+      <img src={tradixaLogo} alt="Tradixa" className="w-40 h-auto mx-auto mb-2 object-contain dark:hidden" />
+      <img src={tradixaLogoWhite} alt="Tradixa" className="w-40 h-auto mx-auto mb-2 object-contain hidden dark:block" />
       <p className="text-slate-500 text-sm mb-6">
         Koneksi memerlukan waktu lebih lama dari biasanya. Ini bisa terjadi karena koneksi internet lambat atau perangkat sedang sibuk.
       </p>
@@ -148,7 +151,8 @@ const AppVisibilityCover = () => {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white">
-      <img src={tradixaLogo} alt="Tradixa" className="w-40 md:w-60 h-auto object-contain" />
+      <img src={tradixaLogo} alt="Tradixa" className="w-40 md:w-60 h-auto object-contain dark:hidden" />
+      <img src={tradixaLogoWhite} alt="Tradixa" className="w-40 md:w-60 h-auto object-contain hidden dark:block" />
     </div>
   );
 };

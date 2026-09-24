@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Loader2, Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
-import tradixaLogo from '@/assets/tradixa-logo-transparent.png';
+import tradixaLogo from '@/assets/tradixa-logo-new.png';
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -176,7 +176,7 @@ export default function SignUp() {
             <motion.img
               src={tradixaLogo}
               alt="Tradixa"
-              className="h-52 mx-auto -mb-8"
+              className="mt-6 h-16 md:h-20 w-auto mx-auto mb-4 object-contain"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.15, duration: 0.4 }}

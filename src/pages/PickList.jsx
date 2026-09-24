@@ -96,6 +96,7 @@ export default function PickList({ store }) {
             product_name: item.product_name || item.name || '-',
             product_id: item.product_id,
             sku: item.sku || products.find(p => p.id === item.product_id)?.sku || '',
+            barcode: item.barcode || products.find(p => p.id === item.product_id)?.barcode || '',
             qty: item.qty || item.quantity || 1,
             picked_qty: 0,
             location: (() => {
@@ -164,6 +165,7 @@ export default function PickList({ store }) {
     
     const items = [...(viewingPick.items || [])];
     const itemIndex = items.findIndex(i => 
+      i.barcode?.toLowerCase() === code.toLowerCase() ||
       i.sku?.toLowerCase() === code.toLowerCase() || 
       i.product_id?.toLowerCase() === code.toLowerCase() ||
       i.product_name?.toLowerCase() === code.toLowerCase()
