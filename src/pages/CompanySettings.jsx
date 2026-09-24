@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import PageHeader from '@/components/layout/PageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useAuth } from '@/lib/AuthContext';
+import { DEV_EMAILS } from '@/planConfig';
 import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
 
 const libraries = ['places'];
@@ -51,19 +53,23 @@ const InfoTooltip = ({ text }) => {
 export default function CompanySettings({ store }) {
   const { settings, updateSetting } = useSettings();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState(null); // 'success' | 'error' | null
 
+  // Dev accounts always bypass all locks
+  const isDevUser = user?.email && DEV_EMAILS.includes(user.email.toLowerCase());
+
   // Trial / Free plan detection for API key lock
   const isTrial = store?.plan === 'pro' && store?.has_used_trial;
   const isFree = !store?.plan || store?.plan === 'free';
-  const isApiLocked = isTrial || isFree;
+  const isApiLocked = isDevUser ? false : (isTrial || isFree);
 
   // Premium-only feature lock (EDC, AI Assistant etc.) — only Premium (paid) and Enterprise can access
   const isPremiumPaid = store?.plan === 'premium' && store?.has_used_trial === false;
   const isEnterprise = store?.plan === 'enterprise';
-  const isPremiumLocked = !(isPremiumPaid || isEnterprise);
+  const isPremiumLocked = isDevUser ? false : !(isPremiumPaid || isEnterprise);
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(store?.logo_url || null);
 
