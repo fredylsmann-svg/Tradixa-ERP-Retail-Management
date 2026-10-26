@@ -8,12 +8,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Plus, Search, Eye, Pencil, Trash2, Package, Boxes, Printer, X, ChevronRight } from 'lucide-react';
+import { Plus, Search, Eye, Pencil, Trash2, Package, Boxes, Printer, X, ChevronRight, Upload } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Filter } from 'lucide-react';
 import ProductForm from '@/components/products/ProductForm';
+import ProductImportDialog from '@/components/products/ProductImportDialog';
 import BarcodePrintModal from '@/components/products/BarcodePrintModal';
 import { formatNumber } from '@/components/utils/currencyFormatter';
 import { useGlobalDate, matchesDate } from '@/contexts/DateContext';
@@ -29,6 +30,7 @@ export default function ProductMaster({ store }) {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [viewingProduct, setViewingProduct] = useState(null);
   const [deleteProduct, setDeleteProduct] = useState(null);
@@ -268,6 +270,15 @@ export default function ProductMaster({ store }) {
             
             store={store}
           />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowImport(true)}
+              className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 text-xs h-8 px-2.5"
+              id="product-import-button"
+            >
+              <Upload className="w-3.5 h-3.5" /><span className="hidden sm:inline">Impor</span>
+            </Button>
             {selectedProductIds.length > 0 && (
               <Button 
                 variant="outline" 
@@ -779,6 +790,15 @@ export default function ProductMaster({ store }) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Import Excel Dialog */}
+      <ProductImportDialog
+        open={showImport}
+        onClose={() => setShowImport(false)}
+        store={store}
+        categories={dynamicCategories}
+        onSuccess={() => { loadProducts(); loadCategories(); }}
+      />
 
       {/* Delete Dialog */}
       <Dialog open={!!deleteProduct} onOpenChange={() => setDeleteProduct(null)}>
