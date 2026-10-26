@@ -496,7 +496,9 @@ export default function ProductImportDialog({ open, onClose, store, categories =
               <Info className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
               <span>
                 Jumlah produk mengikuti kuota paket <b className="capitalize">{store?.plan || 'free'}</b>
-                {limits.maxProducts !== Infinity ? ` (maks ${formatNumber(limits.maxProducts)} produk)` : ' (tanpa batas)'}.
+                {isDev
+                  ? ' — akun developer/admin Tradixa, kuota tidak diberlakukan'
+                  : limits.maxProducts !== Infinity ? ` (maks ${formatNumber(limits.maxProducts)} produk)` : ' (tanpa batas)'}.
                 Data belum disimpan sebelum Anda menekan tombol <b>Mulai Impor</b> di langkah berikutnya.
               </span>
             </div>
