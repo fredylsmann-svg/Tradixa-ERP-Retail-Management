@@ -301,6 +301,9 @@ GRANT EXECUTE ON FUNCTION public.accept_store_invitation(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_store_invitation(TEXT) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.is_email_registered(TEXT) TO anon, authenticated;
 
+-- Refresh PostgREST schema cache agar fungsi baru langsung terbaca dari frontend
+NOTIFY pgrst, 'reload schema';
+
 -- ============================================================
 -- VERIFIKASI (jalankan terpisah):
 --   SELECT proname FROM pg_proc WHERE proname IN
