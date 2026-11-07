@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/api/client';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { UserPlus, Shield, Mail, Loader2, UserCircle, Edit, Briefcase, Key, ExternalLink, MessageCircle, RefreshCw, Download, FileText, MoreHorizontal, Save, LayoutGrid, Trash2, Camera, Building2, MapPin, Users } from 'lucide-react';
+import { UserPlus, Shield, Mail, Loader2, UserCircle, Edit, Briefcase, Key, ExternalLink, MessageCircle, Copy, RefreshCw, Download, FileText, MoreHorizontal, Save, LayoutGrid, Trash2, Camera, Building2, MapPin, Users } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import moment from 'moment';
@@ -115,6 +116,8 @@ export default function UserManagement({ store }) {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [isCreatingInvite, setIsCreatingInvite] = useState(false);
+  const [generatedInvite, setGeneratedInvite] = useState(null); // { link, waUrl, name }
 
   // Invite Form State
   const [inviteForm, setInviteForm] = useState({
@@ -188,7 +191,12 @@ export default function UserManagement({ store }) {
     }
   };
 
-  const handleInviteUserWA = () => {
+  const resetInviteForm = () => {
+    setInviteForm({ name: '', email: '', position: '', customPosition: '', role: 'staff', phone: '', modules: [], authorities: [], approval_limit: 0, max_discount_limit: 0 });
+    setGeneratedInvite(null);
+  };
+
+  const handleInviteUserWA = async () => {
     const { name, position, customPosition, role, phone, modules } = inviteForm;
     const finalPosition = position === 'Custom' ? customPosition : position;
 
@@ -201,20 +209,51 @@ export default function UserManagement({ store }) {
       return;
     }
 
-    const modulesParam = encodeURIComponent(modules.join(','));
-    const authoritiesParam = encodeURIComponent((inviteForm.authorities || []).join(','));
-    const limitParam = inviteForm.approval_limit || 0;
-    const discountParam = inviteForm.max_discount_limit || 0;
-    const regLink = `${window.location.origin}/register?store_id=${store.id}&role=${role}&pos=${encodeURIComponent(finalPosition)}&modules=${modulesParam}&auths=${authoritiesParam}&limit=${limitParam}&discount=${discountParam}&name=${encodeURIComponent(name)}`;
-    const message = `Halo ${name},\n\nAnda diundang oleh *${store.store_name}* untuk bergabung ke sistem *Tradixa ERP* dengan posisi sebagai *${finalPosition}*.\n\nSilakan klik tautan di bawah ini untuk menyelesaikan pendaftaran akun Anda:\n${regLink}\n\nSalam,\nManajemen ${store.store_name}`;
+    setIsCreatingInvite(true);
+    try {
+      // Detail undangan (role, modul, limit) disimpan di server.
+      // Link hanya berisi token acak sekali pakai (berlaku 7 hari).
+      const { data, error } = await supabase.rpc('create_store_invitation', {
+        p_store_id: store.id,
+        p_full_name: name,
+        p_position: finalPosition,
+        p_role: role || 'staff',
+        p_phone: phone,
+        p_modules: modules || [],
+        p_authorities: inviteForm.authorities || [],
+        p_approval_limit: Number(inviteForm.approval_limit) || 0,
+        p_max_discount_limit: Number(inviteForm.max_discount_limit) || 0
+      });
+      if (error) throw error;
 
-    // Clean phone number (remove non-digits)
-    const cleanPhone = phone.replace(/\D/g, '');
-    const waUrl = `https://wa.me/${cleanPhone.startsWith('0') ? '62' + cleanPhone.substring(1) : cleanPhone}?text=${encodeURIComponent(message)}`;
+      const regLink = `${window.location.origin}/register?token=${data.token}`;
+      const message = `Halo ${name},\n\nAnda diundang oleh *${store.store_name}* untuk bergabung ke sistem *Tradixa ERP* dengan posisi sebagai *${finalPosition}*.\n\nSilakan klik tautan di bawah ini untuk menyelesaikan pendaftaran akun Anda (berlaku 7 hari, sekali pakai):\n${regLink}\n\nSalam,\nManajemen ${store.store_name}`;
 
-    window.open(waUrl, '_blank');
-    setShowInviteDialog(false);
-    setInviteForm({ name: '', email: '', position: '', role: 'staff', phone: '', modules: [] });
+      // Clean phone number (remove non-digits)
+      const cleanPhone = phone.replace(/\D/g, '');
+      const waUrl = `https://wa.me/${cleanPhone.startsWith('0') ? '62' + cleanPhone.substring(1) : cleanPhone}?text=${encodeURIComponent(message)}`;
+
+      // Ditampilkan sebagai tombol (klik langsung user) agar tidak diblokir popup blocker
+      setGeneratedInvite({ link: regLink, waUrl, name });
+    } catch (error) {
+      toast({
+        title: "Gagal Membuat Undangan",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsCreatingInvite(false);
+    }
+  };
+
+  const handleCopyInviteLink = async () => {
+    if (!generatedInvite?.link) return;
+    try {
+      await navigator.clipboard.writeText(generatedInvite.link);
+      toast({ title: "Link Disalin", description: "Link undangan berhasil disalin." });
+    } catch {
+      toast({ title: "Gagal Menyalin", description: "Salin link secara manual.", variant: "destructive" });
+    }
   };
 
   const handleEditUser = (user) => {
@@ -578,7 +617,7 @@ export default function UserManagement({ store }) {
       </Card>
 
       {/* WhatsApp Invitation Dialog */}
-      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+      <Dialog open={showInviteDialog} onOpenChange={(open) => { setShowInviteDialog(open); if (!open) resetInviteForm(); }}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden rounded-2xl border-none max-h-[90vh] flex flex-col">
           <div className="bg-slate-50 p-6 border-b shrink-0">
             <h2 className="text-2xl font-bold text-slate-800">Undang User Baru</h2>
@@ -791,12 +830,33 @@ export default function UserManagement({ store }) {
               </div>
             </div>
 
+            {generatedInvite ? (
+              <div className="space-y-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <p className="text-sm font-bold text-emerald-800">Link undangan untuk {generatedInvite.name} siap dikirim</p>
+                <p className="text-[11px] text-emerald-700">Berlaku 7 hari dan hanya bisa dipakai satu kali. Jangan bagikan ke orang lain.</p>
+                <div className="flex gap-2">
+                  <Input readOnly value={generatedInvite.link} className="text-xs bg-white" onFocus={(e) => e.target.select()} />
+                  <Button type="button" variant="outline" onClick={handleCopyInviteLink} className="shrink-0">
+                    <Copy className="w-4 h-4 mr-1" /> Salin
+                  </Button>
+                </div>
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-1 w-full">
+                  <Button variant="ghost" onClick={() => { setShowInviteDialog(false); resetInviteForm(); }} className="font-bold w-full sm:w-auto justify-center">Selesai</Button>
+                  <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 px-8 w-full sm:w-auto justify-center">
+                    <a href={generatedInvite.waUrl} target="_blank" rel="noopener noreferrer">
+                      <MessageCircle className="w-5 h-5 mr-2" /> Kirim via WhatsApp
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            ) : (
             <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-2 w-full">
               <Button variant="ghost" onClick={() => setShowInviteDialog(false)} className="font-bold w-full sm:w-auto justify-center">Kembali</Button>
-              <Button onClick={handleInviteUserWA} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 px-8 w-full sm:w-auto justify-center">
-                <MessageCircle className="w-5 h-5 mr-2" /> Kirim Link Pendaftaran
+              <Button onClick={handleInviteUserWA} disabled={isCreatingInvite} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 px-8 w-full sm:w-auto justify-center">
+                {isCreatingInvite ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <MessageCircle className="w-5 h-5 mr-2" />} Buat Link Pendaftaran
               </Button>
             </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

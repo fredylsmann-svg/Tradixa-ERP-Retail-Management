@@ -9,9 +9,11 @@ import { MessageCircle, Send, Bot, User, Loader2, Plus, Menu, Lock, Sparkles, Za
 import { useNavigate } from 'react-router-dom';
 import { toast as sonnerToast } from 'sonner';
 import { DEV_EMAILS } from '@/planConfig';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function TradixaAssistant({ store }) {
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
 
   const renderMessageContent = (content, isUser) => {
     if (!content) return null;
@@ -217,7 +219,8 @@ export default function TradixaAssistant({ store }) {
   // Premium gating logic — only Premium (paid) and Enterprise can access
   const isPremiumPaid = store?.plan === 'premium' && store?.has_used_trial === false;
   const isEnterprise = store?.plan === 'enterprise';
-  const userEmail = (() => { try { return JSON.parse(localStorage.getItem('tradixa_last_user'))?.email?.toLowerCase(); } catch { return null; } })();
+  // Email dari sesi login (bukan localStorage yang bisa diubah via DevTools)
+  const userEmail = authUser?.email?.toLowerCase() || null;
   const isDevAccount = userEmail && DEV_EMAILS.includes(userEmail);
   const isAiLocked = !(isPremiumPaid || isEnterprise || isDevAccount);
 

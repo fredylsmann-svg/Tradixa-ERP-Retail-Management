@@ -10,12 +10,15 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useSettings } from '@/contexts/SettingsContext';
 import { DEV_EMAILS } from '@/planConfig';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ChatDrawer({ isOpen, onOpenChange, store }) {
   const navigate = useNavigate();
   const isPaidPremium = store?.plan === 'premium';
   const isEnterprise = store?.plan === 'enterprise';
-  const chatUserEmail = (() => { try { return JSON.parse(localStorage.getItem('tradixa_last_user'))?.email?.toLowerCase(); } catch { return null; } })();
+  // Email dari sesi login (bukan localStorage yang bisa diubah via DevTools)
+  const { user: authUser } = useAuth();
+  const chatUserEmail = authUser?.email?.toLowerCase() || null;
   const isDevAccount = chatUserEmail && DEV_EMAILS.includes(chatUserEmail);
   const isChatLocked = !isPaidPremium && !isEnterprise && !isDevAccount;
   const [contacts, setContacts] = useState([]);

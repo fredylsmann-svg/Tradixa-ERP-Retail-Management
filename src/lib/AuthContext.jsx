@@ -71,6 +71,31 @@ export const AuthProvider = ({ children }) => {
           avatar: existingUser.avatar_url
         }));
       } else {
+        // Karyawan yang mendaftar via link undangan (token disimpan di metadata saat signUp).
+        // Undangan diselesaikan di server: role/toko/modul diambil dari database.
+        const inviteToken = sessionUser.user_metadata?.invite_token;
+        if (inviteToken) {
+          const { data: acceptedUser, error: acceptError } = await supabase
+            .rpc('accept_store_invitation', { p_token: inviteToken });
+
+          if (!mountedRef.current) return;
+
+          if (!acceptError && acceptedUser?.id) {
+            console.log('[Tradixa Auth] Invitation accepted, staff record ready');
+            setUser(acceptedUser);
+            setCurrentUserEmail(acceptedUser.email);
+            setIsAuthenticated(true);
+            localStorage.setItem('tradixa_last_user', JSON.stringify({
+              name: acceptedUser.full_name,
+              email: acceptedUser.email,
+              avatar: acceptedUser.avatar_url
+            }));
+            return;
+          }
+          // Undangan tidak valid/kedaluwarsa -> lanjut ke alur normal di bawah
+          console.warn('[Tradixa Auth] Invitation not accepted:', acceptError?.message);
+        }
+
         // Auto-create user record for new sign-ins
         console.log('[Tradixa Auth] Creating new user record...');
         const fullName = sessionUser.user_metadata?.full_name || 

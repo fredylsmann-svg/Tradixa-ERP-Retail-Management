@@ -60,14 +60,11 @@ export default function SignUp() {
 
     setIsLoading(true);
     try {
-      // 1. Cek apakah email sudah terdaftar di tabel users
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', formData.email)
-        .maybeSingle();
+      // 1. Cek apakah email sudah terdaftar di tabel users (via RPC, tanpa membaca tabel langsung)
+      const { data: isRegistered } = await supabase
+        .rpc('is_email_registered', { p_email: formData.email });
 
-      if (existingUser) {
+      if (isRegistered === true) {
         setIsLoading(false);
         const msg = 'Email sudah terdaftar. Silakan gunakan email lain atau langsung Login.';
         setError(msg);
@@ -89,21 +86,25 @@ export default function SignUp() {
 
       // 3. Simpan data tambahan di tabel users
       // Gunakan try-catch terpisah untuk menangani race condition dengan AuthContext
-      try {
-        await api.entities.User.create({
-          full_name: formData.full_name,
-          email: formData.email,
-          password: formData.password,
-          role: 'owner',
-          is_store_setup_completed: false
-        });
-      } catch (insertErr) {
-        // Jika error kode 23505 (Unique Violation), artinya AuthContext 
-        // sudah berhasil membuat data di background. Kita bisa abaikan.
-        if (insertErr.code !== '23505') {
-          throw insertErr;
+      // Catatan: password TIDAK disimpan di tabel users (dikelola Supabase Auth).
+      // Jika belum ada sesi (verifikasi email aktif), record dibuat otomatis
+      // oleh AuthContext saat login pertama.
+      if (authData?.session) {
+        try {
+          await api.entities.User.create({
+            full_name: formData.full_name,
+            email: formData.email,
+            role: 'owner',
+            is_store_setup_completed: false
+          });
+        } catch (insertErr) {
+          // Jika error kode 23505 (Unique Violation), artinya AuthContext 
+          // sudah berhasil membuat data di background. Kita bisa abaikan.
+          if (insertErr.code !== '23505') {
+            throw insertErr;
+          }
+          console.log('[SignUp] User record already created by AuthContext, continuing...');
         }
-        console.log('[SignUp] User record already created by AuthContext, continuing...');
       }
 
       await supabase.auth.signOut();

@@ -318,9 +318,11 @@ export const setCurrentUserEmail = (email) => { currentUserEmail = email; };
 export function getEffectiveLimits(store) {
   // BYPASS LIMITS FOR DEVELOPER/OWNER EMAILS (e.g. ferdiarmond)
   
-  // HMR safe fallback
+  // Email diambil dari sesi login (diset oleh AuthContext via setCurrentUserEmail).
+  // Fallback localStorage HANYA untuk mode development (HMR mereset variabel modul),
+  // karena localStorage bisa diubah siapa pun lewat DevTools.
   let checkEmail = currentUserEmail;
-  if (!checkEmail) {
+  if (!checkEmail && import.meta.env.DEV) {
      try {
        const saved = localStorage.getItem('tradixa_last_user');
        if (saved) {
