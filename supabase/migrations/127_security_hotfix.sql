@@ -93,8 +93,16 @@ REVOKE EXECUTE ON FUNCTION public.reset_demo_store_data(text) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.reset_demo_store_data(text) FROM anon;
 REVOKE EXECUTE ON FUNCTION public.reset_demo_store_data(text) FROM authenticated;
 
--- 2a. Kosongkan password plaintext yang sudah tersimpan
+-- 2a. Kosongkan password plaintext yang sudah tersimpan di tabel users & system_audit_logs
 UPDATE public.users SET password = '' WHERE COALESCE(password, '') <> '';
+
+UPDATE public.system_audit_logs
+SET new_data = new_data - 'password'
+WHERE jsonb_typeof(new_data) = 'object' AND new_data ? 'password';
+
+UPDATE public.system_audit_logs
+SET old_data = old_data - 'password'
+WHERE jsonb_typeof(old_data) = 'object' AND old_data ? 'password';
 
 -- 2b. Trigger: jangan pernah simpan password di tabel users
 CREATE OR REPLACE FUNCTION public.strip_users_plaintext_password()
