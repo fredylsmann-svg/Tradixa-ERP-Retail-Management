@@ -186,7 +186,7 @@ export const AuthProvider = ({ children }) => {
 
           const { error } = await supabase.rpc('register_push_token', {
             p_fcm_token: token,
-            p_store_id: user.store_id || null,
+            p_store_id: user.current_store_id || user.store_id || null,
             p_device_name: deviceName
           });
             

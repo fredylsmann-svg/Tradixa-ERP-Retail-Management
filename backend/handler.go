@@ -71,10 +71,27 @@ func handleNotificationWebhook(c *gin.Context) {
 			}
 		}
 
+		if payload.Table == "internal_messages" && payload.Type == "INSERT" {
+			notifyCreatorOnly = true
+			senderName, _ := payload.Record["sender_name"].(string)
+			if senderName == "" {
+				senderName = "Rekan Kerja"
+			}
+			msgText, _ := payload.Record["message"].(string)
+			if len(msgText) > 80 {
+				msgText = msgText[:80] + "..."
+			}
+			title = fmt.Sprintf("💬 Pesan Baru dari %s", senderName)
+			body = msgText
+		}
+
 		if title != "" {
 			
-			// Get created_by_id to notify the creator
+			// Get target user ID (created_by_id for PO/PR, receiver_id for internal_messages)
 			createdBy, _ := payload.Record["created_by_id"].(string)
+			if createdBy == "" {
+				createdBy, _ = payload.Record["receiver_id"].(string)
+			}
 			if createdBy == "" {
 				createdBy = "00000000-0000-0000-0000-000000000000" // dummy if empty
 			}
@@ -100,8 +117,8 @@ func handleNotificationWebhook(c *gin.Context) {
 				}
 			}
 
-			// Supabase Fallback Insert
-			if storeID != "" {
+			// Supabase Fallback Insert (skip for internal_messages to keep communication_logs clean and save egress)
+			if storeID != "" && payload.Table != "internal_messages" {
 				err := insertSupabaseFallback(storeID, title, body, payload.Table)
 				if err != nil {
 					log.Printf("Supabase Fallback Error: %v", err)

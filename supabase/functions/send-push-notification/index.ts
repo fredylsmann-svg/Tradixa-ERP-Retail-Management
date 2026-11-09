@@ -39,22 +39,23 @@ serve(async (req: any) => {
       throw new Error(`Failed to resolve store details: ${storeError?.message || 'Store not found'}`)
     }
 
-    // Only allow Premium stores to send push notifications
-    if (store.plan !== 'premium') {
+    // Only allow Premium & Enterprise stores to send push notifications
+    if (store.plan !== 'premium' && store.plan !== 'enterprise') {
       return new Response(
-        JSON.stringify({ success: false, error: 'Push notifications are exclusive to the Premium Plan. Please upgrade.' }),
+        JSON.stringify({ success: false, error: 'Push notifications are exclusive to the Premium and Enterprise Plans. Please upgrade.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
       )
     }
 
-    // 2. Query FCM Tokens for the store (and optional target user)
+    // 2. Query FCM Tokens for the target user (or all users in the store)
     let query = supabase
       .from('user_push_subscriptions')
       .select('fcm_token, device_name')
-      .eq('store_id', store_id)
 
     if (target_user_id) {
       query = query.eq('user_id', target_user_id)
+    } else {
+      query = query.eq('store_id', store_id)
     }
 
     const { data: subscriptions, error: subsError } = await query
